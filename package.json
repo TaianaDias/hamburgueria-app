@@ -9,6 +9,9 @@
   },
   "scripts": {
     "start": "node server.js",
+    "check:html": "node scripts/check-html-modules.mjs",
+    "check:smoke": "node scripts/smoke-test.mjs",
+    "ci": "npm run check:html && npm run check:smoke",
     "mobile:copy": "npx cap copy",
     "mobile:sync": "npx cap sync",
     "mobile:doctor": "npx cap doctor",

@@ -281,6 +281,12 @@ function renderProducts(items) {
     const select = document.createElement("select");
     select.id = `for_${item.id}`;
 
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "Sem fornecedor";
+    emptyOption.selected = !supplier?.id;
+    select.appendChild(emptyOption);
+
     fornecedores.forEach((fornecedor) => {
       const option = document.createElement("option");
       option.value = fornecedor.id;

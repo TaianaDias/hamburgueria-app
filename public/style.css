@@ -331,6 +331,21 @@ pre {
   color: var(--muted);
 }
 
+.recipe-note {
+  margin: 12px 0 0;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.recipe-note + pre {
+  margin-top: 12px;
+}
+
+.field-group input[readonly] {
+  opacity: 0.92;
+  cursor: default;
+}
+
 .footer {
   padding: 0 20px 28px;
   text-align: center;

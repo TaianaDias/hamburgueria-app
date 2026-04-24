@@ -37,6 +37,43 @@
           <input id="nome" placeholder="Burger da casa">
         </div>
 
+        <div class="field-group" style="margin-top: 16px;">
+          <label for="descricao">Receita escrita</label>
+          <textarea id="descricao" placeholder="Ex.: Pao brioche, blend 160g, queijo, molho da casa e salada. Use este campo para deixar a montagem e o rendimento descritos por escrito."></textarea>
+        </div>
+
+        <div class="form-grid" style="margin-top: 18px;">
+          <div class="field-group">
+            <label for="valor_total">Valor total do lanche ou preparo</label>
+            <input id="valor_total" type="number" min="0" step="0.01" value="0">
+          </div>
+
+          <div class="field-group">
+            <label for="rendimento_qtd">Quantidade que rende</label>
+            <input id="rendimento_qtd" type="number" min="1" step="1" value="1">
+          </div>
+
+          <div class="field-group">
+            <label for="rendimento_unidade">Unidade do rendimento</label>
+            <input id="rendimento_unidade" placeholder="lanches" value="lanches">
+          </div>
+
+          <div class="field-group">
+            <label for="valor_unitario">Valor por unidade</label>
+            <input id="valor_unitario" type="text" value="R$ 0,00" readonly>
+          </div>
+
+          <div class="field-group">
+            <label for="custo_unitario_estimado">Custo estimado por unidade</label>
+            <input id="custo_unitario_estimado" type="text" value="R$ 0,00" readonly>
+          </div>
+        </div>
+
+        <div class="summary-line" style="margin-top: 16px;">
+          <span id="cost-summary">Custo estimado dos ingredientes: R$ 0,00</span>
+          <strong id="yield-summary">Rende 1 lanches</strong>
+        </div>
+
         <div style="margin-top: 18px;">
           <h3>Ingredientes disponiveis</h3>
           <div id="estoque" class="card-grid" style="margin-top: 12px;"></div>
@@ -88,15 +125,19 @@ const recipesList = document.getElementById("lista");
 const recipeForm = document.getElementById("recipe-form");
 const saveButton = document.getElementById("save-button");
 const recipeNameInput = document.getElementById("nome");
+const recipeDescriptionInput = document.getElementById("descricao");
+const totalValueInput = document.getElementById("valor_total");
+const yieldQuantityInput = document.getElementById("rendimento_qtd");
+const yieldUnitInput = document.getElementById("rendimento_unidade");
+const unitValueInput = document.getElementById("valor_unitario");
+const unitCostInput = document.getElementById("custo_unitario_estimado");
+const costSummary = document.getElementById("cost-summary");
+const yieldSummary = document.getElementById("yield-summary");
 const userInfo = document.getElementById("user-info");
-
-bindLogoutButton();
-
-const { profile } = await requireAuth();
-userInfo.textContent = describeProfile(profile);
 
 let estoque = [];
 let selecionados = [];
+let profile;
 
 function findStockItemByName(nome) {
   return estoque.find((item) => normalizeText(item.nome) === normalizeText(nome));
@@ -107,6 +148,33 @@ function calculateRecipeCost(ingredientes) {
     const item = findStockItemByName(ingrediente.nome);
     return total + (getUnitCost(item) * toNumber(ingrediente.qtd, 0));
   }, 0);
+}
+
+function getYieldQuantity() {
+  return Math.max(1, toNumber(yieldQuantityInput.value, 1));
+}
+
+function getYieldUnit() {
+  const unit = yieldUnitInput.value.trim();
+  return unit || "unidades";
+}
+
+function getTotalSaleValue() {
+  return Math.max(0, toNumber(totalValueInput.value, 0));
+}
+
+function updateRecipeSummary() {
+  const custoTotal = calculateRecipeCost(selecionados);
+  const rendimento = getYieldQuantity();
+  const unidade = getYieldUnit();
+  const valorTotal = getTotalSaleValue();
+  const valorUnitario = rendimento > 0 ? valorTotal / rendimento : 0;
+  const custoUnitario = rendimento > 0 ? custoTotal / rendimento : 0;
+
+  unitValueInput.value = formatCurrency(valorUnitario);
+  unitCostInput.value = formatCurrency(custoUnitario);
+  costSummary.textContent = `Custo estimado dos ingredientes: ${formatCurrency(custoTotal)}`;
+  yieldSummary.textContent = `Rende ${rendimento} ${unidade}`;
 }
 
 function renderStock() {
@@ -132,6 +200,7 @@ function renderStock() {
       }
 
       renderSelected();
+      updateRecipeSummary();
     });
 
     stockList.appendChild(button);
@@ -173,6 +242,7 @@ function renderSelected() {
     qtyInput.value = ingrediente.qtd;
     qtyInput.addEventListener("change", () => {
       ingrediente.qtd = Math.max(0.1, toNumber(qtyInput.value, 1));
+      updateRecipeSummary();
     });
     qtyField.appendChild(qtyInput);
 
@@ -183,6 +253,7 @@ function renderSelected() {
     removeButton.addEventListener("click", () => {
       selecionados.splice(index, 1);
       renderSelected();
+      updateRecipeSummary();
     });
 
     actions.appendChild(qtyField);
@@ -216,6 +287,15 @@ async function loadRecipes() {
   receitas.forEach((receita) => {
     const ingredientes = parseRecipeIngredients(receita);
     const custo = calculateRecipeCost(ingredientes);
+    const rendimentoQuantidade = Math.max(1, toNumber(receita.rendimentoQuantidade, 1));
+    const rendimentoUnidade = receita.rendimentoUnidade || "unidades";
+    const valorTotalVenda = Math.max(0, toNumber(receita.valorTotalVenda, 0));
+    const valorPorUnidade = rendimentoQuantidade > 0
+      ? Math.max(0, toNumber(receita.valorPorUnidade, valorTotalVenda / rendimentoQuantidade))
+      : 0;
+    const custoPorUnidade = rendimentoQuantidade > 0
+      ? Math.max(0, toNumber(receita.custoPorUnidadeEstimado, custo / rendimentoQuantidade))
+      : custo;
     const detalhes = ingredientes
       .map((ingrediente) => `${ingrediente.nome}: ${ingrediente.qtd}`)
       .join("\n");
@@ -225,8 +305,10 @@ async function loadRecipes() {
     article.innerHTML = `
       <div class="summary-line">
         <strong>${escapeHtml(receita.nome)}</strong>
-        <span>${formatCurrency(custo)}</span>
+        <span>${formatCurrency(valorPorUnidade)} por ${escapeHtml(rendimentoUnidade.slice(0, -1) || rendimentoUnidade)}</span>
       </div>
+      <p class="muted" style="margin: 10px 0 0;">Valor total: ${formatCurrency(valorTotalVenda)} | Rende ${rendimentoQuantidade} ${escapeHtml(rendimentoUnidade)} | Custo estimado: ${formatCurrency(custo)} | Custo por unidade: ${formatCurrency(custoPorUnidade)}</p>
+      ${receita.descricao ? `<p class="recipe-note">${escapeHtml(receita.descricao)}</p>` : ""}
       <pre>${escapeHtml(detalhes || "Sem ingredientes detalhados.")}</pre>
     `;
     recipesList.appendChild(article);
@@ -238,14 +320,18 @@ recipeForm.addEventListener("submit", async (event) => {
   setStatus("status", "", "info");
 
   const nome = recipeNameInput.value.trim();
+  const descricao = recipeDescriptionInput.value.trim();
+  const rendimentoQuantidade = getYieldQuantity();
+  const rendimentoUnidade = getYieldUnit();
+  const valorTotalVenda = getTotalSaleValue();
 
   if (!nome) {
     setStatus("status", "Informe o nome da receita.", "error");
     return;
   }
 
-  if (!selecionados.length) {
-    setStatus("status", "Selecione ao menos um ingrediente.", "error");
+  if (!descricao && !selecionados.length) {
+    setStatus("status", "Adicione uma descricao escrita ou selecione ao menos um ingrediente.", "error");
     return;
   }
 
@@ -265,20 +351,33 @@ recipeForm.addEventListener("submit", async (event) => {
       nome: ingrediente.nome,
       qtd: Math.max(0.1, toNumber(ingrediente.qtd, 1))
     }));
+    const custoTotalEstimado = calculateRecipeCost(ingredientes);
+    const valorPorUnidade = rendimentoQuantidade > 0 ? valorTotalVenda / rendimentoQuantidade : 0;
+    const custoPorUnidadeEstimado = rendimentoQuantidade > 0 ? custoTotalEstimado / rendimentoQuantidade : custoTotalEstimado;
 
     await addDoc(collection(db, "receitas"), {
       nome,
+      descricao,
       nomeNormalizado: normalizeText(nome),
       ingredientes,
       itens: ingredientes.map((ingrediente) => `${ingrediente.nome}:${ingrediente.qtd}`).join("\n"),
-      custoTotalEstimado: calculateRecipeCost(ingredientes),
+      custoTotalEstimado,
+      valorTotalVenda,
+      valorPorUnidade,
+      rendimentoQuantidade,
+      rendimentoUnidade,
+      custoPorUnidadeEstimado,
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp()
     });
 
     recipeForm.reset();
     selecionados = [];
+    totalValueInput.value = "0";
+    yieldQuantityInput.value = "1";
+    yieldUnitInput.value = "lanches";
     renderSelected();
+    updateRecipeSummary();
     setStatus("status", "Receita salva com sucesso.", "success");
     await loadRecipes();
   } catch (error) {
@@ -289,9 +388,26 @@ recipeForm.addEventListener("submit", async (event) => {
   }
 });
 
-await loadStock();
-renderSelected();
-await loadRecipes();
+totalValueInput.addEventListener("input", updateRecipeSummary);
+yieldQuantityInput.addEventListener("input", updateRecipeSummary);
+yieldUnitInput.addEventListener("input", updateRecipeSummary);
+
+async function init() {
+  bindLogoutButton();
+  const authContext = await requireAuth();
+  profile = authContext.profile;
+  userInfo.textContent = describeProfile(profile);
+  yieldUnitInput.value = "lanches";
+  await loadStock();
+  renderSelected();
+  updateRecipeSummary();
+  await loadRecipes();
+}
+
+init().catch((error) => {
+  console.error(error);
+  setStatus("status", "Nao foi possivel carregar a tela de receitas.", "error");
+});
 </script>
 </body>
 </html>

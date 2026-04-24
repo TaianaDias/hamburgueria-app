@@ -29,7 +29,15 @@
   </header>
 
   <section class="panel">
-    <h3>Novo fornecedor</h3>
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3 id="form-title">Novo fornecedor</h3>
+        <p class="muted">Cadastre, ajuste telefone/CNPJ ou remova fornecedores que nao sao mais usados.</p>
+      </div>
+
+      <button id="cancel-edit-button" class="secondary" type="button" hidden>Cancelar edicao</button>
+    </div>
+
     <form id="supplier-form" class="form-grid" style="margin-top: 16px;">
       <div class="field-group">
         <label for="nome">Nome</label>
@@ -69,8 +77,12 @@ import { db } from "./firebase.js";
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  updateDoc,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
@@ -85,6 +97,8 @@ import {
 } from "./app.js";
 
 const form = document.getElementById("supplier-form");
+const formTitle = document.getElementById("form-title");
+const cancelEditButton = document.getElementById("cancel-edit-button");
 const saveButton = document.getElementById("save-button");
 const nameInput = document.getElementById("nome");
 const cnpjInput = document.getElementById("cnpj");
@@ -92,21 +106,103 @@ const phoneInput = document.getElementById("telefone");
 const list = document.getElementById("lista");
 const userInfo = document.getElementById("user-info");
 
-bindLogoutButton();
+let profile;
+let fornecedores = [];
+let editingSupplierId = "";
 
-const { profile } = await requireAuth();
-userInfo.textContent = describeProfile(profile);
+function isProductLinkedToSupplier(product, supplier) {
+  if (product.fornecedorId && supplier.id && product.fornecedorId === supplier.id) {
+    return true;
+  }
 
-async function loadSuppliers() {
-  list.innerHTML = "";
-  const snapshot = await getDocs(collection(db, "fornecedores"));
-  const fornecedores = snapshot.docs
+  const productCnpj = normalizeDocumentNumber(product.cnpjFornecedor);
+  const supplierCnpj = normalizeDocumentNumber(supplier.cnpj);
+
+  if (productCnpj && supplierCnpj && productCnpj === supplierCnpj) {
+    return true;
+  }
+
+  return normalizeText(product.fornecedorNome || product.fornecedor) === normalizeText(supplier.nome);
+}
+
+function resetForm() {
+  editingSupplierId = "";
+  form.reset();
+  formTitle.textContent = "Novo fornecedor";
+  saveButton.textContent = "Salvar fornecedor";
+  cancelEditButton.hidden = true;
+}
+
+function startEditingSupplier(fornecedor) {
+  editingSupplierId = fornecedor.id;
+  formTitle.textContent = "Editar fornecedor";
+  saveButton.textContent = "Salvar alteracoes";
+  cancelEditButton.hidden = false;
+  nameInput.value = fornecedor.nome || "";
+  cnpjInput.value = formatDocumentNumber(fornecedor.cnpj || "");
+  phoneInput.value = fornecedor.telefone || "";
+  nameInput.focus();
+}
+
+async function getLinkedProducts(supplier) {
+  const snapshot = await getDocs(collection(db, "estoque"));
+  return snapshot.docs
     .map((document) => ({ id: document.id, ...document.data() }))
-    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+    .filter((item) => isProductLinkedToSupplier(item, supplier));
+}
+
+async function syncLinkedProducts(supplier) {
+  const linkedProducts = await getLinkedProducts(supplier);
+
+  if (!linkedProducts.length) {
+    return 0;
+  }
+
+  const batch = writeBatch(db);
+
+  linkedProducts.forEach((item) => {
+    batch.update(doc(db, "estoque", item.id), {
+      fornecedorId: supplier.id,
+      fornecedorNome: supplier.nome,
+      fornecedor: supplier.nome,
+      cnpjFornecedor: supplier.cnpj || "",
+      atualizadoEm: serverTimestamp()
+    });
+  });
+
+  await batch.commit();
+  return linkedProducts.length;
+}
+
+async function clearLinkedProducts(supplier) {
+  const linkedProducts = await getLinkedProducts(supplier);
+
+  if (!linkedProducts.length) {
+    return 0;
+  }
+
+  const batch = writeBatch(db);
+
+  linkedProducts.forEach((item) => {
+    batch.update(doc(db, "estoque", item.id), {
+      fornecedorId: "",
+      fornecedorNome: "",
+      fornecedor: "",
+      cnpjFornecedor: "",
+      atualizadoEm: serverTimestamp()
+    });
+  });
+
+  await batch.commit();
+  return linkedProducts.length;
+}
+
+function renderSuppliers() {
+  list.innerHTML = "";
 
   if (!fornecedores.length) {
     list.innerHTML = '<div class="empty-state">Nenhum fornecedor cadastrado ainda.</div>';
-    return fornecedores;
+    return;
   }
 
   fornecedores.forEach((fornecedor) => {
@@ -117,11 +213,80 @@ async function loadSuppliers() {
       <h3>${escapeHtml(fornecedor.nome)}</h3>
       <p class="muted">${escapeHtml(fornecedor.telefone || "Telefone nao informado")}${escapeHtml(cnpjInfo)}</p>
     `;
+
+    const actions = document.createElement("div");
+    actions.className = "inline-actions";
+    actions.style.marginTop = "16px";
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "secondary";
+    editButton.textContent = "Editar";
+    editButton.addEventListener("click", () => startEditingSupplier(fornecedor));
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "secondary";
+    deleteButton.textContent = "Excluir";
+    deleteButton.addEventListener("click", async () => {
+      const linkedProducts = await getLinkedProducts(fornecedor);
+      const message = linkedProducts.length
+        ? `Deseja excluir ${fornecedor.nome}? ${linkedProducts.length} item(ns) do estoque ficarao sem fornecedor.`
+        : `Deseja excluir ${fornecedor.nome}?`;
+
+      if (!window.confirm(message)) {
+        return;
+      }
+
+      try {
+        deleteButton.disabled = true;
+        editButton.disabled = true;
+
+        const clearedCount = await clearLinkedProducts(fornecedor);
+        await deleteDoc(doc(db, "fornecedores", fornecedor.id));
+
+        if (editingSupplierId === fornecedor.id) {
+          resetForm();
+        }
+
+        setStatus(
+          "status",
+          clearedCount
+            ? `Fornecedor removido. ${clearedCount} item(ns) do estoque ficaram sem fornecedor e podem ser vinculados novamente depois.`
+            : "Fornecedor removido com sucesso.",
+          "success"
+        );
+        await loadSuppliers();
+      } catch (error) {
+        console.error(error);
+        setStatus("status", error.message || "Nao foi possivel excluir o fornecedor.", "error");
+      } finally {
+        deleteButton.disabled = false;
+        editButton.disabled = false;
+      }
+    });
+
+    actions.appendChild(editButton);
+    actions.appendChild(deleteButton);
+    card.appendChild(actions);
     list.appendChild(card);
   });
+}
 
+async function loadSuppliers() {
+  const snapshot = await getDocs(collection(db, "fornecedores"));
+  fornecedores = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  renderSuppliers();
   return fornecedores;
 }
+
+cancelEditButton.addEventListener("click", () => {
+  setStatus("status", "", "info");
+  resetForm();
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -130,6 +295,7 @@ form.addEventListener("submit", async (event) => {
   const nome = nameInput.value.trim();
   const cnpj = normalizeDocumentNumber(cnpjInput.value);
   const telefone = phoneInput.value.trim();
+  const nomeNormalizado = normalizeText(nome);
 
   if (!nome) {
     setStatus("status", "Informe o nome do fornecedor.", "error");
@@ -139,11 +305,12 @@ form.addEventListener("submit", async (event) => {
   saveButton.disabled = true;
 
   try {
-    const fornecedores = await loadSuppliers();
-    const nomeNormalizado = normalizeText(nome);
-    const fornecedorExistente = fornecedores.some((item) => normalizeText(item.nome) === nomeNormalizado);
+    await loadSuppliers();
+    const fornecedorExistente = fornecedores.some((item) =>
+      item.id !== editingSupplierId && normalizeText(item.nome) === nomeNormalizado
+    );
     const cnpjExistente = cnpj
-      ? fornecedores.some((item) => normalizeDocumentNumber(item.cnpj) === cnpj)
+      ? fornecedores.some((item) => item.id !== editingSupplierId && normalizeDocumentNumber(item.cnpj) === cnpj)
       : false;
 
     if (fornecedorExistente) {
@@ -154,17 +321,52 @@ form.addEventListener("submit", async (event) => {
       throw new Error("Ja existe um fornecedor com esse CNPJ.");
     }
 
-    await addDoc(collection(db, "fornecedores"), {
-      nome,
-      cnpj,
-      telefone,
-      telefoneNormalizado: normalizePhone(telefone),
-      nomeNormalizado,
-      criadoEm: serverTimestamp()
-    });
+    if (editingSupplierId) {
+      const existingSupplier = fornecedores.find((item) => item.id === editingSupplierId);
 
-    form.reset();
-    setStatus("status", "Fornecedor salvo com sucesso.", "success");
+      if (!existingSupplier) {
+        throw new Error("Fornecedor nao encontrado para edicao.");
+      }
+
+      const updatedSupplier = {
+        id: editingSupplierId,
+        nome,
+        cnpj,
+        telefone
+      };
+
+      await updateDoc(doc(db, "fornecedores", editingSupplierId), {
+        nome,
+        cnpj,
+        telefone,
+        telefoneNormalizado: normalizePhone(telefone),
+        nomeNormalizado,
+        atualizadoEm: serverTimestamp()
+      });
+
+      const syncedProducts = await syncLinkedProducts(updatedSupplier);
+      resetForm();
+      setStatus(
+        "status",
+        syncedProducts
+          ? `Fornecedor atualizado com sucesso. ${syncedProducts} item(ns) do estoque tambem foram atualizados.`
+          : "Fornecedor atualizado com sucesso.",
+        "success"
+      );
+    } else {
+      await addDoc(collection(db, "fornecedores"), {
+        nome,
+        cnpj,
+        telefone,
+        telefoneNormalizado: normalizePhone(telefone),
+        nomeNormalizado,
+        criadoEm: serverTimestamp()
+      });
+
+      resetForm();
+      setStatus("status", "Fornecedor salvo com sucesso.", "success");
+    }
+
     await loadSuppliers();
   } catch (error) {
     console.error(error);
@@ -174,7 +376,19 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-await loadSuppliers();
+async function init() {
+  bindLogoutButton();
+  const authContext = await requireAuth();
+  profile = authContext.profile;
+  userInfo.textContent = describeProfile(profile);
+  resetForm();
+  await loadSuppliers();
+}
+
+init().catch((error) => {
+  console.error(error);
+  setStatus("status", "Nao foi possivel carregar a tela de fornecedores.", "error");
+});
 </script>
 </body>
 </html>
