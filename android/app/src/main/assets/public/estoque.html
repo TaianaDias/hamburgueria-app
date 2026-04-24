@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Estoque | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Operacao</p>
+      <h1>Estoque</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="compras.html">Compras</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Novo produto</h3>
+        <p class="muted">Cadastre limites, custo unitario e fornecedor para automatizar compras e receitas.</p>
+      </div>
+
+      <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
+    </div>
+
+    <form id="product-form" class="form-grid">
+      <div class="field-group">
+        <label for="novo_nome">Nome</label>
+        <input id="novo_nome" placeholder="Blend bovino">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_qtd">Quantidade atual</label>
+        <input id="novo_qtd" type="number" min="0" step="1" value="0">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_min">Minimo</label>
+        <input id="novo_min" type="number" min="0" step="1" value="2">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_max">Maximo</label>
+        <input id="novo_max" type="number" min="1" step="1" value="50">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_conv">Conversao de compra</label>
+        <input id="novo_conv" type="number" min="1" step="1" value="1">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_custo">Custo unitario</label>
+        <input id="novo_custo" type="number" min="0" step="0.01" value="0">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_fornecedor">Fornecedor</label>
+        <select id="novo_fornecedor"></select>
+      </div>
+
+      <button id="create-button" type="submit">Salvar produto</button>
+    </form>
+
+    <div id="status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Itens cadastrados</h3>
+        <p class="muted">Edite os valores diretamente e salve cada card quando terminar.</p>
+      </div>
+    </div>
+
+    <div id="lista" class="list"></div>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  updateDoc,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  getUnitCost,
+  normalizeText,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+const form = document.getElementById("product-form");
+const resetButton = document.getElementById("reset-button");
+const createButton = document.getElementById("create-button");
+const supplierSelect = document.getElementById("novo_fornecedor");
+const list = document.getElementById("lista");
+const userInfo = document.getElementById("user-info");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+userInfo.textContent = describeProfile(profile);
+
+let fornecedores = [];
+
+async function loadSuppliers() {
+  const snapshot = await getDocs(collection(db, "fornecedores"));
+  fornecedores = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  supplierSelect.innerHTML = "";
+
+  if (!fornecedores.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Cadastre um fornecedor primeiro";
+    supplierSelect.appendChild(option);
+    return;
+  }
+
+  fornecedores.forEach((fornecedor) => {
+    const option = document.createElement("option");
+    option.value = fornecedor.id;
+    option.textContent = fornecedor.nome;
+    supplierSelect.appendChild(option);
+  });
+}
+
+function createField(id, label, value, type = "number", step = "1") {
+  const wrapper = document.createElement("label");
+  wrapper.className = "field-group";
+  wrapper.htmlFor = id;
+  wrapper.innerHTML = `<span>${label}</span>`;
+
+  const input = document.createElement("input");
+  input.id = id;
+  input.type = type;
+  input.value = value;
+  input.step = step;
+  input.min = "0";
+  wrapper.appendChild(input);
+  return wrapper;
+}
+
+function getSupplierOption(item) {
+  if (item.fornecedorId) {
+    return fornecedores.find((fornecedor) => fornecedor.id === item.fornecedorId);
+  }
+
+  return fornecedores.find((fornecedor) => fornecedor.nome === item.fornecedorNome || fornecedor.nome === item.fornecedor);
+}
+
+function renderProducts(items) {
+  list.innerHTML = "";
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum produto cadastrado ainda.</div>';
+    return;
+  }
+
+  items.forEach((item) => {
+    const article = document.createElement("article");
+    article.className = item.quantidade <= item.minimo ? "card critical" : "card";
+
+    const supplier = getSupplierOption(item);
+    const fields = document.createElement("div");
+    fields.className = "form-grid";
+    fields.style.marginTop = "16px";
+
+    fields.appendChild(createField(`qtd_${item.id}`, "Quantidade", item.quantidade));
+    fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
+    fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
+    fields.appendChild(createField(`conv_${item.id}`, "Conversao", item.conversao));
+    fields.appendChild(createField(`custo_${item.id}`, "Custo unitario", getUnitCost(item), "number", "0.01"));
+
+    const supplierWrapper = document.createElement("label");
+    supplierWrapper.className = "field-group";
+    supplierWrapper.htmlFor = `for_${item.id}`;
+    supplierWrapper.innerHTML = "<span>Fornecedor</span>";
+
+    const select = document.createElement("select");
+    select.id = `for_${item.id}`;
+
+    fornecedores.forEach((fornecedor) => {
+      const option = document.createElement("option");
+      option.value = fornecedor.id;
+      option.textContent = fornecedor.nome;
+      option.selected = fornecedor.id === supplier?.id;
+      select.appendChild(option);
+    });
+
+    supplierWrapper.appendChild(select);
+    fields.appendChild(supplierWrapper);
+
+    const summary = document.createElement("div");
+    summary.className = "summary-line";
+    summary.style.marginTop = "10px";
+    summary.innerHTML = `
+      <span>Estoque minimo</span>
+      <strong>${item.quantidade <= item.minimo ? "Atencao: precisa repor" : "Operacao dentro do limite"}</strong>
+    `;
+
+    const actions = document.createElement("div");
+    actions.className = "inline-actions";
+    actions.style.marginTop = "16px";
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.textContent = "Salvar";
+    saveButton.addEventListener("click", async () => {
+      const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
+      const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
+      const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
+      const conversao = Math.max(1, toNumber(document.getElementById(`conv_${item.id}`).value, 1));
+      const custoUnitario = Math.max(0, toNumber(document.getElementById(`custo_${item.id}`).value, 0));
+      const fornecedorId = document.getElementById(`for_${item.id}`).value;
+      const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+
+      if (maximo < minimo) {
+        setStatus("status", `O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`, "error");
+        return;
+      }
+
+      await updateDoc(doc(db, "estoque", item.id), {
+        quantidade,
+        minimo,
+        maximo,
+        conversao,
+        custoUnitario,
+        custo: custoUnitario,
+        fornecedorId: fornecedorSelecionado?.id || "",
+        fornecedorNome: fornecedorSelecionado?.nome || "",
+        fornecedor: fornecedorSelecionado?.nome || "",
+        atualizadoEm: serverTimestamp()
+      });
+
+      setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
+      await loadProducts();
+    });
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "secondary";
+    deleteButton.textContent = "Excluir";
+    deleteButton.addEventListener("click", async () => {
+      if (!window.confirm(`Deseja excluir ${item.nome}?`)) {
+        return;
+      }
+
+      await deleteDoc(doc(db, "estoque", item.id));
+
+      await addDoc(collection(db, "historico"), {
+        tipo: "exclusao",
+        itemId: item.id,
+        itemNome: item.nome,
+        responsavel: profile.email,
+        data: serverTimestamp()
+      });
+
+      setStatus("status", `Produto ${item.nome} removido.`, "success");
+      await loadProducts();
+    });
+
+    actions.appendChild(saveButton);
+    actions.appendChild(deleteButton);
+
+    article.innerHTML = `
+      <h3>${escapeHtml(item.nome)}</h3>
+      <p class="muted">Fornecedor atual: ${escapeHtml(supplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido")}</p>
+    `;
+    article.appendChild(summary);
+    article.appendChild(fields);
+    article.appendChild(actions);
+    list.appendChild(article);
+  });
+}
+
+async function loadProducts() {
+  await loadSuppliers();
+  const snapshot = await getDocs(collection(db, "estoque"));
+  const items = snapshot.docs
+    .map((document) => ({
+      id: document.id,
+      ...document.data(),
+      quantidade: toNumber(document.data().quantidade, 0),
+      minimo: toNumber(document.data().minimo, 0),
+      maximo: toNumber(document.data().maximo, 0),
+      conversao: Math.max(1, toNumber(document.data().conversao, 1))
+    }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  renderProducts(items);
+  return items;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("status", "", "info");
+
+  const nome = document.getElementById("novo_nome").value.trim();
+  const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
+  const minimo = Math.max(0, toNumber(document.getElementById("novo_min").value, 0));
+  const maximo = Math.max(1, toNumber(document.getElementById("novo_max").value, 1));
+  const conversao = Math.max(1, toNumber(document.getElementById("novo_conv").value, 1));
+  const custoUnitario = Math.max(0, toNumber(document.getElementById("novo_custo").value, 0));
+  const fornecedorId = supplierSelect.value;
+  const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+
+  if (!nome) {
+    setStatus("status", "Informe o nome do produto.", "error");
+    return;
+  }
+
+  if (!fornecedorSelecionado) {
+    setStatus("status", "Cadastre e selecione um fornecedor antes de salvar o produto.", "error");
+    return;
+  }
+
+  if (maximo < minimo) {
+    setStatus("status", "O valor maximo precisa ser maior ou igual ao minimo.", "error");
+    return;
+  }
+
+  createButton.disabled = true;
+
+  try {
+    const existingItems = await loadProducts();
+    const duplicated = existingItems.some((item) => normalizeText(item.nome) === normalizeText(nome));
+
+    if (duplicated) {
+      throw new Error("Ja existe um produto com esse nome.");
+    }
+
+    await addDoc(collection(db, "estoque"), {
+      nome,
+      nomeNormalizado: normalizeText(nome),
+      quantidade,
+      minimo,
+      maximo,
+      conversao,
+      custoUnitario,
+      custo: custoUnitario,
+      fornecedorId: fornecedorSelecionado.id,
+      fornecedorNome: fornecedorSelecionado.nome,
+      fornecedor: fornecedorSelecionado.nome,
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    });
+
+    form.reset();
+    document.getElementById("novo_qtd").value = "0";
+    document.getElementById("novo_min").value = "2";
+    document.getElementById("novo_max").value = "50";
+    document.getElementById("novo_conv").value = "1";
+    document.getElementById("novo_custo").value = "0";
+
+    setStatus("status", "Produto criado com sucesso.", "success");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", error.message || "Nao foi possivel criar o produto.", "error");
+  } finally {
+    createButton.disabled = false;
+  }
+});
+
+resetButton.addEventListener("click", async () => {
+  setStatus("status", "", "info");
+
+  if (!window.confirm("Deseja zerar todas as quantidades do estoque?")) {
+    return;
+  }
+
+  try {
+    const snapshot = await getDocs(collection(db, "estoque"));
+    const batch = writeBatch(db);
+
+    snapshot.docs.forEach((document) => {
+      batch.update(doc(db, "estoque", document.id), {
+        quantidade: 0,
+        atualizadoEm: serverTimestamp()
+      });
+    });
+
+    await batch.commit();
+
+    await addDoc(collection(db, "historico"), {
+      tipo: "zerar",
+      responsavel: profile.email,
+      data: serverTimestamp()
+    });
+
+    setStatus("status", "Todas as quantidades foram zeradas.", "success");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", "Nao foi possivel zerar o estoque.", "error");
+  }
+});
+
+await loadProducts();
+</script>
+</body>
+</html>

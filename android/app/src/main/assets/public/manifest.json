@@ -1,0 +1,8 @@
+{
+  "name": "Hamburgueria",
+  "short_name": "BurgerOps",
+  "start_url": "/login.html",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827"
+}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Inicio | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Painel principal</p>
+      <h1>Sistema da hamburgueria</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="dashboard.html">Dashboard</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="menu-grid">
+    <a class="card" href="estoque.html">
+      <h3>Estoque</h3>
+      <p class="muted">Cadastre produtos, limites, custos e fornecedores.</p>
+    </a>
+
+    <a class="card" href="receitas.html">
+      <h3>Receitas</h3>
+      <p class="muted">Monte fichas tecnicas e acompanhe custo estimado.</p>
+    </a>
+
+    <a class="card" href="compras.html">
+      <h3>Compras</h3>
+      <p class="muted">Veja reposicoes necessarias e envie pedidos rapido.</p>
+    </a>
+
+    <a class="card" href="fornecedores.html">
+      <h3>Fornecedores</h3>
+      <p class="muted">Organize contatos e referencia de cada item.</p>
+    </a>
+
+    <a class="card" href="dashboard.html">
+      <h3>Dashboard</h3>
+      <p class="muted">Resumo da operacao com alertas de estoque.</p>
+    </a>
+
+    <a id="employees-link" class="card" href="funcionarios.html" hidden>
+      <h3>Funcionarios</h3>
+      <p class="muted">Crie acessos e acompanhe o quadro da equipe.</p>
+    </a>
+  </section>
+</main>
+
+<script type="module">
+import {
+  bindLogoutButton,
+  describeProfile,
+  registerServiceWorker,
+  requireAuth
+} from "./app.js";
+
+const userInfo = document.getElementById("user-info");
+const employeesLink = document.getElementById("employees-link");
+
+registerServiceWorker();
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+userInfo.textContent = describeProfile(profile);
+employeesLink.hidden = profile.tipo !== "admin";
+
+<footer class="footer">
+  🚀 Desenvolvido por <strong>Taiana Dias</strong> • Sistema Interno
+</footer>
+
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Dashboard | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Visao geral</p>
+      <h1>Dashboard</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <article class="card">
+      <span class="muted">Produtos cadastrados</span>
+      <strong id="metric-produtos" class="metric-value">0</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Itens em baixa</span>
+      <strong id="metric-baixa" class="metric-value">0</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Valor estimado em estoque</span>
+      <strong id="metric-valor" class="metric-value">R$ 0,00</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Receitas cadastradas</span>
+      <strong id="metric-receitas" class="metric-value">0</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Fornecedores ativos</span>
+      <strong id="metric-fornecedores" class="metric-value">0</strong>
+    </article>
+  </section>
+
+  <section class="layout-grid" style="margin-top: 20px;">
+    <article class="panel">
+      <h3>Alertas de estoque</h3>
+      <div id="low-stock-list" class="list" style="margin-top: 16px;"></div>
+    </article>
+
+    <article class="panel">
+      <h3>Historico recente</h3>
+      <div id="history-list" class="list" style="margin-top: 16px;"></div>
+    </article>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatCurrency,
+  getUnitCost,
+  requireAuth,
+  toNumber
+} from "./app.js";
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+const [stockSnapshot, recipeSnapshot, supplierSnapshot, historySnapshot] = await Promise.all([
+  getDocs(collection(db, "estoque")),
+  getDocs(collection(db, "receitas")),
+  getDocs(collection(db, "fornecedores")),
+  getDocs(collection(db, "historico"))
+]);
+
+const estoque = stockSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+const receitas = recipeSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+const fornecedores = supplierSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+const historico = historySnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+
+const itensEmBaixa = estoque.filter((item) => toNumber(item.quantidade, 0) <= toNumber(item.minimo, 0));
+const valorEstoque = estoque.reduce(
+  (total, item) => total + (toNumber(item.quantidade, 0) * getUnitCost(item)),
+  0
+);
+
+document.getElementById("metric-produtos").textContent = String(estoque.length);
+document.getElementById("metric-baixa").textContent = String(itensEmBaixa.length);
+document.getElementById("metric-valor").textContent = formatCurrency(valorEstoque);
+document.getElementById("metric-receitas").textContent = String(receitas.length);
+document.getElementById("metric-fornecedores").textContent = String(fornecedores.length);
+
+const lowStockList = document.getElementById("low-stock-list");
+if (!itensEmBaixa.length) {
+  lowStockList.innerHTML = '<div class="empty-state">Nenhum item abaixo do nivel minimo.</div>';
+} else {
+  itensEmBaixa
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"))
+    .forEach((item) => {
+      const article = document.createElement("article");
+      article.className = "card critical";
+      article.innerHTML = `
+        <h3>${escapeHtml(item.nome)}</h3>
+        <p class="muted">Quantidade atual: ${toNumber(item.quantidade, 0)} | Minimo: ${toNumber(item.minimo, 0)}</p>
+      `;
+      lowStockList.appendChild(article);
+    });
+}
+
+const historyList = document.getElementById("history-list");
+if (!historico.length) {
+  historyList.innerHTML = '<div class="empty-state">Ainda nao ha registros no historico.</div>';
+} else {
+  historico
+    .sort((left, right) => {
+      const leftDate = left.data?.seconds || 0;
+      const rightDate = right.data?.seconds || 0;
+      return rightDate - leftDate;
+    })
+    .slice(0, 6)
+    .forEach((item) => {
+      const article = document.createElement("article");
+      article.className = "card";
+      article.innerHTML = `
+        <h3>${escapeHtml(item.tipo || "registro")}</h3>
+        <p class="muted">${escapeHtml(item.itemNome || item.responsavel || "Sem detalhes adicionais")}</p>
+      `;
+      historyList.appendChild(article);
+    });
+}
+</script>
+</body>
+</html>
