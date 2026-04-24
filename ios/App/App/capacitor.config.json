@@ -1,0 +1,9 @@
+{
+	"appId": "com.cariocas.hamburgueria",
+	"appName": "Painel Cariocas",
+	"webDir": "public",
+	"server": {
+		"cleartext": true
+	},
+	"packageClassList": []
+}

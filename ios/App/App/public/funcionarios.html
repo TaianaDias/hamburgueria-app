@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Funcionarios | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Administracao</p>
+      <h1>Funcionarios</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h3>Criar novo acesso</h3>
+    <form id="employee-form" class="form-grid" style="margin-top: 16px;">
+      <div class="field-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="novo@empresa.com">
+      </div>
+
+      <div class="field-group">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" placeholder="Minimo de 6 caracteres">
+      </div>
+
+      <div class="field-group">
+        <label for="tipo">Tipo</label>
+        <select id="tipo">
+          <option value="admin">Admin</option>
+          <option value="estoque">Estoque</option>
+          <option value="caixa">Caixa</option>
+        </select>
+      </div>
+
+      <button id="create-button" type="submit">Criar funcionario</button>
+    </form>
+
+    <div id="status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <h3>Lista de acessos</h3>
+    <div id="lista" class="list" style="margin-top: 16px;"></div>
+  </section>
+</main>
+
+<script type="module">
+import {
+  apiFetch,
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  requireAuth,
+  setStatus
+} from "./app.js";
+
+const form = document.getElementById("employee-form");
+const createButton = document.getElementById("create-button");
+const list = document.getElementById("lista");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth({ adminOnly: true });
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+async function loadEmployees() {
+  list.innerHTML = "";
+
+  try {
+    const data = await apiFetch("/api/usuarios");
+    const usuarios = data.usuarios || [];
+
+    if (!usuarios.length) {
+      list.innerHTML = '<div class="empty-state">Nenhum funcionario cadastrado.</div>';
+      return;
+    }
+
+    usuarios.forEach((usuario) => {
+      const article = document.createElement("article");
+      article.className = "card";
+      article.innerHTML = `
+        <h3>${escapeHtml(usuario.email)}</h3>
+        <p class="muted">Perfil: ${escapeHtml(usuario.tipo)}</p>
+      `;
+      list.appendChild(article);
+    });
+  } catch (error) {
+    console.error(error);
+    list.innerHTML = '<div class="empty-state">Nao foi possivel carregar os funcionarios.</div>';
+  }
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("status", "", "info");
+
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const senha = document.getElementById("senha").value;
+  const tipo = document.getElementById("tipo").value;
+
+  if (!email || !senha) {
+    setStatus("status", "Preencha email e senha.", "error");
+    return;
+  }
+
+  if (senha.length < 6) {
+    setStatus("status", "A senha precisa ter pelo menos 6 caracteres.", "error");
+    return;
+  }
+
+  createButton.disabled = true;
+
+  try {
+    await apiFetch("/api/usuarios", {
+      method: "POST",
+      body: JSON.stringify({ email, senha, tipo })
+    });
+
+    form.reset();
+    document.getElementById("tipo").value = "admin";
+    setStatus("status", "Funcionario criado com sucesso.", "success");
+    await loadEmployees();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", error.message || "Nao foi possivel criar o funcionario.", "error");
+  } finally {
+    createButton.disabled = false;
+  }
+});
+
+await loadEmployees();
+</script>
+</body>
+</html>
