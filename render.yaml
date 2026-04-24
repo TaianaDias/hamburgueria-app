@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: hamburgueria-app
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false

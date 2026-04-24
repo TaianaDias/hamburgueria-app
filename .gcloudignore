@@ -1,0 +1,8 @@
+.gcloud/
+.git/
+.gitignore
+#!include:.gitignore
+node_modules/
+android/
+ios/
+serviceAccountKey.json

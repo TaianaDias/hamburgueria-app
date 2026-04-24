@@ -1,0 +1,9 @@
+.git
+.gitignore
+node_modules
+npm-debug.log
+.env
+server/serviceAccountKey.json
+serviceAccountKey.json
+android
+ios
