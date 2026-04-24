@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Receitas | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Fichas tecnicas</p>
+      <h1>Receitas</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="layout-grid">
+    <article class="panel">
+      <h3>Nova receita</h3>
+      <form id="recipe-form" style="margin-top: 16px;">
+        <div class="field-group">
+          <label for="nome">Nome do lanche</label>
+          <input id="nome" placeholder="Burger da casa">
+        </div>
+
+        <div style="margin-top: 18px;">
+          <h3>Ingredientes disponiveis</h3>
+          <div id="estoque" class="card-grid" style="margin-top: 12px;"></div>
+        </div>
+
+        <div style="margin-top: 18px;">
+          <h3>Selecionados</h3>
+          <div id="selecionados" class="list" style="margin-top: 12px;"></div>
+        </div>
+
+        <button id="save-button" type="submit" style="margin-top: 18px;">Salvar receita</button>
+      </form>
+
+      <div id="status" class="status info" hidden></div>
+    </article>
+
+    <article class="panel">
+      <h3>Receitas cadastradas</h3>
+      <p class="muted">O custo estimado usa o custo unitario cadastrado no estoque.</p>
+      <div id="lista" class="list" style="margin-top: 16px;"></div>
+    </article>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatCurrency,
+  getUnitCost,
+  normalizeText,
+  parseRecipeIngredients,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+const stockList = document.getElementById("estoque");
+const selectedList = document.getElementById("selecionados");
+const recipesList = document.getElementById("lista");
+const recipeForm = document.getElementById("recipe-form");
+const saveButton = document.getElementById("save-button");
+const recipeNameInput = document.getElementById("nome");
+const userInfo = document.getElementById("user-info");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+userInfo.textContent = describeProfile(profile);
+
+let estoque = [];
+let selecionados = [];
+
+function findStockItemByName(nome) {
+  return estoque.find((item) => normalizeText(item.nome) === normalizeText(nome));
+}
+
+function calculateRecipeCost(ingredientes) {
+  return ingredientes.reduce((total, ingrediente) => {
+    const item = findStockItemByName(ingrediente.nome);
+    return total + (getUnitCost(item) * toNumber(ingrediente.qtd, 0));
+  }, 0);
+}
+
+function renderStock() {
+  stockList.innerHTML = "";
+
+  if (!estoque.length) {
+    stockList.innerHTML = '<div class="empty-state">Cadastre itens no estoque para montar receitas.</div>';
+    return;
+  }
+
+  estoque.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = item.nome;
+    button.addEventListener("click", () => {
+      const existing = selecionados.find((selected) => normalizeText(selected.nome) === normalizeText(item.nome));
+
+      if (existing) {
+        existing.qtd += 1;
+      } else {
+        selecionados.push({ nome: item.nome, qtd: 1 });
+      }
+
+      renderSelected();
+    });
+
+    stockList.appendChild(button);
+  });
+}
+
+function renderSelected() {
+  selectedList.innerHTML = "";
+
+  if (!selecionados.length) {
+    selectedList.innerHTML = '<div class="empty-state">Nenhum ingrediente selecionado.</div>';
+    return;
+  }
+
+  selecionados.forEach((ingrediente, index) => {
+    const stockItem = findStockItemByName(ingrediente.nome);
+    const card = document.createElement("article");
+    card.className = "card";
+
+    card.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(ingrediente.nome)}</strong>
+        <span>${formatCurrency(getUnitCost(stockItem))} por unidade</span>
+      </div>
+    `;
+
+    const actions = document.createElement("div");
+    actions.className = "form-grid";
+    actions.style.marginTop = "12px";
+
+    const qtyField = document.createElement("label");
+    qtyField.className = "field-group";
+    qtyField.innerHTML = "<span>Quantidade na receita</span>";
+
+    const qtyInput = document.createElement("input");
+    qtyInput.type = "number";
+    qtyInput.min = "0.1";
+    qtyInput.step = "0.1";
+    qtyInput.value = ingrediente.qtd;
+    qtyInput.addEventListener("change", () => {
+      ingrediente.qtd = Math.max(0.1, toNumber(qtyInput.value, 1));
+    });
+    qtyField.appendChild(qtyInput);
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "secondary";
+    removeButton.textContent = "Remover";
+    removeButton.addEventListener("click", () => {
+      selecionados.splice(index, 1);
+      renderSelected();
+    });
+
+    actions.appendChild(qtyField);
+    actions.appendChild(removeButton);
+    card.appendChild(actions);
+    selectedList.appendChild(card);
+  });
+}
+
+async function loadStock() {
+  const snapshot = await getDocs(collection(db, "estoque"));
+  estoque = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  renderStock();
+}
+
+async function loadRecipes() {
+  recipesList.innerHTML = "";
+  const snapshot = await getDocs(collection(db, "receitas"));
+  const receitas = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  if (!receitas.length) {
+    recipesList.innerHTML = '<div class="empty-state">Nenhuma receita cadastrada ainda.</div>';
+    return;
+  }
+
+  receitas.forEach((receita) => {
+    const ingredientes = parseRecipeIngredients(receita);
+    const custo = calculateRecipeCost(ingredientes);
+    const detalhes = ingredientes
+      .map((ingrediente) => `${ingrediente.nome}: ${ingrediente.qtd}`)
+      .join("\n");
+
+    const article = document.createElement("article");
+    article.className = "card";
+    article.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(receita.nome)}</strong>
+        <span>${formatCurrency(custo)}</span>
+      </div>
+      <pre>${escapeHtml(detalhes || "Sem ingredientes detalhados.")}</pre>
+    `;
+    recipesList.appendChild(article);
+  });
+}
+
+recipeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("status", "", "info");
+
+  const nome = recipeNameInput.value.trim();
+
+  if (!nome) {
+    setStatus("status", "Informe o nome da receita.", "error");
+    return;
+  }
+
+  if (!selecionados.length) {
+    setStatus("status", "Selecione ao menos um ingrediente.", "error");
+    return;
+  }
+
+  saveButton.disabled = true;
+
+  try {
+    const receitasExistentes = await getDocs(collection(db, "receitas"));
+    const duplicated = receitasExistentes.docs.some((document) =>
+      normalizeText(document.data().nome) === normalizeText(nome)
+    );
+
+    if (duplicated) {
+      throw new Error("Ja existe uma receita com esse nome.");
+    }
+
+    const ingredientes = selecionados.map((ingrediente) => ({
+      nome: ingrediente.nome,
+      qtd: Math.max(0.1, toNumber(ingrediente.qtd, 1))
+    }));
+
+    await addDoc(collection(db, "receitas"), {
+      nome,
+      nomeNormalizado: normalizeText(nome),
+      ingredientes,
+      itens: ingredientes.map((ingrediente) => `${ingrediente.nome}:${ingrediente.qtd}`).join("\n"),
+      custoTotalEstimado: calculateRecipeCost(ingredientes),
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    });
+
+    recipeForm.reset();
+    selecionados = [];
+    renderSelected();
+    setStatus("status", "Receita salva com sucesso.", "success");
+    await loadRecipes();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", error.message || "Nao foi possivel salvar a receita.", "error");
+  } finally {
+    saveButton.disabled = false;
+  }
+});
+
+await loadStock();
+renderSelected();
+await loadRecipes();
+</script>
+</body>
+</html>

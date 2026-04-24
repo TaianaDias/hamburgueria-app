@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Fornecedores | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Cadastros</p>
+      <h1>Fornecedores</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h3>Novo fornecedor</h3>
+    <form id="supplier-form" class="form-grid" style="margin-top: 16px;">
+      <div class="field-group">
+        <label for="nome">Nome</label>
+        <input id="nome" placeholder="Distribuidora Central">
+      </div>
+
+      <div class="field-group">
+        <label for="cnpj">CNPJ</label>
+        <input id="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00">
+      </div>
+
+      <div class="field-group">
+        <label for="telefone">Telefone ou WhatsApp</label>
+        <input id="telefone" placeholder="(11) 99999-9999">
+      </div>
+
+      <button id="save-button" type="submit">Salvar fornecedor</button>
+    </form>
+
+    <div id="status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Lista atual</h3>
+        <p class="muted">Os nomes e CNPJs ajudam a casar as notas fiscais com o fornecedor certo.</p>
+      </div>
+    </div>
+
+    <div id="lista" class="list"></div>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatDocumentNumber,
+  normalizeDocumentNumber,
+  normalizePhone,
+  normalizeText,
+  requireAuth,
+  setStatus
+} from "./app.js";
+
+const form = document.getElementById("supplier-form");
+const saveButton = document.getElementById("save-button");
+const nameInput = document.getElementById("nome");
+const cnpjInput = document.getElementById("cnpj");
+const phoneInput = document.getElementById("telefone");
+const list = document.getElementById("lista");
+const userInfo = document.getElementById("user-info");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+userInfo.textContent = describeProfile(profile);
+
+async function loadSuppliers() {
+  list.innerHTML = "";
+  const snapshot = await getDocs(collection(db, "fornecedores"));
+  const fornecedores = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  if (!fornecedores.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum fornecedor cadastrado ainda.</div>';
+    return fornecedores;
+  }
+
+  fornecedores.forEach((fornecedor) => {
+    const card = document.createElement("article");
+    card.className = "card";
+    const cnpjInfo = fornecedor.cnpj ? ` | CNPJ ${formatDocumentNumber(fornecedor.cnpj)}` : "";
+    card.innerHTML = `
+      <h3>${escapeHtml(fornecedor.nome)}</h3>
+      <p class="muted">${escapeHtml(fornecedor.telefone || "Telefone nao informado")}${escapeHtml(cnpjInfo)}</p>
+    `;
+    list.appendChild(card);
+  });
+
+  return fornecedores;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("status", "", "info");
+
+  const nome = nameInput.value.trim();
+  const cnpj = normalizeDocumentNumber(cnpjInput.value);
+  const telefone = phoneInput.value.trim();
+
+  if (!nome) {
+    setStatus("status", "Informe o nome do fornecedor.", "error");
+    return;
+  }
+
+  saveButton.disabled = true;
+
+  try {
+    const fornecedores = await loadSuppliers();
+    const nomeNormalizado = normalizeText(nome);
+    const fornecedorExistente = fornecedores.some((item) => normalizeText(item.nome) === nomeNormalizado);
+    const cnpjExistente = cnpj
+      ? fornecedores.some((item) => normalizeDocumentNumber(item.cnpj) === cnpj)
+      : false;
+
+    if (fornecedorExistente) {
+      throw new Error("Ja existe um fornecedor com esse nome.");
+    }
+
+    if (cnpjExistente) {
+      throw new Error("Ja existe um fornecedor com esse CNPJ.");
+    }
+
+    await addDoc(collection(db, "fornecedores"), {
+      nome,
+      cnpj,
+      telefone,
+      telefoneNormalizado: normalizePhone(telefone),
+      nomeNormalizado,
+      criadoEm: serverTimestamp()
+    });
+
+    form.reset();
+    setStatus("status", "Fornecedor salvo com sucesso.", "success");
+    await loadSuppliers();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", error.message || "Nao foi possivel salvar o fornecedor.", "error");
+  } finally {
+    saveButton.disabled = false;
+  }
+});
+
+await loadSuppliers();
+</script>
+</body>
+</html>

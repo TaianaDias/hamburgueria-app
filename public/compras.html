@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Compras | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Reposicao</p>
+      <h1>Compras</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="send-button" type="button">Enviar pedidos</button>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h3>Pedidos sugeridos</h3>
+    <p class="muted">Cada grupo abaixo e gerado a partir do nivel minimo e do maximo configurado no estoque.</p>
+    <div id="status" class="status info" hidden></div>
+    <div id="lista" class="list" style="margin-top: 16px;"></div>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  normalizePhone,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+const list = document.getElementById("lista");
+const sendButton = document.getElementById("send-button");
+const userInfo = document.getElementById("user-info");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+userInfo.textContent = describeProfile(profile);
+
+let pedidos = [];
+
+function buildMessage(pedido) {
+  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra}`);
+  return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
+}
+
+function renderOrders(items) {
+  list.innerHTML = "";
+  sendButton.disabled = items.length === 0;
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao neste momento.</div>';
+    return;
+  }
+
+  items.forEach((pedido) => {
+    const article = document.createElement("article");
+    article.className = "card";
+
+    const phoneInfo = pedido.telefone ? pedido.telefone : "Telefone nao informado";
+    const supplierInfo = pedido.fornecedor || "Fornecedor nao definido";
+    const orderLines = pedido.itens
+      .map((item) => `<li>${escapeHtml(item.nome)}: ${item.qtdCompra}</li>`)
+      .join("");
+
+    article.innerHTML = `
+      <h3>${escapeHtml(supplierInfo)}</h3>
+      <p class="muted">${escapeHtml(phoneInfo)}</p>
+      <ul class="order-items">${orderLines}</ul>
+    `;
+
+    list.appendChild(article);
+  });
+}
+
+async function loadOrders() {
+  const [supplierSnapshot, stockSnapshot] = await Promise.all([
+    getDocs(collection(db, "fornecedores")),
+    getDocs(collection(db, "estoque"))
+  ]);
+
+  const suppliers = supplierSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data()
+  }));
+
+  const grouped = new Map();
+
+  stockSnapshot.docs.forEach((document) => {
+    const item = document.data();
+    const quantidade = toNumber(item.quantidade, 0);
+    const minimo = toNumber(item.minimo, 0);
+    const maximo = Math.max(minimo, toNumber(item.maximo, 0));
+    const conversao = Math.max(1, toNumber(item.conversao, 1));
+
+    if (quantidade > minimo) {
+      return;
+    }
+
+    const fornecedor = suppliers.find((supplier) =>
+      supplier.id === item.fornecedorId ||
+      supplier.nome === item.fornecedorNome ||
+      supplier.nome === item.fornecedor
+    );
+
+    const key = fornecedor?.id || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
+    const falta = Math.max(0, maximo - quantidade);
+    const qtdCompra = Math.max(1, Math.ceil(falta / conversao));
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        fornecedor: fornecedor?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
+        telefone: fornecedor?.telefone || "",
+        telefoneNormalizado: fornecedor?.telefoneNormalizado || normalizePhone(fornecedor?.telefone || ""),
+        itens: []
+      });
+    }
+
+    grouped.get(key).itens.push({
+      nome: item.nome,
+      qtdCompra
+    });
+  });
+
+  pedidos = Array.from(grouped.values()).sort((left, right) =>
+    left.fornecedor.localeCompare(right.fornecedor, "pt-BR")
+  );
+
+  renderOrders(pedidos);
+}
+
+sendButton.addEventListener("click", () => {
+  if (!pedidos.length) {
+    setStatus("status", "Nao ha pedidos pendentes para enviar.", "info");
+    return;
+  }
+
+  let enviados = 0;
+  let faltandoTelefone = 0;
+
+  pedidos.forEach((pedido) => {
+    const telefone = normalizePhone(pedido.telefoneNormalizado || pedido.telefone);
+
+    if (!telefone) {
+      faltandoTelefone += 1;
+      return;
+    }
+
+    const url = `https://wa.me/${telefone}?text=${buildMessage(pedido)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    enviados += 1;
+  });
+
+  if (enviados && !faltandoTelefone) {
+    setStatus("status", "Pedidos abertos no WhatsApp com sucesso.", "success");
+    return;
+  }
+
+  if (enviados && faltandoTelefone) {
+    setStatus("status", `Pedidos enviados para ${enviados} fornecedor(es). ${faltandoTelefone} pedido(s) ficaram sem telefone cadastrado.`, "info");
+    return;
+  }
+
+  setStatus("status", "Nenhum pedido foi enviado porque faltam telefones validos.", "error");
+});
+
+await loadOrders();
+</script>
+
+<footer class="footer">
+  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
+</footer>
+</body>
+</html>

@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Estoque | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Operacao</p>
+      <h1>Estoque</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="compras.html">Compras</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Importar nota fiscal XML</h3>
+        <p class="muted">Selecione XMLs de NF-e para dar entrada no estoque com base nos itens da nota.</p>
+      </div>
+
+      <div class="actions">
+        <label for="xml-files" class="button secondary">Selecionar XMLs</label>
+        <input id="xml-files" class="file-input" type="file" accept=".xml,text/xml,application/xml" multiple>
+        <button id="import-xml-button" class="secondary" type="button" disabled>Importar para estoque</button>
+      </div>
+    </div>
+
+    <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao do custo unitario.</p>
+    <div id="xml-status" class="status info" hidden></div>
+    <div id="xml-preview" class="list" style="margin-top: 16px;"></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Novo produto</h3>
+        <p class="muted">Cadastre limites, custo unitario e fornecedor para automatizar compras e receitas.</p>
+      </div>
+
+      <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
+    </div>
+
+    <form id="product-form" class="form-grid">
+      <div class="field-group">
+        <label for="novo_nome">Nome</label>
+        <input id="novo_nome" placeholder="Blend bovino">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_qtd">Quantidade atual</label>
+        <input id="novo_qtd" type="number" min="0" step="1" value="0">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_min">Minimo</label>
+        <input id="novo_min" type="number" min="0" step="1" value="2">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_max">Maximo</label>
+        <input id="novo_max" type="number" min="1" step="1" value="50">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_conv">Conversao de compra</label>
+        <input id="novo_conv" type="number" min="1" step="1" value="1">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_custo">Custo unitario</label>
+        <input id="novo_custo" type="number" min="0" step="0.01" value="0">
+      </div>
+
+      <div class="field-group">
+        <label for="novo_fornecedor">Fornecedor</label>
+        <select id="novo_fornecedor"></select>
+      </div>
+
+      <button id="create-button" type="submit">Salvar produto</button>
+    </form>
+
+    <div id="status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Itens cadastrados</h3>
+        <p class="muted">Edite os valores diretamente e salve cada card quando terminar.</p>
+      </div>
+    </div>
+
+    <div id="lista" class="list"></div>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  updateDoc,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatCurrency,
+  formatDocumentNumber,
+  getUnitCost,
+  normalizeDocumentNumber,
+  normalizePhone,
+  normalizeText,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+const DEFAULT_IMPORTED_PRODUCT = Object.freeze({
+  minimo: 2,
+  maximo: 50,
+  conversao: 1
+});
+
+const form = document.getElementById("product-form");
+const resetButton = document.getElementById("reset-button");
+const createButton = document.getElementById("create-button");
+const supplierSelect = document.getElementById("novo_fornecedor");
+const xmlInput = document.getElementById("xml-files");
+const importXmlButton = document.getElementById("import-xml-button");
+const xmlPreview = document.getElementById("xml-preview");
+const list = document.getElementById("lista");
+const userInfo = document.getElementById("user-info");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+userInfo.textContent = describeProfile(profile);
+
+let fornecedores = [];
+let produtos = [];
+let xmlImports = [];
+
+function sortByName(items) {
+  return [...items].sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+}
+
+function renderSupplierOptions() {
+  supplierSelect.innerHTML = "";
+
+  if (!fornecedores.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Cadastre um fornecedor primeiro";
+    supplierSelect.appendChild(option);
+    return;
+  }
+
+  fornecedores.forEach((fornecedor) => {
+    const option = document.createElement("option");
+    option.value = fornecedor.id;
+    option.textContent = fornecedor.nome;
+    supplierSelect.appendChild(option);
+  });
+}
+
+async function loadSuppliers() {
+  const snapshot = await getDocs(collection(db, "fornecedores"));
+  fornecedores = sortByName(snapshot.docs.map((document) => ({ id: document.id, ...document.data() })));
+  renderSupplierOptions();
+}
+
+function createField(id, label, value, type = "number", step = "1") {
+  const wrapper = document.createElement("label");
+  wrapper.className = "field-group";
+  wrapper.htmlFor = id;
+  wrapper.innerHTML = `<span>${label}</span>`;
+
+  const input = document.createElement("input");
+  input.id = id;
+  input.type = type;
+  input.value = value;
+  input.step = step;
+  input.min = "0";
+  wrapper.appendChild(input);
+  return wrapper;
+}
+
+function findSupplierMatch(candidate = {}) {
+  const cnpj = normalizeDocumentNumber(candidate.cnpj);
+  const name = normalizeText(candidate.nome);
+
+  if (cnpj) {
+    const matchByDocument = fornecedores.find((fornecedor) => normalizeDocumentNumber(fornecedor.cnpj) === cnpj);
+
+    if (matchByDocument) {
+      return matchByDocument;
+    }
+  }
+
+  if (!name) {
+    return null;
+  }
+
+  return fornecedores.find((fornecedor) => normalizeText(fornecedor.nome) === name) || null;
+}
+
+function getSupplierOption(item) {
+  if (item.fornecedorId) {
+    return fornecedores.find((fornecedor) => fornecedor.id === item.fornecedorId) || null;
+  }
+
+  if (item.cnpjFornecedor) {
+    const supplierByCnpj = fornecedores.find((fornecedor) =>
+      normalizeDocumentNumber(fornecedor.cnpj) === normalizeDocumentNumber(item.cnpjFornecedor)
+    );
+
+    if (supplierByCnpj) {
+      return supplierByCnpj;
+    }
+  }
+
+  return findSupplierMatch({
+    nome: item.fornecedorNome || item.fornecedor,
+    cnpj: item.cnpjFornecedor || ""
+  });
+}
+
+function renderProducts(items) {
+  list.innerHTML = "";
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum produto cadastrado ainda.</div>';
+    return;
+  }
+
+  items.forEach((item) => {
+    const article = document.createElement("article");
+    article.className = item.quantidade <= item.minimo ? "card critical" : "card";
+
+    const supplier = getSupplierOption(item);
+    const fields = document.createElement("div");
+    fields.className = "form-grid";
+    fields.style.marginTop = "16px";
+
+    fields.appendChild(createField(`qtd_${item.id}`, "Quantidade", item.quantidade));
+    fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
+    fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
+    fields.appendChild(createField(`conv_${item.id}`, "Conversao", item.conversao));
+    fields.appendChild(createField(`custo_${item.id}`, "Custo unitario", getUnitCost(item), "number", "0.01"));
+
+    const supplierWrapper = document.createElement("label");
+    supplierWrapper.className = "field-group";
+    supplierWrapper.htmlFor = `for_${item.id}`;
+    supplierWrapper.innerHTML = "<span>Fornecedor</span>";
+
+    const select = document.createElement("select");
+    select.id = `for_${item.id}`;
+
+    fornecedores.forEach((fornecedor) => {
+      const option = document.createElement("option");
+      option.value = fornecedor.id;
+      option.textContent = fornecedor.nome;
+      option.selected = fornecedor.id === supplier?.id;
+      select.appendChild(option);
+    });
+
+    supplierWrapper.appendChild(select);
+    fields.appendChild(supplierWrapper);
+
+    const summary = document.createElement("div");
+    summary.className = "summary-line";
+    summary.style.marginTop = "10px";
+    summary.innerHTML = `
+      <span>Estoque minimo</span>
+      <strong>${item.quantidade <= item.minimo ? "Atencao: precisa repor" : "Operacao dentro do limite"}</strong>
+    `;
+
+    const actions = document.createElement("div");
+    actions.className = "inline-actions";
+    actions.style.marginTop = "16px";
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.textContent = "Salvar";
+    saveButton.addEventListener("click", async () => {
+      const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
+      const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
+      const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
+      const conversao = Math.max(1, toNumber(document.getElementById(`conv_${item.id}`).value, 1));
+      const custoUnitario = Math.max(0, toNumber(document.getElementById(`custo_${item.id}`).value, 0));
+      const fornecedorId = document.getElementById(`for_${item.id}`).value;
+      const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+
+      if (maximo < minimo) {
+        setStatus("status", `O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`, "error");
+        return;
+      }
+
+      await updateDoc(doc(db, "estoque", item.id), {
+        quantidade,
+        minimo,
+        maximo,
+        conversao,
+        custoUnitario,
+        custo: custoUnitario,
+        fornecedorId: fornecedorSelecionado?.id || "",
+        fornecedorNome: fornecedorSelecionado?.nome || "",
+        fornecedor: fornecedorSelecionado?.nome || "",
+        cnpjFornecedor: fornecedorSelecionado?.cnpj || "",
+        atualizadoEm: serverTimestamp()
+      });
+
+      setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
+      await loadProducts();
+    });
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "secondary";
+    deleteButton.textContent = "Excluir";
+    deleteButton.addEventListener("click", async () => {
+      if (!window.confirm(`Deseja excluir ${item.nome}?`)) {
+        return;
+      }
+
+      await deleteDoc(doc(db, "estoque", item.id));
+
+      await addDoc(collection(db, "historico"), {
+        tipo: "exclusao",
+        itemId: item.id,
+        itemNome: item.nome,
+        responsavel: profile.email,
+        data: serverTimestamp()
+      });
+
+      setStatus("status", `Produto ${item.nome} removido.`, "success");
+      await loadProducts();
+    });
+
+    actions.appendChild(saveButton);
+    actions.appendChild(deleteButton);
+
+    const supplierDescription = supplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido";
+    const cnpjDescription = supplier?.cnpj || item.cnpjFornecedor
+      ? ` | CNPJ ${formatDocumentNumber(supplier?.cnpj || item.cnpjFornecedor)}`
+      : "";
+
+    article.innerHTML = `
+      <h3>${escapeHtml(item.nome)}</h3>
+      <p class="muted">Fornecedor atual: ${escapeHtml(`${supplierDescription}${cnpjDescription}`)}</p>
+    `;
+    article.appendChild(summary);
+    article.appendChild(fields);
+    article.appendChild(actions);
+    list.appendChild(article);
+  });
+}
+
+async function loadProducts() {
+  await loadSuppliers();
+  const snapshot = await getDocs(collection(db, "estoque"));
+  produtos = snapshot.docs
+    .map((document) => ({
+      id: document.id,
+      ...document.data(),
+      quantidade: toNumber(document.data().quantidade, 0),
+      minimo: toNumber(document.data().minimo, 0),
+      maximo: toNumber(document.data().maximo, 0),
+      conversao: Math.max(1, toNumber(document.data().conversao, 1))
+    }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  renderProducts(produtos);
+  return produtos;
+}
+
+function getDescendantByLocalName(node, localName) {
+  return Array.from(node?.getElementsByTagName("*") || []).find((child) => child.localName === localName) || null;
+}
+
+function getDirectChildrenByLocalName(node, localName) {
+  return Array.from(node?.children || []).filter((child) => child.localName === localName);
+}
+
+function getDirectChildByLocalName(node, localName) {
+  return getDirectChildrenByLocalName(node, localName)[0] || null;
+}
+
+function readXmlText(node, localName) {
+  return getDescendantByLocalName(node, localName)?.textContent?.trim() || "";
+}
+
+function parseXmlNumber(value) {
+  return toNumber(String(value ?? "").trim().replace(/,/g, "."), 0);
+}
+
+function formatQuantity(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: 3
+  }).format(toNumber(value, 0));
+}
+
+function formatInvoiceDate(value) {
+  if (!value) {
+    return "Data nao informada";
+  }
+
+  const candidate = value.includes("T") ? value : `${value}T00:00:00`;
+  const parsedDate = new Date(candidate);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  const options = value.includes("T")
+    ? { dateStyle: "short", timeStyle: "short" }
+    : { dateStyle: "short" };
+
+  return new Intl.DateTimeFormat("pt-BR", options).format(parsedDate);
+}
+
+function buildImportId(note) {
+  if (note.chaveAcesso) {
+    return note.chaveAcesso;
+  }
+
+  const fallback = normalizeText([
+    note.fornecedor.nome,
+    note.numero,
+    note.serie,
+    note.fileName
+  ].filter(Boolean).join(" "))
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+
+  return fallback || `xml-${Date.now()}`;
+}
+
+function parseInvoiceXml(fileName, xmlContent) {
+  const xmlDocument = new DOMParser().parseFromString(xmlContent, "application/xml");
+  const parserError = xmlDocument.getElementsByTagName("parsererror")[0];
+
+  if (parserError) {
+    throw new Error("O arquivo nao parece ser um XML valido.");
+  }
+
+  const infNFe = Array.from(xmlDocument.getElementsByTagName("*")).find((node) => node.localName === "infNFe");
+
+  if (!infNFe) {
+    throw new Error("Nao encontrei a estrutura infNFe no XML.");
+  }
+
+  const ide = getDirectChildByLocalName(infNFe, "ide") || getDescendantByLocalName(infNFe, "ide");
+  const emit = getDirectChildByLocalName(infNFe, "emit") || getDescendantByLocalName(infNFe, "emit");
+  const total = getDirectChildByLocalName(infNFe, "total") || getDescendantByLocalName(infNFe, "total");
+  const totals = getDescendantByLocalName(total, "ICMSTot");
+  const emitterAddress = getDescendantByLocalName(emit, "enderEmit");
+  const detailNodes = getDirectChildrenByLocalName(infNFe, "det");
+
+  const itens = detailNodes
+    .map((detail) => {
+      const product = getDirectChildByLocalName(detail, "prod") || getDescendantByLocalName(detail, "prod");
+
+      if (!product) {
+        return null;
+      }
+
+      const nome = readXmlText(product, "xProd");
+      const quantidade = parseXmlNumber(readXmlText(product, "qCom") || readXmlText(product, "qTrib"));
+
+      if (!nome || quantidade <= 0) {
+        return null;
+      }
+
+      const custoUnitario = Math.max(0, parseXmlNumber(readXmlText(product, "vUnCom") || readXmlText(product, "vUnTrib")));
+      const totalItem = Math.max(0, parseXmlNumber(readXmlText(product, "vProd")) || (quantidade * custoUnitario));
+
+      return {
+        codigo: readXmlText(product, "cProd"),
+        nome,
+        quantidade,
+        unidade: readXmlText(product, "uCom") || readXmlText(product, "uTrib") || "un",
+        custoUnitario,
+        total: totalItem,
+        ncm: readXmlText(product, "NCM")
+      };
+    })
+    .filter(Boolean);
+
+  if (!itens.length) {
+    throw new Error("Nenhum item de produto foi encontrado no XML.");
+  }
+
+  const note = {
+    fileName,
+    chaveAcesso: String(infNFe.getAttribute("Id") || "").replace(/^NFe/i, "").trim(),
+    numero: readXmlText(ide, "nNF"),
+    serie: readXmlText(ide, "serie"),
+    emissaoOriginal: readXmlText(ide, "dhEmi") || readXmlText(ide, "dEmi"),
+    emissaoFormatada: formatInvoiceDate(readXmlText(ide, "dhEmi") || readXmlText(ide, "dEmi")),
+    totalNota: Math.max(0, parseXmlNumber(readXmlText(totals, "vNF"))),
+    fornecedor: {
+      nome: readXmlText(emit, "xFant") || readXmlText(emit, "xNome") || "Fornecedor nao identificado",
+      cnpj: normalizeDocumentNumber(readXmlText(emit, "CNPJ") || readXmlText(emit, "CPF")),
+      telefone: readXmlText(emitterAddress, "fone")
+    },
+    itens
+  };
+
+  note.importId = buildImportId(note);
+
+  return note;
+}
+
+function summarizeMessages(messages) {
+  if (!messages.length) {
+    return "";
+  }
+
+  const preview = messages.slice(0, 2).join(" | ");
+  return messages.length > 2 ? `${preview} | ...` : preview;
+}
+
+function renderXmlPreview(notes) {
+  xmlPreview.innerHTML = "";
+
+  if (!notes.length) {
+    xmlPreview.innerHTML = '<div class="empty-state">Selecione um ou mais XMLs para visualizar a nota antes de importar.</div>';
+    return;
+  }
+
+  notes.forEach((note) => {
+    const article = document.createElement("article");
+    article.className = "card";
+
+    const supplierMatch = findSupplierMatch(note.fornecedor);
+    const supplierStatus = supplierMatch
+      ? `Fornecedor encontrado: ${supplierMatch.nome}`
+      : "Fornecedor sera criado automaticamente ao importar";
+    const cnpjInfo = note.fornecedor.cnpj
+      ? `CNPJ ${formatDocumentNumber(note.fornecedor.cnpj)}`
+      : "CNPJ nao informado";
+    const itemLines = note.itens.map((item) => `
+      <li>
+        <div class="xml-item-main">
+          <strong>${escapeHtml(item.nome)}</strong>
+          <span>${escapeHtml(`${formatQuantity(item.quantidade)} ${item.unidade}`)}</span>
+        </div>
+        <span class="xml-item-meta">
+          ${escapeHtml(`Cod. ${item.codigo || "-"} | Unit. ${formatCurrency(item.custoUnitario)} | Total ${formatCurrency(item.total)}`)}
+        </span>
+      </li>
+    `).join("");
+
+    article.innerHTML = `
+      <div class="summary-line">
+        <span>${escapeHtml(note.fileName)}</span>
+        <strong>${escapeHtml(note.chaveAcesso ? `Chave ${note.chaveAcesso}` : "XML pronto para importar")}</strong>
+      </div>
+      <h3 style="margin-top: 12px;">${escapeHtml(note.fornecedor.nome)}</h3>
+      <p class="muted">${escapeHtml(`NF ${note.numero || "-"} | Serie ${note.serie || "-"} | ${note.emissaoFormatada} | ${formatCurrency(note.totalNota)}`)}</p>
+      <p class="muted">${escapeHtml(`${cnpjInfo} | ${supplierStatus}`)}</p>
+      <ul class="xml-items">${itemLines}</ul>
+    `;
+
+    xmlPreview.appendChild(article);
+  });
+}
+
+async function ensureSupplierForImport(supplierData) {
+  const existingSupplier = findSupplierMatch(supplierData);
+
+  if (!existingSupplier) {
+    const newSupplier = {
+      nome: supplierData.nome || "Fornecedor importado",
+      cnpj: normalizeDocumentNumber(supplierData.cnpj),
+      telefone: supplierData.telefone || "",
+      telefoneNormalizado: normalizePhone(supplierData.telefone || ""),
+      nomeNormalizado: normalizeText(supplierData.nome || "Fornecedor importado"),
+      criadoEm: serverTimestamp()
+    };
+
+    const supplierRef = await addDoc(collection(db, "fornecedores"), newSupplier);
+    const createdSupplier = { id: supplierRef.id, ...newSupplier };
+    fornecedores = sortByName([...fornecedores, createdSupplier]);
+    renderSupplierOptions();
+
+    return {
+      supplier: createdSupplier,
+      created: true
+    };
+  }
+
+  const updates = {};
+  const incomingCnpj = normalizeDocumentNumber(supplierData.cnpj);
+  const incomingPhone = supplierData.telefone || "";
+
+  if (incomingCnpj && !normalizeDocumentNumber(existingSupplier.cnpj)) {
+    updates.cnpj = incomingCnpj;
+  }
+
+  if (incomingPhone && !existingSupplier.telefone) {
+    updates.telefone = incomingPhone;
+    updates.telefoneNormalizado = normalizePhone(incomingPhone);
+  }
+
+  if (Object.keys(updates).length) {
+    updates.atualizadoEm = serverTimestamp();
+    await updateDoc(doc(db, "fornecedores", existingSupplier.id), updates);
+    Object.assign(existingSupplier, updates);
+  }
+
+  return {
+    supplier: existingSupplier,
+    created: false
+  };
+}
+
+function findMatchingProduct(importedItem, inventoryByName, inventoryByCode) {
+  if (importedItem.codigo && inventoryByCode.has(importedItem.codigo)) {
+    return inventoryByCode.get(importedItem.codigo);
+  }
+
+  return inventoryByName.get(normalizeText(importedItem.nome)) || null;
+}
+
+async function handleXmlSelection() {
+  setStatus("xml-status", "", "info");
+  xmlImports = [];
+  renderXmlPreview(xmlImports);
+  importXmlButton.disabled = true;
+
+  const files = Array.from(xmlInput.files || []);
+
+  if (!files.length) {
+    setStatus("xml-status", "Selecione pelo menos um XML para continuar.", "info");
+    return;
+  }
+
+  const imports = [];
+  const errors = [];
+  const seenImportIds = new Set();
+
+  for (const file of files) {
+    try {
+      const xmlContent = await file.text();
+      const parsedInvoice = parseInvoiceXml(file.name, xmlContent);
+
+      if (seenImportIds.has(parsedInvoice.importId)) {
+        errors.push(`${file.name}: esta nota ja foi adicionada na lista.`);
+        continue;
+      }
+
+      seenImportIds.add(parsedInvoice.importId);
+      imports.push(parsedInvoice);
+    } catch (error) {
+      console.error(error);
+      errors.push(`${file.name}: ${error.message || "Nao foi possivel ler o XML."}`);
+    }
+  }
+
+  xmlImports = imports;
+  renderXmlPreview(xmlImports);
+  importXmlButton.disabled = !xmlImports.length;
+
+  if (imports.length && !errors.length) {
+    setStatus("xml-status", `${imports.length} XML(s) lido(s) com sucesso. Revise a pre-visualizacao e clique em importar.`, "success");
+    return;
+  }
+
+  if (imports.length) {
+    setStatus("xml-status", `${imports.length} XML(s) pronto(s) para importar. Alguns arquivos foram ignorados: ${summarizeMessages(errors)}`, "info");
+    return;
+  }
+
+  setStatus("xml-status", summarizeMessages(errors) || "Nenhum XML valido foi encontrado.", "error");
+}
+
+async function importXmlInvoices() {
+  if (!xmlImports.length) {
+    setStatus("xml-status", "Selecione e leia um XML antes de importar.", "error");
+    return;
+  }
+
+  importXmlButton.disabled = true;
+  setStatus("xml-status", "Importando notas para o estoque...", "info");
+
+  try {
+    const currentItems = await loadProducts();
+    const inventoryByName = new Map(currentItems.map((item) => [normalizeText(item.nome), item]));
+    const inventoryByCode = new Map(
+      currentItems
+        .filter((item) => item.codigoProduto)
+        .map((item) => [String(item.codigoProduto).trim(), item])
+    );
+
+    let importedNotes = 0;
+    let ignoredNotes = 0;
+    let createdItems = 0;
+    let updatedItems = 0;
+    let createdSuppliers = 0;
+
+    for (const note of xmlImports) {
+      const importRef = doc(db, "importacoesXml", note.importId);
+      const importSnapshot = await getDoc(importRef);
+
+      if (importSnapshot.exists()) {
+        ignoredNotes += 1;
+        continue;
+      }
+
+      const supplierResult = await ensureSupplierForImport(note.fornecedor);
+      const supplier = supplierResult.supplier;
+
+      if (supplierResult.created) {
+        createdSuppliers += 1;
+      }
+
+      const batch = writeBatch(db);
+
+      note.itens.forEach((importedItem) => {
+        const matchedItem = findMatchingProduct(importedItem, inventoryByName, inventoryByCode);
+        const nextUnitCost = importedItem.custoUnitario > 0
+          ? importedItem.custoUnitario
+          : getUnitCost(matchedItem);
+
+        if (matchedItem) {
+          const nextQuantity = Math.max(0, toNumber(matchedItem.quantidade, 0) + importedItem.quantidade);
+
+          batch.update(doc(db, "estoque", matchedItem.id), {
+            quantidade: nextQuantity,
+            custoUnitario: nextUnitCost,
+            custo: nextUnitCost,
+            unidadeCompra: importedItem.unidade || matchedItem.unidadeCompra || "",
+            codigoProduto: importedItem.codigo || matchedItem.codigoProduto || "",
+            ncm: importedItem.ncm || matchedItem.ncm || "",
+            fornecedorId: supplier.id || matchedItem.fornecedorId || "",
+            fornecedorNome: supplier.nome || matchedItem.fornecedorNome || "",
+            fornecedor: supplier.nome || matchedItem.fornecedor || "",
+            cnpjFornecedor: supplier.cnpj || matchedItem.cnpjFornecedor || "",
+            atualizadoEm: serverTimestamp()
+          });
+
+          matchedItem.quantidade = nextQuantity;
+          matchedItem.custoUnitario = nextUnitCost;
+          matchedItem.custo = nextUnitCost;
+          matchedItem.unidadeCompra = importedItem.unidade || matchedItem.unidadeCompra || "";
+          matchedItem.codigoProduto = importedItem.codigo || matchedItem.codigoProduto || "";
+          matchedItem.ncm = importedItem.ncm || matchedItem.ncm || "";
+          matchedItem.fornecedorId = supplier.id || matchedItem.fornecedorId || "";
+          matchedItem.fornecedorNome = supplier.nome || matchedItem.fornecedorNome || "";
+          matchedItem.fornecedor = supplier.nome || matchedItem.fornecedor || "";
+          matchedItem.cnpjFornecedor = supplier.cnpj || matchedItem.cnpjFornecedor || "";
+
+          inventoryByName.set(normalizeText(matchedItem.nome), matchedItem);
+
+          if (matchedItem.codigoProduto) {
+            inventoryByCode.set(String(matchedItem.codigoProduto).trim(), matchedItem);
+          }
+
+          updatedItems += 1;
+          return;
+        }
+
+        const newProductRef = doc(collection(db, "estoque"));
+        const newProduct = {
+          nome: importedItem.nome,
+          nomeNormalizado: normalizeText(importedItem.nome),
+          quantidade: importedItem.quantidade,
+          minimo: DEFAULT_IMPORTED_PRODUCT.minimo,
+          maximo: DEFAULT_IMPORTED_PRODUCT.maximo,
+          conversao: DEFAULT_IMPORTED_PRODUCT.conversao,
+          custoUnitario: nextUnitCost,
+          custo: nextUnitCost,
+          unidadeCompra: importedItem.unidade || "",
+          codigoProduto: importedItem.codigo || "",
+          ncm: importedItem.ncm || "",
+          fornecedorId: supplier.id,
+          fornecedorNome: supplier.nome,
+          fornecedor: supplier.nome,
+          cnpjFornecedor: supplier.cnpj || "",
+          criadoEm: serverTimestamp(),
+          atualizadoEm: serverTimestamp()
+        };
+
+        batch.set(newProductRef, newProduct);
+
+        const cachedProduct = { id: newProductRef.id, ...newProduct };
+        inventoryByName.set(newProduct.nomeNormalizado, cachedProduct);
+
+        if (cachedProduct.codigoProduto) {
+          inventoryByCode.set(String(cachedProduct.codigoProduto).trim(), cachedProduct);
+        }
+
+        createdItems += 1;
+      });
+
+      const historyRef = doc(collection(db, "historico"));
+
+      batch.set(historyRef, {
+        tipo: "importacao_xml",
+        importacaoId: note.importId,
+        chaveAcesso: note.chaveAcesso || note.importId,
+        numeroNota: note.numero || "",
+        serie: note.serie || "",
+        fornecedorId: supplier.id,
+        fornecedorNome: supplier.nome,
+        totalNota: note.totalNota,
+        totalItens: note.itens.length,
+        arquivo: note.fileName,
+        dataEmissao: note.emissaoOriginal || "",
+        responsavel: profile.email,
+        data: serverTimestamp()
+      });
+
+      batch.set(importRef, {
+        importacaoId: note.importId,
+        chaveAcesso: note.chaveAcesso || "",
+        numeroNota: note.numero || "",
+        serie: note.serie || "",
+        fornecedorId: supplier.id,
+        fornecedorNome: supplier.nome,
+        fornecedorCnpj: supplier.cnpj || "",
+        arquivo: note.fileName,
+        totalNota: note.totalNota,
+        totalItens: note.itens.length,
+        responsavel: profile.email,
+        criadoEm: serverTimestamp()
+      });
+
+      await batch.commit();
+      importedNotes += 1;
+    }
+
+    xmlImports = [];
+    xmlInput.value = "";
+    renderXmlPreview(xmlImports);
+    await loadProducts();
+
+    const summary = [
+      `${importedNotes} nota(s) importada(s)`,
+      `${createdItems} item(ns) criado(s)`,
+      `${updatedItems} item(ns) atualizado(s)`
+    ];
+
+    if (createdSuppliers) {
+      summary.push(`${createdSuppliers} fornecedor(es) criado(s)`);
+    }
+
+    if (ignoredNotes) {
+      summary.push(`${ignoredNotes} nota(s) ignorada(s) por ja terem sido importadas`);
+    }
+
+    const statusType = ignoredNotes ? "info" : "success";
+    setStatus("xml-status", `Importacao concluida: ${summary.join(", ")}.`, statusType);
+  } catch (error) {
+    console.error(error);
+    setStatus("xml-status", error.message || "Nao foi possivel importar os XMLs selecionados.", "error");
+    importXmlButton.disabled = false;
+    return;
+  }
+
+  importXmlButton.disabled = true;
+}
+
+xmlInput.addEventListener("change", handleXmlSelection);
+importXmlButton.addEventListener("click", importXmlInvoices);
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("status", "", "info");
+
+  const nome = document.getElementById("novo_nome").value.trim();
+  const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
+  const minimo = Math.max(0, toNumber(document.getElementById("novo_min").value, 0));
+  const maximo = Math.max(1, toNumber(document.getElementById("novo_max").value, 1));
+  const conversao = Math.max(1, toNumber(document.getElementById("novo_conv").value, 1));
+  const custoUnitario = Math.max(0, toNumber(document.getElementById("novo_custo").value, 0));
+  const fornecedorId = supplierSelect.value;
+  const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+
+  if (!nome) {
+    setStatus("status", "Informe o nome do produto.", "error");
+    return;
+  }
+
+  if (!fornecedorSelecionado) {
+    setStatus("status", "Cadastre e selecione um fornecedor antes de salvar o produto.", "error");
+    return;
+  }
+
+  if (maximo < minimo) {
+    setStatus("status", "O valor maximo precisa ser maior ou igual ao minimo.", "error");
+    return;
+  }
+
+  createButton.disabled = true;
+
+  try {
+    const existingItems = await loadProducts();
+    const duplicated = existingItems.some((item) => normalizeText(item.nome) === normalizeText(nome));
+
+    if (duplicated) {
+      throw new Error("Ja existe um produto com esse nome.");
+    }
+
+    await addDoc(collection(db, "estoque"), {
+      nome,
+      nomeNormalizado: normalizeText(nome),
+      quantidade,
+      minimo,
+      maximo,
+      conversao,
+      custoUnitario,
+      custo: custoUnitario,
+      fornecedorId: fornecedorSelecionado.id,
+      fornecedorNome: fornecedorSelecionado.nome,
+      fornecedor: fornecedorSelecionado.nome,
+      cnpjFornecedor: fornecedorSelecionado.cnpj || "",
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    });
+
+    form.reset();
+    document.getElementById("novo_qtd").value = "0";
+    document.getElementById("novo_min").value = "2";
+    document.getElementById("novo_max").value = "50";
+    document.getElementById("novo_conv").value = "1";
+    document.getElementById("novo_custo").value = "0";
+
+    setStatus("status", "Produto criado com sucesso.", "success");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", error.message || "Nao foi possivel criar o produto.", "error");
+  } finally {
+    createButton.disabled = false;
+  }
+});
+
+resetButton.addEventListener("click", async () => {
+  setStatus("status", "", "info");
+
+  if (!window.confirm("Deseja zerar todas as quantidades do estoque?")) {
+    return;
+  }
+
+  try {
+    const snapshot = await getDocs(collection(db, "estoque"));
+    const batch = writeBatch(db);
+
+    snapshot.docs.forEach((document) => {
+      batch.update(doc(db, "estoque", document.id), {
+        quantidade: 0,
+        atualizadoEm: serverTimestamp()
+      });
+    });
+
+    await batch.commit();
+
+    await addDoc(collection(db, "historico"), {
+      tipo: "zerar",
+      responsavel: profile.email,
+      data: serverTimestamp()
+    });
+
+    setStatus("status", "Todas as quantidades foram zeradas.", "success");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", "Nao foi possivel zerar o estoque.", "error");
+  }
+});
+
+renderXmlPreview(xmlImports);
+await loadProducts();
+</script>
+</body>
+</html>
