@@ -1,4 +1,4 @@
-const CACHE_NAME = "hamburgueria-app-v4";
+const CACHE_NAME = "hamburgueria-app-v5";
 const APP_SHELL = [
   "/",
   "/login.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "/receitas.html",
   "/compras.html",
   "/analise-compras.html",
+  "/dashboard-compras.html",
   "/fornecedores.html",
   "/dashboard.html",
   "/funcionarios.html",

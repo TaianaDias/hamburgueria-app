@@ -398,6 +398,97 @@ pre {
   margin-top: 10px;
 }
 
+.purchase-dashboard-hero {
+  padding: 28px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #2cc7f0 0%, #2b90d8 45%, #2d66b8 100%);
+  box-shadow: 0 24px 60px rgba(14, 116, 218, 0.28);
+}
+
+.purchase-dashboard-hero h2 {
+  margin-top: 6px;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.purchase-dashboard-hero-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.purchase-dashboard-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.purchase-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: white;
+  font-weight: 700;
+}
+
+.purchase-chart-surface {
+  margin-top: 20px;
+}
+
+.purchase-chart-surface svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.purchase-chart-grid {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 1;
+}
+
+.purchase-chart-axis-label,
+.purchase-chart-month-label {
+  fill: rgba(255, 255, 255, 0.92);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.purchase-chart-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.purchase-chart-area {
+  fill: rgba(255, 255, 255, 0.18);
+}
+
+.purchase-chart-point {
+  fill: white;
+  stroke: rgba(255, 255, 255, 0.34);
+  stroke-width: 3;
+}
+
+.purchase-highlight-card {
+  min-height: 180px;
+}
+
+.purchase-dashboard-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.purchase-dashboard-month-card {
+  min-height: 220px;
+}
+
 .analytics-month-list {
   display: grid;
   gap: 16px;
@@ -462,6 +553,18 @@ pre {
 @media (max-width: 760px) {
   .page {
     padding: 20px 16px 40px;
+  }
+
+  .purchase-dashboard-hero {
+    padding: 20px 16px 22px;
+  }
+
+  .purchase-dashboard-hero-header {
+    display: grid;
+  }
+
+  .purchase-dashboard-badges {
+    justify-content: flex-start;
   }
 
   .page-header,

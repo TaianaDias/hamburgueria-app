@@ -721,3 +721,171 @@ export function parseRecipeIngredients(recipe) {
     })
     .filter((item) => item.nome);
 }
+
+export function getMonthKey(value) {
+  const raw = String(value ?? "").trim();
+  return raw.length >= 7 ? raw.slice(0, 7) : "";
+}
+
+export function getMonthDate(monthKey) {
+  return new Date(`${monthKey}-01T00:00:00`);
+}
+
+export function formatMonthLabel(monthKey) {
+  if (!monthKey) {
+    return "Mes nao informado";
+  }
+
+  const parsed = getMonthDate(monthKey);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return monthKey;
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    month: "short",
+    year: "numeric"
+  }).format(parsed);
+}
+
+export function calculatePurchaseReferenceTotal(purchase) {
+  if (purchase?.valorReferenciaTotal != null) {
+    return Math.max(0, toNumber(purchase.valorReferenciaTotal, 0));
+  }
+
+  const packageCount = Math.max(1, toNumber(purchase?.quantidadeEmbalagens, 1));
+  const normalPackageValue = Math.max(
+    0,
+    toNumber(purchase?.valorNormalEmbalagem ?? purchase?.valorEmbalagem ?? purchase?.valorTotal, 0)
+  );
+
+  return normalPackageValue * packageCount;
+}
+
+export function calculatePurchaseDiscountTotal(purchase) {
+  if (purchase?.descontoTotal != null) {
+    return Math.max(0, toNumber(purchase.descontoTotal, 0));
+  }
+
+  return Math.max(0, calculatePurchaseReferenceTotal(purchase) - Math.max(0, toNumber(purchase?.valorTotal, 0)));
+}
+
+function compareTopItems(left, right, primaryField, secondaryField) {
+  const primaryDifference = toNumber(right?.[primaryField], 0) - toNumber(left?.[primaryField], 0);
+
+  if (primaryDifference !== 0) {
+    return primaryDifference;
+  }
+
+  const secondaryDifference = toNumber(right?.[secondaryField], 0) - toNumber(left?.[secondaryField], 0);
+
+  if (secondaryDifference !== 0) {
+    return secondaryDifference;
+  }
+
+  return String(left?.nome || "").localeCompare(String(right?.nome || ""), "pt-BR");
+}
+
+export function aggregateMonthlyPurchases(purchases = []) {
+  const monthlyMap = new Map();
+
+  purchases.forEach((purchase) => {
+    const monthKey = getMonthKey(purchase?.mesReferencia || purchase?.dataCompra);
+
+    if (!monthKey) {
+      return;
+    }
+
+    if (!monthlyMap.has(monthKey)) {
+      monthlyMap.set(monthKey, {
+        monthKey,
+        totalPaid: 0,
+        totalReference: 0,
+        totalDiscount: 0,
+        purchaseCount: 0,
+        products: new Set(),
+        productTotals: new Map()
+      });
+    }
+
+    const aggregate = monthlyMap.get(monthKey);
+    const totalPaid = Math.max(0, toNumber(purchase?.valorTotal, 0));
+    const totalReference = calculatePurchaseReferenceTotal(purchase);
+    const totalDiscount = calculatePurchaseDiscountTotal(purchase);
+    const productKey = purchase?.produtoId || normalizeText(purchase?.produtoNome || "produto");
+    const quantityUnits = Math.max(
+      0,
+      toNumber(purchase?.quantidadeUnidades, toNumber(purchase?.quantidadeEmbalagens, 0))
+    );
+    const productName = purchase?.produtoNome || "Produto";
+    const usageUnit = String(purchase?.unidadeUso || "un").trim() || "un";
+
+    aggregate.totalPaid += totalPaid;
+    aggregate.totalReference += totalReference;
+    aggregate.totalDiscount += totalDiscount;
+    aggregate.purchaseCount += 1;
+    aggregate.products.add(productKey);
+
+    if (!aggregate.productTotals.has(productKey)) {
+      aggregate.productTotals.set(productKey, {
+        key: productKey,
+        nome: productName,
+        quantidade: 0,
+        unidadeUso: usageUnit,
+        totalPago: 0
+      });
+    }
+
+    const productAggregate = aggregate.productTotals.get(productKey);
+    productAggregate.quantidade += quantityUnits;
+    productAggregate.totalPago += totalPaid;
+  });
+
+  const monthlySummaries = Array.from(monthlyMap.values())
+    .map((entry) => {
+      const items = Array.from(entry.productTotals.values());
+      const topBoughtItem = items.length
+        ? [...items].sort((left, right) => compareTopItems(left, right, "quantidade", "totalPago"))[0]
+        : null;
+      const mostExpensiveItem = items.length
+        ? [...items].sort((left, right) => compareTopItems(left, right, "totalPago", "quantidade"))[0]
+        : null;
+
+      return {
+        monthKey: entry.monthKey,
+        totalPaid: entry.totalPaid,
+        totalReference: entry.totalReference,
+        totalDiscount: entry.totalDiscount,
+        purchaseCount: entry.purchaseCount,
+        uniqueProducts: entry.products.size,
+        topBoughtItem,
+        mostExpensiveItem
+      };
+    })
+    .sort((left, right) => left.monthKey.localeCompare(right.monthKey));
+
+  const totalPaid = monthlySummaries.reduce((sum, month) => sum + month.totalPaid, 0);
+  const totalDiscount = monthlySummaries.reduce((sum, month) => sum + month.totalDiscount, 0);
+  const averagePaid = monthlySummaries.length ? totalPaid / monthlySummaries.length : 0;
+  const highestMonth = monthlySummaries.length
+    ? [...monthlySummaries].sort((left, right) => right.totalPaid - left.totalPaid)[0]
+    : null;
+  const lowestMonth = monthlySummaries.length
+    ? [...monthlySummaries].sort((left, right) => left.totalPaid - right.totalPaid)[0]
+    : null;
+  const latestMonth = monthlySummaries.length ? monthlySummaries[monthlySummaries.length - 1] : null;
+  const maxPaid = monthlySummaries.length
+    ? Math.max(...monthlySummaries.map((month) => month.totalPaid))
+    : 0;
+
+  return {
+    monthlySummaries,
+    totalPaid,
+    totalDiscount,
+    averagePaid,
+    highestMonth,
+    lowestMonth,
+    latestMonth,
+    maxPaid
+  };
+}

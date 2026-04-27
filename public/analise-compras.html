@@ -25,6 +25,7 @@
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
       <a class="button secondary" href="compras.html">Compras</a>
+      <a class="button secondary" href="dashboard-compras.html">Dashboard</a>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
@@ -74,12 +75,13 @@
 import { db } from "./firebase.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
+  aggregateMonthlyPurchases,
   bindLogoutButton,
   describeProfile,
   escapeHtml,
   formatCurrency,
-  requireAuth,
-  toNumber
+  formatMonthLabel,
+  requireAuth
 } from "./app.js";
 
 bindLogoutButton();
@@ -87,107 +89,17 @@ bindLogoutButton();
 const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = describeProfile(profile);
 
-function getMonthKey(value) {
-  const raw = String(value ?? "").trim();
-  return raw.length >= 7 ? raw.slice(0, 7) : "";
-}
-
-function getMonthDate(monthKey) {
-  return new Date(`${monthKey}-01T00:00:00`);
-}
-
-function formatMonthLabel(monthKey) {
-  if (!monthKey) {
-    return "Mes nao informado";
-  }
-
-  const parsed = getMonthDate(monthKey);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return monthKey;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    month: "long",
-    year: "numeric"
-  }).format(parsed);
-}
-
-function calculateReferenceTotal(purchase) {
-  if (purchase.valorReferenciaTotal != null) {
-    return Math.max(0, toNumber(purchase.valorReferenciaTotal, 0));
-  }
-
-  const packageCount = Math.max(1, toNumber(purchase.quantidadeEmbalagens, 1));
-  const normalPackageValue = Math.max(
-    0,
-    toNumber(purchase.valorNormalEmbalagem ?? purchase.valorEmbalagem ?? purchase.valorTotal, 0)
-  );
-
-  return normalPackageValue * packageCount;
-}
-
-function calculateDiscountTotal(purchase) {
-  if (purchase.descontoTotal != null) {
-    return Math.max(0, toNumber(purchase.descontoTotal, 0));
-  }
-
-  return Math.max(0, calculateReferenceTotal(purchase) - Math.max(0, toNumber(purchase.valorTotal, 0)));
-}
-
 const purchasesSnapshot = await getDocs(collection(db, "comprasMensais"));
 const purchases = purchasesSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
-const monthlyMap = new Map();
-
-purchases.forEach((purchase) => {
-  const monthKey = getMonthKey(purchase.mesReferencia || purchase.dataCompra);
-
-  if (!monthKey) {
-    return;
-  }
-
-  if (!monthlyMap.has(monthKey)) {
-    monthlyMap.set(monthKey, {
-      monthKey,
-      totalPaid: 0,
-      totalReference: 0,
-      totalDiscount: 0,
-      purchaseCount: 0,
-      products: new Set()
-    });
-  }
-
-  const aggregate = monthlyMap.get(monthKey);
-  const totalPaid = Math.max(0, toNumber(purchase.valorTotal, 0));
-  const totalReference = calculateReferenceTotal(purchase);
-  const totalDiscount = calculateDiscountTotal(purchase);
-
-  aggregate.totalPaid += totalPaid;
-  aggregate.totalReference += totalReference;
-  aggregate.totalDiscount += totalDiscount;
-  aggregate.purchaseCount += 1;
-  aggregate.products.add(purchase.produtoNome || purchase.produtoId || "produto");
-});
-
-const monthlySummaries = Array.from(monthlyMap.values())
-  .map((entry) => ({
-    ...entry,
-    uniqueProducts: entry.products.size
-  }))
-  .sort((left, right) => left.monthKey.localeCompare(right.monthKey));
-
-const totalPaid = monthlySummaries.reduce((sum, month) => sum + month.totalPaid, 0);
-const totalDiscount = monthlySummaries.reduce((sum, month) => sum + month.totalDiscount, 0);
-const averagePaid = monthlySummaries.length ? totalPaid / monthlySummaries.length : 0;
-const highestMonth = monthlySummaries.length
-  ? [...monthlySummaries].sort((left, right) => right.totalPaid - left.totalPaid)[0]
-  : null;
-const lowestMonth = monthlySummaries.length
-  ? [...monthlySummaries].sort((left, right) => left.totalPaid - right.totalPaid)[0]
-  : null;
-const maxPaid = monthlySummaries.length
-  ? Math.max(...monthlySummaries.map((month) => month.totalPaid))
-  : 0;
+const {
+  monthlySummaries,
+  totalPaid,
+  totalDiscount,
+  averagePaid,
+  highestMonth,
+  lowestMonth,
+  maxPaid
+} = aggregateMonthlyPurchases(purchases);
 
 document.getElementById("metric-total-paid").textContent = formatCurrency(totalPaid);
 document.getElementById("metric-total-discount").textContent = formatCurrency(totalDiscount);
