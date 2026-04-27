@@ -102,12 +102,17 @@
           </div>
 
           <div class="field-group">
+            <label for="novo_custo_promocional">Custo promocional da embalagem</label>
+            <input id="novo_custo_promocional" type="number" min="0" step="0.01" value="">
+          </div>
+
+          <div class="field-group">
             <label for="novo_unidade">Unidade de uso</label>
             <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
           </div>
 
           <div class="field-group">
-            <label for="novo_custo_unitario">Custo por unidade de uso</label>
+            <label for="novo_custo_unitario">Custo por unidade atual</label>
             <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
           </div>
 
@@ -117,6 +122,24 @@
               <option value="sim">Sim, usar como custo padrao</option>
               <option value="nao">Nao, deixar como alternativa</option>
             </select>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_promocao_ativa">Promocao ativa</label>
+            <select id="novo_promocao_ativa">
+              <option value="nao">Nao</option>
+              <option value="sim">Sim</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_promocao_inicio">Inicio da promocao</label>
+            <input id="novo_promocao_inicio" type="date">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_promocao_fim">Fim da promocao</label>
+            <input id="novo_promocao_fim" type="date">
           </div>
         </div>
 
@@ -166,11 +189,14 @@ import {
   formatCurrency,
   formatDocumentNumber,
   getCheapestProductSupplier,
+  getEffectiveSupplierPurchaseCost,
+  getEffectiveSupplierUnitCost,
   getPackageQuantity,
   getPurchaseCost,
   getPrimaryProductSupplier,
   getUnitCost,
   getUsageUnit,
+  isSupplierPromotionActive,
   normalizeProductSuppliers,
   normalizeDocumentNumber,
   normalizePhone,
@@ -191,10 +217,14 @@ const resetButton = document.getElementById("reset-button");
 const createButton = document.getElementById("create-button");
 const packageQuantityInput = document.getElementById("novo_conv");
 const purchaseCostInput = document.getElementById("novo_custo");
+const promotionalCostInput = document.getElementById("novo_custo_promocional");
 const usageUnitInput = document.getElementById("novo_unidade");
 const unitCostPreviewInput = document.getElementById("novo_custo_unitario");
 const supplierSelect = document.getElementById("novo_fornecedor");
 const createPrimarySelect = document.getElementById("novo_fornecedor_principal");
+const createPromotionActiveSelect = document.getElementById("novo_promocao_ativa");
+const createPromotionStartInput = document.getElementById("novo_promocao_inicio");
+const createPromotionEndInput = document.getElementById("novo_promocao_fim");
 const addSupplierButton = document.getElementById("add-supplier-button");
 const newSuppliersList = document.getElementById("new-suppliers-list");
 const xmlInput = document.getElementById("xml-files");
@@ -214,7 +244,12 @@ let xmlImports = [];
 
 function updateCreateCostPreview() {
   const packageQuantity = Math.max(1, toNumber(packageQuantityInput.value, 1));
-  const purchaseCost = Math.max(0, toNumber(purchaseCostInput.value, 0));
+  const basePurchaseCost = Math.max(0, toNumber(purchaseCostInput.value, 0));
+  const promotionalPurchaseCost = promotionalCostInput.value === ""
+    ? null
+    : Math.max(0, toNumber(promotionalCostInput.value, 0));
+  const shouldUsePromotion = createPromotionActiveSelect.value === "sim" && promotionalPurchaseCost != null;
+  const purchaseCost = shouldUsePromotion ? promotionalPurchaseCost : basePurchaseCost;
   unitCostPreviewInput.value = formatCurrency(calculateUnitCost(purchaseCost, packageQuantity));
 }
 
@@ -257,6 +292,11 @@ function serializeProductSuppliers(productSuppliers) {
     conversao: supplier.conversao,
     custoCompra: supplier.custoCompra,
     custoUnitario: supplier.custoUnitario,
+    custoPromocionalCompra: supplier.custoPromocionalCompra ?? null,
+    custoPromocionalUnitario: supplier.custoPromocionalUnitario ?? null,
+    promocaoAtiva: Boolean(supplier.promocaoAtiva),
+    promocaoInicio: supplier.promocaoInicio || "",
+    promocaoFim: supplier.promocaoFim || "",
     unidadeUso: supplier.unidadeUso,
     principal: supplier.principal
   }));
@@ -286,6 +326,11 @@ function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
       custoCompra: fallbackPurchaseCost,
       custoUnitario: fallbackUnitCost,
       custo: fallbackUnitCost,
+      custoPromocionalCompra: null,
+      custoPromocionalUnitario: null,
+      promocaoAtiva: false,
+      promocaoInicio: "",
+      promocaoFim: "",
       unidadeUso: fallbackUsageUnit,
       fornecedorId: "",
       fornecedorNome: "",
@@ -300,6 +345,11 @@ function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
     custoCompra: primarySupplier.custoCompra,
     custoUnitario: primarySupplier.custoUnitario,
     custo: primarySupplier.custoUnitario,
+    custoPromocionalCompra: primarySupplier.custoPromocionalCompra ?? null,
+    custoPromocionalUnitario: primarySupplier.custoPromocionalUnitario ?? null,
+    promocaoAtiva: Boolean(primarySupplier.promocaoAtiva),
+    promocaoInicio: primarySupplier.promocaoInicio || "",
+    promocaoFim: primarySupplier.promocaoFim || "",
     unidadeUso: primarySupplier.unidadeUso,
     fornecedorId: primarySupplier.fornecedorId,
     fornecedorNome: primarySupplier.nome,
@@ -311,6 +361,9 @@ function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
 function buildSupplierEntryFromCatalog(supplier, overrides = {}) {
   const packageQuantity = Math.max(1, toNumber(overrides.conversao, 1));
   const purchaseCost = Math.max(0, toNumber(overrides.custoCompra, 0));
+  const promotionalPurchaseCost = overrides.custoPromocionalCompra == null || overrides.custoPromocionalCompra === ""
+    ? null
+    : Math.max(0, toNumber(overrides.custoPromocionalCompra, 0));
   const usageUnit = String(overrides.unidadeUso || "un").trim() || "un";
 
   return {
@@ -322,6 +375,13 @@ function buildSupplierEntryFromCatalog(supplier, overrides = {}) {
     conversao: packageQuantity,
     custoCompra: purchaseCost,
     custoUnitario: calculateUnitCost(purchaseCost, packageQuantity),
+    custoPromocionalCompra: promotionalPurchaseCost,
+    custoPromocionalUnitario: promotionalPurchaseCost != null
+      ? calculateUnitCost(promotionalPurchaseCost, packageQuantity)
+      : null,
+    promocaoAtiva: Boolean(overrides.promocaoAtiva),
+    promocaoInicio: String(overrides.promocaoInicio || "").trim(),
+    promocaoFim: String(overrides.promocaoFim || "").trim(),
     unidadeUso: usageUnit,
     principal: Boolean(overrides.principal)
   };
@@ -421,11 +481,39 @@ function ensureSinglePrincipal(container) {
 function refreshSupplierEntryUnitCost(entryElement) {
   const quantityInput = entryElement.querySelector(".supplier-package-quantity");
   const costInput = entryElement.querySelector(".supplier-purchase-cost");
+  const promotionalCostInput = entryElement.querySelector(".supplier-promotional-cost");
+  const promotionActiveInput = entryElement.querySelector(".supplier-promotion-active");
+  const promotionStartInput = entryElement.querySelector(".supplier-promotion-start");
+  const promotionEndInput = entryElement.querySelector(".supplier-promotion-end");
   const unitCostInput = entryElement.querySelector(".supplier-unit-cost");
+  const packageQuantity = Math.max(1, toNumber(quantityInput.value, 1));
+  const baseCost = Math.max(0, toNumber(costInput.value, 0));
+  const promotionalCost = promotionalCostInput?.value === ""
+    ? null
+    : Math.max(0, toNumber(promotionalCostInput?.value, 0));
+  const previewEntry = {
+    custoCompra: baseCost,
+    custoUnitario: calculateUnitCost(baseCost, packageQuantity),
+    custoPromocionalCompra: promotionalCost,
+    custoPromocionalUnitario: promotionalCost != null ? calculateUnitCost(promotionalCost, packageQuantity) : null,
+    promocaoAtiva: promotionActiveInput?.value === "sim",
+    promocaoInicio: promotionStartInput?.value || "",
+    promocaoFim: promotionEndInput?.value || ""
+  };
+  const effectiveUnitCost = isSupplierPromotionActive(previewEntry)
+    ? getEffectiveSupplierUnitCost(previewEntry)
+    : calculateUnitCost(baseCost, packageQuantity);
+  const helper = entryElement.querySelector(".supplier-cost-helper");
 
-  unitCostInput.value = formatCurrency(
-    calculateUnitCost(costInput.value, quantityInput.value)
-  );
+  unitCostInput.value = formatCurrency(effectiveUnitCost);
+
+  if (helper) {
+    if (promotionalCost != null) {
+      helper.textContent = `${isSupplierPromotionActive(previewEntry) ? "Promocao aplicada" : "Promocao cadastrada"} | Normal ${formatCurrency(baseCost)} | Promo ${formatCurrency(promotionalCost)}`;
+    } else {
+      helper.textContent = `Preco normal ${formatCurrency(baseCost)}`;
+    }
+  }
 }
 
 function createSupplierEntryElement(entry = {}, options = {}) {
@@ -464,7 +552,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
 
   const purchaseCostField = createField(
     `supplier_cost_${Math.random().toString(36).slice(2)}`,
-    "Custo da embalagem",
+    "Custo normal da embalagem",
     Math.max(0, toNumber(entry.custoCompra, 0)),
     {
       type: "number",
@@ -473,6 +561,18 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   );
   purchaseCostField.querySelector("input").classList.add("supplier-purchase-cost");
   fields.appendChild(purchaseCostField);
+
+  const promotionalCostField = createField(
+    `supplier_promo_cost_${Math.random().toString(36).slice(2)}`,
+    "Custo promocional da embalagem",
+    entry.custoPromocionalCompra ?? "",
+    {
+      type: "number",
+      step: "0.01"
+    }
+  );
+  promotionalCostField.querySelector("input").classList.add("supplier-promotional-cost");
+  fields.appendChild(promotionalCostField);
 
   const usageUnitField = createField(
     `supplier_unit_${Math.random().toString(36).slice(2)}`,
@@ -487,8 +587,12 @@ function createSupplierEntryElement(entry = {}, options = {}) {
 
   const unitCostField = createField(
     `supplier_unit_cost_${Math.random().toString(36).slice(2)}`,
-    "Custo por unidade",
-    formatCurrency(calculateUnitCost(entry.custoCompra, entry.conversao)),
+    "Custo por unidade atual",
+    formatCurrency(
+      isSupplierPromotionActive(entry)
+        ? getEffectiveSupplierUnitCost(entry)
+        : calculateUnitCost(entry.custoCompra, entry.conversao)
+    ),
     {
       type: "text",
       readOnly: true
@@ -496,6 +600,37 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   );
   unitCostField.querySelector("input").classList.add("supplier-unit-cost");
   fields.appendChild(unitCostField);
+
+  const promotionActiveWrapper = document.createElement("label");
+  promotionActiveWrapper.className = "field-group";
+  promotionActiveWrapper.innerHTML = "<span>Promocao ativa</span>";
+  const promotionActiveField = document.createElement("select");
+  promotionActiveField.className = "supplier-promotion-active";
+  promotionActiveField.innerHTML = `
+    <option value="nao">Nao</option>
+    <option value="sim">Sim</option>
+  `;
+  promotionActiveField.value = entry.promocaoAtiva ? "sim" : "nao";
+  promotionActiveWrapper.appendChild(promotionActiveField);
+  fields.appendChild(promotionActiveWrapper);
+
+  const promotionStartField = createField(
+    `supplier_promo_start_${Math.random().toString(36).slice(2)}`,
+    "Inicio da promocao",
+    entry.promocaoInicio || "",
+    { type: "date" }
+  );
+  promotionStartField.querySelector("input").classList.add("supplier-promotion-start");
+  fields.appendChild(promotionStartField);
+
+  const promotionEndField = createField(
+    `supplier_promo_end_${Math.random().toString(36).slice(2)}`,
+    "Fim da promocao",
+    entry.promocaoFim || "",
+    { type: "date" }
+  );
+  promotionEndField.querySelector("input").classList.add("supplier-promotion-end");
+  fields.appendChild(promotionEndField);
 
   const principalWrapper = document.createElement("div");
   principalWrapper.className = "field-group";
@@ -515,6 +650,10 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   const actions = document.createElement("div");
   actions.className = "inline-actions";
   actions.style.marginTop = "16px";
+
+  const costHelper = document.createElement("p");
+  costHelper.className = "muted supplier-cost-helper";
+  costHelper.style.margin = "14px 0 0";
 
   const removeButton = document.createElement("button");
   removeButton.type = "button";
@@ -543,8 +682,13 @@ function createSupplierEntryElement(entry = {}, options = {}) {
 
   const quantityInput = quantityField.querySelector("input");
   const purchaseCostInput = purchaseCostField.querySelector("input");
+  const promotionalCostEntryInput = promotionalCostField.querySelector("input");
   quantityInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   purchaseCostInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionalCostEntryInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionActiveField.addEventListener("change", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionStartField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionEndField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   principalRadio.addEventListener("change", () => {
     if (principalRadio.checked) {
       header.querySelector("strong").textContent = "Principal";
@@ -562,6 +706,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
 
   wrapper.appendChild(header);
   wrapper.appendChild(fields);
+  wrapper.appendChild(costHelper);
   wrapper.appendChild(actions);
 
   supplierField.addEventListener("change", () => {
@@ -618,6 +763,9 @@ function collectSupplierEntries(container) {
       row.querySelector(".supplier-purchase-cost").value,
       0
     ));
+    const custoPromocionalCompra = row.querySelector(".supplier-promotional-cost").value === ""
+      ? null
+      : Math.max(0, toNumber(row.querySelector(".supplier-promotional-cost").value, 0));
     const unidadeUso = String(
       row.querySelector(".supplier-usage-unit").value || "un"
     ).trim() || "un";
@@ -625,6 +773,10 @@ function collectSupplierEntries(container) {
     return buildSupplierEntryFromCatalog(selectedSupplier, {
       conversao,
       custoCompra,
+      custoPromocionalCompra,
+      promocaoAtiva: row.querySelector(".supplier-promotion-active").value === "sim",
+      promocaoInicio: row.querySelector(".supplier-promotion-start").value || "",
+      promocaoFim: row.querySelector(".supplier-promotion-end").value || "",
       unidadeUso,
       principal: row.querySelector(".supplier-principal-radio").checked
     });
@@ -683,7 +835,7 @@ function renderProducts(items) {
     summary.style.marginTop = "10px";
     summary.innerHTML = `
       <span>${primarySupplier
-        ? `${formatCurrency(primarySupplier.custoCompra)} por embalagem com ${primarySupplier.conversao} ${escapeHtml(primarySupplier.unidadeUso)} | ${formatCurrency(primarySupplier.custoUnitario)} por ${escapeHtml(primarySupplier.unidadeUso)}`
+        ? `${formatCurrency(getEffectiveSupplierPurchaseCost(primarySupplier))} por embalagem com ${primarySupplier.conversao} ${escapeHtml(primarySupplier.unidadeUso)} | ${formatCurrency(getEffectiveSupplierUnitCost(primarySupplier))} por ${escapeHtml(primarySupplier.unidadeUso)}${primarySupplier.promocaoAplicada ? " | promocao ativa" : ""}`
         : "Nenhum fornecedor principal definido ainda"}</span>
       <strong>${item.quantidade <= item.minimo ? "Atencao: precisa repor" : "Operacao dentro do limite"}</strong>
     `;
@@ -694,7 +846,7 @@ function renderProducts(items) {
     if (!productSuppliers.length) {
       supplierSummary.textContent = "Este item ainda nao tem fornecedor vinculado. Adicione pelo menos um para aparecer corretamente em Compras.";
     } else if (cheapestSupplier && primarySupplier && cheapestSupplier.fornecedorId !== primarySupplier.fornecedorId) {
-      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier.nome}. Melhor custo atual: ${cheapestSupplier.nome} (${formatCurrency(cheapestSupplier.custoUnitario)} por ${cheapestSupplier.unidadeUso}).`;
+      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier.nome}. Melhor custo atual: ${cheapestSupplier.nome} (${formatCurrency(getEffectiveSupplierUnitCost(cheapestSupplier))} por ${cheapestSupplier.unidadeUso}).`;
     } else {
       supplierSummary.textContent = `Fornecedor principal: ${primarySupplier?.nome || "Nao definido"} | ${productSuppliers.length} fornecedor(es) vinculado(s).`;
     }
@@ -736,9 +888,9 @@ function renderProducts(items) {
       }
 
       const fallbackSupplier = fornecedores[0];
-      const fallbackQuantity = getPackageQuantity(item);
-      const fallbackCost = getPurchaseCost(item);
-      const fallbackUnit = getUsageUnit(item);
+      const fallbackQuantity = primarySupplier?.conversao || getPackageQuantity(item);
+      const fallbackCost = primarySupplier?.custoCompra ?? getPurchaseCost(item);
+      const fallbackUnit = primarySupplier?.unidadeUso || getUsageUnit(item);
 
       appendSupplierEntry(supplierList, buildSupplierEntryFromCatalog(fallbackSupplier, {
         conversao: fallbackQuantity,
@@ -1246,6 +1398,9 @@ async function importXmlInvoices() {
     for (const note of xmlImports) {
       const importRef = doc(db, "importacoesXml", note.importId);
       const importSnapshot = await getDoc(importRef);
+      const purchaseDate = String(note.emissaoOriginal || "").slice(0, 10)
+        || new Date().toISOString().slice(0, 10);
+      const purchaseMonth = purchaseDate.slice(0, 7);
 
       if (importSnapshot.exists()) {
         ignoredNotes += 1;
@@ -1309,6 +1464,31 @@ async function importXmlInvoices() {
             inventoryByCode.set(String(matchedItem.codigoProduto).trim(), matchedItem);
           }
 
+          const purchaseRef = doc(collection(db, "comprasMensais"));
+          batch.set(purchaseRef, {
+            produtoId: matchedItem.id,
+            produtoNome: matchedItem.nome,
+            fornecedorId: supplier.id,
+            fornecedorNome: supplier.nome,
+            dataCompra: purchaseDate,
+            mesReferencia: purchaseMonth,
+            quantidadeEmbalagens: 1,
+            quantidadeUnidades: importedItem.quantidade,
+            conversao: importedPackageQuantity,
+            unidadeUso: importedUsageUnit,
+            valorEmbalagem: importedPurchaseCost,
+            valorUnitarioUso: importedItem.custoUnitario,
+            valorTotal: importedPurchaseCost,
+            promocaoAplicada: false,
+            valorNormalEmbalagem: importedPurchaseCost,
+            valorPromocionalEmbalagem: null,
+            atualizouEstoque: true,
+            observacao: `Importacao XML NF ${note.numero || "-"}`,
+            origem: "xml",
+            responsavel: profile.email,
+            criadoEm: serverTimestamp()
+          });
+
           updatedItems += 1;
           return;
         }
@@ -1347,6 +1527,31 @@ async function importXmlInvoices() {
         if (cachedProduct.codigoProduto) {
           inventoryByCode.set(String(cachedProduct.codigoProduto).trim(), cachedProduct);
         }
+
+        const purchaseRef = doc(collection(db, "comprasMensais"));
+        batch.set(purchaseRef, {
+          produtoId: newProductRef.id,
+          produtoNome: importedItem.nome,
+          fornecedorId: supplier.id,
+          fornecedorNome: supplier.nome,
+          dataCompra: purchaseDate,
+          mesReferencia: purchaseMonth,
+          quantidadeEmbalagens: 1,
+          quantidadeUnidades: importedItem.quantidade,
+          conversao: importedPackageQuantity,
+          unidadeUso: importedUsageUnit,
+          valorEmbalagem: importedPurchaseCost,
+          valorUnitarioUso: importedItem.custoUnitario,
+          valorTotal: importedPurchaseCost,
+          promocaoAplicada: false,
+          valorNormalEmbalagem: importedPurchaseCost,
+          valorPromocionalEmbalagem: null,
+          atualizouEstoque: true,
+          observacao: `Importacao XML NF ${note.numero || "-"}`,
+          origem: "xml",
+          responsavel: profile.email,
+          criadoEm: serverTimestamp()
+        });
 
         createdItems += 1;
       });
@@ -1423,6 +1628,10 @@ xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
 packageQuantityInput.addEventListener("input", updateCreateCostPreview);
 purchaseCostInput.addEventListener("input", updateCreateCostPreview);
+promotionalCostInput.addEventListener("input", updateCreateCostPreview);
+createPromotionActiveSelect.addEventListener("change", updateCreateCostPreview);
+createPromotionStartInput.addEventListener("input", updateCreateCostPreview);
+createPromotionEndInput.addEventListener("input", updateCreateCostPreview);
 addSupplierButton.addEventListener("click", () => {
   setStatus("status", "", "info");
 
@@ -1437,6 +1646,12 @@ addSupplierButton.addEventListener("click", () => {
   appendSupplierEntry(newSuppliersList, buildSupplierEntryFromCatalog(fornecedorSelecionado, {
     conversao: Math.max(1, toNumber(packageQuantityInput.value, 1)),
     custoCompra: Math.max(0, toNumber(purchaseCostInput.value, 0)),
+    custoPromocionalCompra: promotionalCostInput.value === ""
+      ? null
+      : Math.max(0, toNumber(promotionalCostInput.value, 0)),
+    promocaoAtiva: createPromotionActiveSelect.value === "sim",
+    promocaoInicio: createPromotionStartInput.value || "",
+    promocaoFim: createPromotionEndInput.value || "",
     unidadeUso: String(usageUnitInput.value || "un").trim() || "un",
     principal: principalSelecionado
   }), {
@@ -1454,8 +1669,12 @@ addSupplierButton.addEventListener("click", () => {
 
   packageQuantityInput.value = "1";
   purchaseCostInput.value = "0";
+  promotionalCostInput.value = "";
   usageUnitInput.value = "un";
   createPrimarySelect.value = "nao";
+  createPromotionActiveSelect.value = "nao";
+  createPromotionStartInput.value = "";
+  createPromotionEndInput.value = "";
   updateCreateCostPreview();
 });
 
@@ -1511,8 +1730,12 @@ form.addEventListener("submit", async (event) => {
     document.getElementById("novo_max").value = "50";
     document.getElementById("novo_conv").value = "1";
     document.getElementById("novo_custo").value = "0";
+    document.getElementById("novo_custo_promocional").value = "";
     document.getElementById("novo_unidade").value = "un";
     createPrimarySelect.value = "sim";
+    createPromotionActiveSelect.value = "nao";
+    createPromotionStartInput.value = "";
+    createPromotionEndInput.value = "";
     newSuppliersList.innerHTML = "";
     refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
     updateCreateCostPreview();

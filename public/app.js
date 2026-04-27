@@ -175,6 +175,70 @@ export function normalizePhone(value) {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+function normalizeDateValue(value) {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayDateKey(referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function isSupplierPromotionActive(entry = {}, referenceDate = new Date()) {
+  if (!entry?.promocaoAtiva) {
+    return false;
+  }
+
+  const hasPromotionalPrice = entry?.custoPromocionalCompra != null || entry?.custoPromocionalUnitario != null;
+
+  if (!hasPromotionalPrice) {
+    return false;
+  }
+
+  const today = getTodayDateKey(referenceDate);
+  const startDate = normalizeDateValue(entry?.promocaoInicio);
+  const endDate = normalizeDateValue(entry?.promocaoFim);
+
+  if (startDate && today < startDate) {
+    return false;
+  }
+
+  if (endDate && today > endDate) {
+    return false;
+  }
+
+  return true;
+}
+
+export function getEffectiveSupplierPurchaseCost(entry = {}) {
+  return Math.max(0, toNumber(entry?.custoCompraEfetivo ?? entry?.custoCompra ?? 0, 0));
+}
+
+export function getEffectiveSupplierUnitCost(entry = {}) {
+  return Math.max(0, toNumber(entry?.custoUnitarioEfetivo ?? entry?.custoUnitario ?? 0, 0));
+}
+
 function findSupplierInCatalog(candidate = {}, supplierCatalog = []) {
   const supplierId = String(candidate?.fornecedorId ?? candidate?.id ?? "").trim();
 
@@ -224,6 +288,18 @@ function normalizeProductSupplierEntry(entry = {}, product = {}, supplierCatalog
   const unitCost = entry?.custoUnitario != null
     ? Math.max(0, toNumber(entry.custoUnitario, 0))
     : calculateUnitCost(purchaseCost, packageQuantity);
+  const promotionalPurchaseCostFromUnit = entry?.custoPromocionalUnitario != null
+    ? toNumber(entry.custoPromocionalUnitario, 0) * packageQuantity
+    : null;
+  const promotionalPurchaseCost = entry?.custoPromocionalCompra != null || promotionalPurchaseCostFromUnit != null
+    ? Math.max(0, toNumber(
+      entry?.custoPromocionalCompra ?? promotionalPurchaseCostFromUnit,
+      promotionalPurchaseCostFromUnit ?? 0
+    ))
+    : null;
+  const promotionalUnitCost = promotionalPurchaseCost != null
+    ? calculateUnitCost(promotionalPurchaseCost, packageQuantity)
+    : null;
   const supplierName = String(
     entry?.nome ??
     entry?.fornecedorNome ??
@@ -237,6 +313,22 @@ function normalizeProductSupplierEntry(entry = {}, product = {}, supplierCatalog
     catalogSupplier?.telefone ??
     ""
   ).trim();
+  const promotionEnabled = Boolean(entry?.promocaoAtiva);
+  const promotionStart = normalizeDateValue(entry?.promocaoInicio);
+  const promotionEnd = normalizeDateValue(entry?.promocaoFim);
+  const promotionApplies = isSupplierPromotionActive({
+    promocaoAtiva: promotionEnabled,
+    promocaoInicio: promotionStart,
+    promocaoFim: promotionEnd,
+    custoPromocionalCompra: promotionalPurchaseCost,
+    custoPromocionalUnitario: promotionalUnitCost
+  });
+  const effectivePurchaseCost = promotionApplies && promotionalPurchaseCost != null
+    ? promotionalPurchaseCost
+    : purchaseCost;
+  const effectiveUnitCost = promotionApplies && promotionalUnitCost != null
+    ? promotionalUnitCost
+    : unitCost;
 
   return {
     fornecedorId: String(entry?.fornecedorId ?? entry?.id ?? catalogSupplier?.id ?? "").trim(),
@@ -247,6 +339,14 @@ function normalizeProductSupplierEntry(entry = {}, product = {}, supplierCatalog
     conversao: packageQuantity,
     custoCompra: purchaseCost,
     custoUnitario: unitCost,
+    custoPromocionalCompra: promotionalPurchaseCost,
+    custoPromocionalUnitario: promotionalUnitCost,
+    promocaoAtiva: promotionEnabled,
+    promocaoInicio: promotionStart,
+    promocaoFim: promotionEnd,
+    promocaoAplicada: promotionApplies,
+    custoCompraEfetivo: effectivePurchaseCost,
+    custoUnitarioEfetivo: effectiveUnitCost,
     unidadeUso: String(
       entry?.unidadeUso ??
       entry?.unidadeCompra ??
@@ -329,15 +429,13 @@ export function getCheapestProductSupplier(item, supplierCatalog = []) {
   }
 
   return [...suppliers].sort((left, right) => {
-    const unitCostDifference = toNumber(left.custoUnitario, Number.POSITIVE_INFINITY)
-      - toNumber(right.custoUnitario, Number.POSITIVE_INFINITY);
+    const unitCostDifference = getEffectiveSupplierUnitCost(left) - getEffectiveSupplierUnitCost(right);
 
     if (unitCostDifference !== 0) {
       return unitCostDifference;
     }
 
-    const purchaseCostDifference = toNumber(left.custoCompra, Number.POSITIVE_INFINITY)
-      - toNumber(right.custoCompra, Number.POSITIVE_INFINITY);
+    const purchaseCostDifference = getEffectiveSupplierPurchaseCost(left) - getEffectiveSupplierPurchaseCost(right);
 
     if (purchaseCostDifference !== 0) {
       return purchaseCostDifference;
@@ -370,7 +468,7 @@ export function getPurchaseCost(item) {
   const primarySupplier = getPrimaryProductSupplier(item);
 
   if (primarySupplier) {
-    return Math.max(0, toNumber(primarySupplier.custoCompra, 0));
+    return getEffectiveSupplierPurchaseCost(primarySupplier);
   }
 
   if (item?.custoCompra != null) {
@@ -384,7 +482,7 @@ export function getUnitCost(item) {
   const primarySupplier = getPrimaryProductSupplier(item);
 
   if (primarySupplier) {
-    return Math.max(0, toNumber(primarySupplier.custoUnitario, 0));
+    return getEffectiveSupplierUnitCost(primarySupplier);
   }
 
   if (item?.custoCompra != null) {

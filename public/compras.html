@@ -30,6 +30,95 @@
   </header>
 
   <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Registro mensal de compras</h3>
+        <p class="muted">Lance compras manuais, acompanhe o gasto do mes e, se quiser, ja atualize o estoque no mesmo registro.</p>
+      </div>
+    </div>
+
+    <form id="purchase-form" class="form-grid">
+      <div class="field-group">
+        <label for="purchase-product">Produto</label>
+        <select id="purchase-product"></select>
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-supplier">Fornecedor</label>
+        <select id="purchase-supplier"></select>
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-date">Data da compra</label>
+        <input id="purchase-date" type="date">
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-packages">Quantidade de embalagens</label>
+        <input id="purchase-packages" type="number" min="1" step="1" value="1">
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-price">Valor por embalagem</label>
+        <input id="purchase-price" type="number" min="0" step="0.01" value="0">
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-total">Valor total</label>
+        <input id="purchase-total" type="text" value="R$ 0,00" readonly>
+      </div>
+
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <label for="purchase-note">Observacao</label>
+        <textarea id="purchase-note" placeholder="Ex.: promocao do mes, compra emergencial, pedido dividido..."></textarea>
+      </div>
+
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <span>Atualizacao de estoque</span>
+        <label class="inline-choice">
+          <input id="purchase-update-stock" type="checkbox" checked>
+          <span>Dar entrada no estoque ao registrar esta compra</span>
+        </label>
+      </div>
+
+      <button id="purchase-save-button" type="submit">Registrar compra</button>
+    </form>
+
+    <div id="purchase-status" class="status info" hidden></div>
+
+    <div class="page-header" style="margin: 24px 0 12px;">
+      <div>
+        <h3>Resumo do mes</h3>
+        <p class="muted">Escolha o mes para consultar o total gasto e os itens comprados.</p>
+      </div>
+
+      <div class="field-group" style="min-width: 220px;">
+        <label for="purchase-month-filter">Mes de consulta</label>
+        <input id="purchase-month-filter" type="month">
+      </div>
+    </div>
+
+    <section class="stats-grid">
+      <article class="card">
+        <span class="muted">Total gasto no mes</span>
+        <strong id="monthly-total" class="metric-value">R$ 0,00</strong>
+      </article>
+
+      <article class="card">
+        <span class="muted">Compras registradas</span>
+        <strong id="monthly-count" class="metric-value">0</strong>
+      </article>
+
+      <article class="card">
+        <span class="muted">Produtos comprados</span>
+        <strong id="monthly-products" class="metric-value">0</strong>
+      </article>
+    </section>
+
+    <div id="monthly-purchases-list" class="list" style="margin-top: 16px;"></div>
+  </section>
+
+  <section class="panel">
     <h3>Pedidos sugeridos</h3>
     <p class="muted">Cada grupo abaixo e gerado a partir do nivel minimo e do maximo configurado no estoque.</p>
     <div id="status" class="status info" hidden></div>
@@ -39,14 +128,24 @@
 
 <script type="module">
 import { db } from "./firebase.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  serverTimestamp,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
   describeProfile,
   escapeHtml,
   formatCurrency,
   getCheapestProductSupplier,
+  getEffectiveSupplierPurchaseCost,
+  getEffectiveSupplierUnitCost,
   getPackageQuantity,
+  isSupplierPromotionActive,
   normalizeProductSuppliers,
   normalizePhone,
   requireAuth,
@@ -57,6 +156,21 @@ import {
 const list = document.getElementById("lista");
 const sendButton = document.getElementById("send-button");
 const userInfo = document.getElementById("user-info");
+const purchaseForm = document.getElementById("purchase-form");
+const purchaseProductSelect = document.getElementById("purchase-product");
+const purchaseSupplierSelect = document.getElementById("purchase-supplier");
+const purchaseDateInput = document.getElementById("purchase-date");
+const purchasePackagesInput = document.getElementById("purchase-packages");
+const purchasePriceInput = document.getElementById("purchase-price");
+const purchaseTotalInput = document.getElementById("purchase-total");
+const purchaseNoteInput = document.getElementById("purchase-note");
+const purchaseUpdateStockCheckbox = document.getElementById("purchase-update-stock");
+const purchaseStatus = document.getElementById("purchase-status");
+const purchaseMonthFilter = document.getElementById("purchase-month-filter");
+const monthlyTotal = document.getElementById("monthly-total");
+const monthlyCount = document.getElementById("monthly-count");
+const monthlyProducts = document.getElementById("monthly-products");
+const monthlyPurchasesList = document.getElementById("monthly-purchases-list");
 
 bindLogoutButton();
 
@@ -65,18 +179,187 @@ userInfo.textContent = describeProfile(profile);
 
 let pedidos = [];
 let sugestoes = [];
+let fornecedoresCatalogo = [];
+let produtosEstoque = [];
+let comprasRegistradas = [];
 
 function buildMessage(pedido) {
   const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns)`);
   return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
 }
 
-function describeSupplierOption(supplier) {
-  if (!supplier) {
-    return "Fornecedor nao definido";
+function getTodayDateValue(referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthValue(referenceDate = new Date()) {
+  return getTodayDateValue(referenceDate).slice(0, 7);
+}
+
+function getMonthKey(value) {
+  const raw = String(value ?? "").trim();
+  return raw.length >= 7 ? raw.slice(0, 7) : "";
+}
+
+function formatPurchaseDate(value) {
+  if (!value) {
+    return "Data nao informada";
   }
 
-  return `${supplier.nome} (${formatCurrency(supplier.custoUnitario)} por ${supplier.unidadeUso} | embalagem ${formatCurrency(supplier.custoCompra)})`;
+  const parsed = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(parsed);
+}
+
+function getSortedProductSuppliers(product) {
+  return normalizeProductSuppliers(product, fornecedoresCatalogo).sort((left, right) => {
+    const unitCostDifference = getEffectiveSupplierUnitCost(left) - getEffectiveSupplierUnitCost(right);
+
+    if (unitCostDifference !== 0) {
+      return unitCostDifference;
+    }
+
+    return left.nome.localeCompare(right.nome, "pt-BR");
+  });
+}
+
+function getProductById(productId) {
+  return produtosEstoque.find((item) => item.id === productId) || null;
+}
+
+function getSelectedPurchaseSupplier() {
+  const product = getProductById(purchaseProductSelect.value);
+
+  if (!product) {
+    return null;
+  }
+
+  return getSortedProductSuppliers(product).find((supplier) =>
+    supplier.fornecedorId === purchaseSupplierSelect.value
+  ) || null;
+}
+
+function updatePurchaseTotalPreview() {
+  const packageCount = Math.max(1, toNumber(purchasePackagesInput.value, 1));
+  const packagePrice = Math.max(0, toNumber(purchasePriceInput.value, 0));
+  purchaseTotalInput.value = formatCurrency(packageCount * packagePrice);
+}
+
+function applySelectedSupplierPrice() {
+  const selectedSupplier = getSelectedPurchaseSupplier();
+  purchasePriceInput.value = selectedSupplier
+    ? String(getEffectiveSupplierPurchaseCost(selectedSupplier).toFixed(2))
+    : "0";
+  updatePurchaseTotalPreview();
+}
+
+function syncPurchaseSupplierOptions(preferredSupplierId = "") {
+  purchaseSupplierSelect.innerHTML = "";
+  const product = getProductById(purchaseProductSelect.value);
+
+  if (!product) {
+    purchaseSupplierSelect.innerHTML = '<option value="">Selecione um produto</option>';
+    applySelectedSupplierPrice();
+    return;
+  }
+
+  const suppliers = getSortedProductSuppliers(product);
+
+  if (!suppliers.length) {
+    purchaseSupplierSelect.innerHTML = '<option value="">Produto sem fornecedor cadastrado</option>';
+    applySelectedSupplierPrice();
+    return;
+  }
+
+  suppliers.forEach((supplier, index) => {
+    const option = document.createElement("option");
+    option.value = supplier.fornecedorId;
+    option.selected = preferredSupplierId
+      ? supplier.fornecedorId === preferredSupplierId
+      : index === 0;
+    option.textContent = `${supplier.nome} | embalagem ${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))}${supplier.promocaoAplicada ? " | promo ativa" : ""}`;
+    purchaseSupplierSelect.appendChild(option);
+  });
+
+  applySelectedSupplierPrice();
+}
+
+function populatePurchaseProductOptions(preferredProductId = "") {
+  purchaseProductSelect.innerHTML = "";
+
+  if (!produtosEstoque.length) {
+    purchaseProductSelect.innerHTML = '<option value="">Nenhum produto cadastrado</option>';
+    syncPurchaseSupplierOptions();
+    return;
+  }
+
+  produtosEstoque
+    .slice()
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"))
+    .forEach((product, index) => {
+      const option = document.createElement("option");
+      option.value = product.id;
+      option.selected = preferredProductId ? product.id === preferredProductId : index === 0;
+      option.textContent = product.nome;
+      purchaseProductSelect.appendChild(option);
+    });
+}
+
+function renderMonthlyPurchases() {
+  const selectedMonth = purchaseMonthFilter.value || getCurrentMonthValue();
+  const filteredPurchases = comprasRegistradas
+    .filter((purchase) => getMonthKey(purchase.mesReferencia || purchase.dataCompra) === selectedMonth)
+    .sort((left, right) => {
+      const leftDate = left.dataCompra || "";
+      const rightDate = right.dataCompra || "";
+
+      if (leftDate !== rightDate) {
+        return rightDate.localeCompare(leftDate);
+      }
+
+      const leftCreated = left.criadoEm?.seconds || 0;
+      const rightCreated = right.criadoEm?.seconds || 0;
+      return rightCreated - leftCreated;
+    });
+
+  const totalSpent = filteredPurchases.reduce((sum, purchase) => sum + toNumber(purchase.valorTotal, 0), 0);
+  const uniqueProducts = new Set(filteredPurchases.map((purchase) => purchase.produtoId || purchase.produtoNome));
+
+  monthlyTotal.textContent = formatCurrency(totalSpent);
+  monthlyCount.textContent = String(filteredPurchases.length);
+  monthlyProducts.textContent = String(uniqueProducts.size);
+  monthlyPurchasesList.innerHTML = "";
+
+  if (!filteredPurchases.length) {
+    monthlyPurchasesList.innerHTML = '<div class="empty-state">Nenhuma compra registrada para o mes selecionado.</div>';
+    return;
+  }
+
+  filteredPurchases.forEach((purchase) => {
+    const article = document.createElement("article");
+    article.className = "card";
+    const sourceLabel = purchase.origem === "xml" ? "Importacao XML" : "Registro manual";
+    const stockLabel = purchase.atualizouEstoque ? "Entrou no estoque" : "Sem movimentar estoque";
+
+    article.innerHTML = `
+      <div class="summary-line">
+        <span>${escapeHtml(`${formatPurchaseDate(purchase.dataCompra)} | ${sourceLabel}`)}</span>
+        <strong>${formatCurrency(purchase.valorTotal)}</strong>
+      </div>
+      <h3 style="margin-top: 12px;">${escapeHtml(purchase.produtoNome || "Produto nao informado")}</h3>
+      <p class="muted">${escapeHtml(`${purchase.fornecedorNome || "Fornecedor nao informado"} | ${purchase.quantidadeEmbalagens || 0} embalagem(ns) | ${stockLabel}`)}</p>
+      <p class="muted">${escapeHtml(purchase.observacao || "Sem observacoes adicionais.")}</p>
+    `;
+
+    monthlyPurchasesList.appendChild(article);
+  });
 }
 
 function renderOrders(items) {
@@ -95,8 +378,13 @@ function renderOrders(items) {
       ? item.fornecedores.map((supplier) => `
         <div class="supplier-price-card${supplier.recomendado ? " best" : ""}">
           <strong>${escapeHtml(supplier.nome || "Fornecedor nao definido")}</strong>
-          <span class="supplier-price">${formatCurrency(supplier.custoUnitario)}</span>
-          <p class="muted">${escapeHtml(`Embalagem ${formatCurrency(supplier.custoCompra)} | ${supplier.conversao} ${supplier.unidadeUso} | ${supplier.qtdCompra} embalagem(ns)`)} </p>
+          <span class="supplier-price">${formatCurrency(getEffectiveSupplierUnitCost(supplier))}</span>
+          <p class="muted">${escapeHtml(`Embalagem ${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))} | ${supplier.conversao} ${supplier.unidadeUso} | ${supplier.qtdCompra} embalagem(ns)`)} </p>
+          <p class="muted">${escapeHtml(
+            supplier.promocaoAplicada && supplier.custoPromocionalCompra != null
+              ? `Promocao ativa | normal ${formatCurrency(supplier.custoCompra)} | promo ${formatCurrency(supplier.custoPromocionalCompra)}`
+              : `Preco normal ${formatCurrency(supplier.custoCompra)}`
+          )}</p>
         </div>
       `).join("")
       : '<div class="empty-state">Nenhum fornecedor cadastrado para este item.</div>';
@@ -111,22 +399,11 @@ function renderOrders(items) {
   });
 }
 
-async function loadOrders() {
-  const [supplierSnapshot, stockSnapshot] = await Promise.all([
-    getDocs(collection(db, "fornecedores")),
-    getDocs(collection(db, "estoque"))
-  ]);
-
-  const suppliers = supplierSnapshot.docs.map((document) => ({
-    id: document.id,
-    ...document.data()
-  }));
-
+function buildOrderSuggestions() {
   const grouped = new Map();
   const productSuggestions = [];
 
-  stockSnapshot.docs.forEach((document) => {
-    const item = document.data();
+  produtosEstoque.forEach((item) => {
     const quantidade = toNumber(item.quantidade, 0);
     const minimo = toNumber(item.minimo, 0);
     const maximo = Math.max(minimo, toNumber(item.maximo, 0));
@@ -135,17 +412,8 @@ async function loadOrders() {
       return;
     }
 
-    const productSuppliers = normalizeProductSuppliers(item, suppliers).sort((left, right) => {
-      const unitCostDifference = toNumber(left.custoUnitario, Number.POSITIVE_INFINITY)
-        - toNumber(right.custoUnitario, Number.POSITIVE_INFINITY);
-
-      if (unitCostDifference !== 0) {
-        return unitCostDifference;
-      }
-
-      return left.nome.localeCompare(right.nome, "pt-BR");
-    });
-    const supplierChoice = getCheapestProductSupplier(item, suppliers) || productSuppliers[0] || null;
+    const productSuppliers = getSortedProductSuppliers(item);
+    const supplierChoice = getCheapestProductSupplier(item, fornecedoresCatalogo) || productSuppliers[0] || null;
     const key = supplierChoice?.fornecedorId || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
     const falta = Math.max(0, maximo - quantidade);
     const sortedSuppliers = productSuppliers.map((supplier, index) => {
@@ -153,7 +421,8 @@ async function loadOrders() {
       return {
         ...supplier,
         qtdCompra: Math.max(1, Math.ceil(falta / packageQuantity)),
-        recomendado: index === 0
+        recomendado: index === 0,
+        promocaoAplicada: isSupplierPromotionActive(supplier)
       };
     });
     const packageQuantity = supplierChoice
@@ -195,6 +464,40 @@ async function loadOrders() {
   renderOrders(sugestoes);
 }
 
+async function loadPageData(options = {}) {
+  const { preserveProduct = true, preserveSupplier = true } = options;
+  const previousProductId = preserveProduct ? purchaseProductSelect.value : "";
+  const previousSupplierId = preserveSupplier ? purchaseSupplierSelect.value : "";
+  const [supplierSnapshot, stockSnapshot, purchaseSnapshot] = await Promise.all([
+    getDocs(collection(db, "fornecedores")),
+    getDocs(collection(db, "estoque")),
+    getDocs(collection(db, "comprasMensais"))
+  ]);
+
+  fornecedoresCatalogo = supplierSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data()
+  }));
+
+  produtosEstoque = stockSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
+    quantidade: toNumber(document.data().quantidade, 0),
+    minimo: toNumber(document.data().minimo, 0),
+    maximo: toNumber(document.data().maximo, 0)
+  }));
+
+  comprasRegistradas = purchaseSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data()
+  }));
+
+  populatePurchaseProductOptions(previousProductId);
+  syncPurchaseSupplierOptions(previousSupplierId);
+  buildOrderSuggestions();
+  renderMonthlyPurchases();
+}
+
 sendButton.addEventListener("click", () => {
   if (!pedidos.length) {
     setStatus("status", "Nao ha pedidos pendentes para enviar.", "info");
@@ -230,7 +533,103 @@ sendButton.addEventListener("click", () => {
   setStatus("status", "Nenhum pedido foi enviado porque faltam telefones validos.", "error");
 });
 
-await loadOrders();
+purchaseProductSelect.addEventListener("change", () => syncPurchaseSupplierOptions());
+purchaseSupplierSelect.addEventListener("change", applySelectedSupplierPrice);
+purchasePackagesInput.addEventListener("input", updatePurchaseTotalPreview);
+purchasePriceInput.addEventListener("input", updatePurchaseTotalPreview);
+purchaseMonthFilter.addEventListener("change", renderMonthlyPurchases);
+
+purchaseForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("purchase-status", "", "info");
+
+  const product = getProductById(purchaseProductSelect.value);
+  const supplier = getSelectedPurchaseSupplier();
+  const dataCompra = purchaseDateInput.value || getTodayDateValue();
+  const quantidadeEmbalagens = Math.max(1, toNumber(purchasePackagesInput.value, 1));
+  const valorEmbalagem = Math.max(0, toNumber(purchasePriceInput.value, 0));
+  const observacao = purchaseNoteInput.value.trim();
+
+  if (!product) {
+    setStatus("purchase-status", "Selecione um produto para registrar a compra.", "error");
+    return;
+  }
+
+  if (!supplier) {
+    setStatus("purchase-status", "Selecione um fornecedor valido para registrar a compra.", "error");
+    return;
+  }
+
+  const quantidadeUnidades = quantidadeEmbalagens * Math.max(1, toNumber(supplier.conversao, 1));
+  const valorTotal = quantidadeEmbalagens * valorEmbalagem;
+
+  try {
+    const atualizarEstoque = purchaseUpdateStockCheckbox.checked;
+
+    await addDoc(collection(db, "comprasMensais"), {
+      produtoId: product.id,
+      produtoNome: product.nome,
+      fornecedorId: supplier.fornecedorId,
+      fornecedorNome: supplier.nome,
+      dataCompra,
+      mesReferencia: getMonthKey(dataCompra),
+      quantidadeEmbalagens,
+      quantidadeUnidades,
+      conversao: supplier.conversao,
+      unidadeUso: supplier.unidadeUso,
+      valorEmbalagem,
+      valorUnitarioUso: quantidadeUnidades > 0 ? (valorTotal / quantidadeUnidades) : 0,
+      valorTotal,
+      promocaoAplicada: Boolean(supplier.promocaoAplicada),
+      valorNormalEmbalagem: supplier.custoCompra,
+      valorPromocionalEmbalagem: supplier.custoPromocionalCompra ?? null,
+      atualizouEstoque: atualizarEstoque,
+      observacao,
+      origem: "manual",
+      responsavel: profile.email,
+      criadoEm: serverTimestamp()
+    });
+
+    if (atualizarEstoque) {
+      await updateDoc(doc(db, "estoque", product.id), {
+        quantidade: Math.max(0, toNumber(product.quantidade, 0) + quantidadeUnidades),
+        atualizadoEm: serverTimestamp()
+      });
+    }
+
+    await addDoc(collection(db, "historico"), {
+      tipo: "compra_manual",
+      itemId: product.id,
+      itemNome: product.nome,
+      fornecedorNome: supplier.nome,
+      totalCompra: valorTotal,
+      responsavel: profile.email,
+      data: serverTimestamp()
+    });
+
+    purchasePackagesInput.value = "1";
+    purchaseNoteInput.value = "";
+    purchaseUpdateStockCheckbox.checked = true;
+    applySelectedSupplierPrice();
+
+    setStatus(
+      "purchase-status",
+      atualizarEstoque
+        ? "Compra registrada com sucesso e estoque atualizado."
+        : "Compra registrada com sucesso no controle mensal.",
+      "success"
+    );
+
+    await loadPageData({ preserveProduct: true, preserveSupplier: true });
+  } catch (error) {
+    console.error(error);
+    setStatus("purchase-status", error.message || "Nao foi possivel registrar a compra.", "error");
+  }
+});
+
+purchaseDateInput.value = getTodayDateValue();
+purchaseMonthFilter.value = getCurrentMonthValue();
+await loadPageData({ preserveProduct: false, preserveSupplier: false });
 </script>
 
 <footer class="footer">
