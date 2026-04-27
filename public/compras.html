@@ -44,6 +44,7 @@ import {
   bindLogoutButton,
   describeProfile,
   escapeHtml,
+  formatCurrency,
   getCheapestProductSupplier,
   getPackageQuantity,
   normalizeProductSuppliers,
@@ -69,6 +70,14 @@ function buildMessage(pedido) {
   return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
 }
 
+function describeSupplierOption(supplier) {
+  if (!supplier) {
+    return "Fornecedor nao definido";
+  }
+
+  return `${supplier.nome} (${formatCurrency(supplier.custoUnitario)} por ${supplier.unidadeUso} | embalagem ${formatCurrency(supplier.custoCompra)})`;
+}
+
 function renderOrders(items) {
   list.innerHTML = "";
   sendButton.disabled = items.length === 0;
@@ -85,13 +94,18 @@ function renderOrders(items) {
     const phoneInfo = pedido.telefone ? pedido.telefone : "Telefone nao informado";
     const supplierInfo = pedido.fornecedor || "Fornecedor nao definido";
     const orderLines = pedido.itens
-      .map((item) => `<li>${escapeHtml(item.nome)}: ${item.qtdCompra} embalagem(ns)${item.resumo ? ` | ${escapeHtml(item.resumo)}` : ""}</li>`)
+      .map((item) => `
+        <li>
+          <strong>${escapeHtml(item.nome)}</strong>: ${item.qtdCompra} embalagem(ns)${item.resumo ? ` | ${escapeHtml(item.resumo)}` : ""}
+          <div class="muted">Distribuidores cadastrados: ${escapeHtml(item.distribuidoresTexto || "Nao informado")}</div>
+        </li>
+      `)
       .join("");
 
     article.innerHTML = `
       <h3>${escapeHtml(supplierInfo)}</h3>
       <p class="muted">${escapeHtml(phoneInfo)}</p>
-      <p class="muted">${escapeHtml(pedido.descricao || "Pedido sugerido com base no menor custo cadastrado para cada item.")}</p>
+      <p class="muted">${escapeHtml(pedido.descricao || "Pedido sugerido com base no menor custo cadastrado para cada item, mas exibindo todas as opcoes cadastradas.")}</p>
       <ul class="order-items">${orderLines}</ul>
     `;
 
@@ -122,7 +136,16 @@ async function loadOrders() {
       return;
     }
 
-    const productSuppliers = normalizeProductSuppliers(item, suppliers);
+    const productSuppliers = normalizeProductSuppliers(item, suppliers).sort((left, right) => {
+      const unitCostDifference = toNumber(left.custoUnitario, Number.POSITIVE_INFINITY)
+        - toNumber(right.custoUnitario, Number.POSITIVE_INFINITY);
+
+      if (unitCostDifference !== 0) {
+        return unitCostDifference;
+      }
+
+      return left.nome.localeCompare(right.nome, "pt-BR");
+    });
     const supplierChoice = getCheapestProductSupplier(item, suppliers) || productSuppliers[0] || null;
     const key = supplierChoice?.fornecedorId || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
     const falta = Math.max(0, maximo - quantidade);
@@ -130,9 +153,12 @@ async function loadOrders() {
       ? Math.max(1, toNumber(supplierChoice.conversao, 1))
       : Math.max(1, getPackageQuantity(item));
     const qtdCompra = Math.max(1, Math.ceil(falta / packageQuantity));
+    const distributorsText = productSuppliers.length
+      ? productSuppliers.map((supplier) => describeSupplierOption(supplier)).join(" | ")
+      : "Item sem fornecedor cadastrado";
     const alternativeCount = productSuppliers.length > 1 ? productSuppliers.length - 1 : 0;
     const resumo = supplierChoice
-      ? `${packageQuantity} ${supplierChoice.unidadeUso} por embalagem | ${alternativeCount ? `${alternativeCount} alternativa(s)` : "sem alternativas"}`
+      ? `${packageQuantity} ${supplierChoice.unidadeUso} por embalagem | menor custo atual com ${supplierChoice.nome}${alternativeCount ? ` | ${alternativeCount} alternativa(s)` : ""}`
       : "Item sem fornecedor cadastrado";
 
     if (!grouped.has(key)) {
@@ -141,7 +167,7 @@ async function loadOrders() {
         telefone: supplierChoice?.telefone || "",
         telefoneNormalizado: supplierChoice?.telefoneNormalizado || normalizePhone(supplierChoice?.telefone || ""),
         descricao: supplierChoice
-          ? "Itens agrupados pelo fornecedor de menor custo cadastrado para reposicao."
+          ? "Itens agrupados pelo fornecedor de menor custo para reposicao. Cada item mostra tambem os outros distribuidores cadastrados."
           : "Itens sem fornecedor definido precisam de revisao no estoque.",
         itens: []
       });
@@ -150,7 +176,8 @@ async function loadOrders() {
     grouped.get(key).itens.push({
       nome: item.nome,
       qtdCompra,
-      resumo
+      resumo,
+      distribuidoresTexto: distributorsText
     });
   });
 
