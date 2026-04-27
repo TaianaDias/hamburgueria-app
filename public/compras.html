@@ -44,6 +44,9 @@ import {
   bindLogoutButton,
   describeProfile,
   escapeHtml,
+  getCheapestProductSupplier,
+  getPackageQuantity,
+  normalizeProductSuppliers,
   normalizePhone,
   requireAuth,
   setStatus,
@@ -62,7 +65,7 @@ userInfo.textContent = describeProfile(profile);
 let pedidos = [];
 
 function buildMessage(pedido) {
-  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra}`);
+  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns)`);
   return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
 }
 
@@ -82,12 +85,13 @@ function renderOrders(items) {
     const phoneInfo = pedido.telefone ? pedido.telefone : "Telefone nao informado";
     const supplierInfo = pedido.fornecedor || "Fornecedor nao definido";
     const orderLines = pedido.itens
-      .map((item) => `<li>${escapeHtml(item.nome)}: ${item.qtdCompra}</li>`)
+      .map((item) => `<li>${escapeHtml(item.nome)}: ${item.qtdCompra} embalagem(ns)${item.resumo ? ` | ${escapeHtml(item.resumo)}` : ""}</li>`)
       .join("");
 
     article.innerHTML = `
       <h3>${escapeHtml(supplierInfo)}</h3>
       <p class="muted">${escapeHtml(phoneInfo)}</p>
+      <p class="muted">${escapeHtml(pedido.descricao || "Pedido sugerido com base no menor custo cadastrado para cada item.")}</p>
       <ul class="order-items">${orderLines}</ul>
     `;
 
@@ -113,34 +117,40 @@ async function loadOrders() {
     const quantidade = toNumber(item.quantidade, 0);
     const minimo = toNumber(item.minimo, 0);
     const maximo = Math.max(minimo, toNumber(item.maximo, 0));
-    const conversao = Math.max(1, toNumber(item.conversao, 1));
 
     if (quantidade > minimo) {
       return;
     }
 
-    const fornecedor = suppliers.find((supplier) =>
-      supplier.id === item.fornecedorId ||
-      supplier.nome === item.fornecedorNome ||
-      supplier.nome === item.fornecedor
-    );
-
-    const key = fornecedor?.id || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
+    const productSuppliers = normalizeProductSuppliers(item, suppliers);
+    const supplierChoice = getCheapestProductSupplier(item, suppliers) || productSuppliers[0] || null;
+    const key = supplierChoice?.fornecedorId || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
     const falta = Math.max(0, maximo - quantidade);
-    const qtdCompra = Math.max(1, Math.ceil(falta / conversao));
+    const packageQuantity = supplierChoice
+      ? Math.max(1, toNumber(supplierChoice.conversao, 1))
+      : Math.max(1, getPackageQuantity(item));
+    const qtdCompra = Math.max(1, Math.ceil(falta / packageQuantity));
+    const alternativeCount = productSuppliers.length > 1 ? productSuppliers.length - 1 : 0;
+    const resumo = supplierChoice
+      ? `${packageQuantity} ${supplierChoice.unidadeUso} por embalagem | ${alternativeCount ? `${alternativeCount} alternativa(s)` : "sem alternativas"}`
+      : "Item sem fornecedor cadastrado";
 
     if (!grouped.has(key)) {
       grouped.set(key, {
-        fornecedor: fornecedor?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
-        telefone: fornecedor?.telefone || "",
-        telefoneNormalizado: fornecedor?.telefoneNormalizado || normalizePhone(fornecedor?.telefone || ""),
+        fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
+        telefone: supplierChoice?.telefone || "",
+        telefoneNormalizado: supplierChoice?.telefoneNormalizado || normalizePhone(supplierChoice?.telefone || ""),
+        descricao: supplierChoice
+          ? "Itens agrupados pelo fornecedor de menor custo cadastrado para reposicao."
+          : "Itens sem fornecedor definido precisam de revisao no estoque.",
         itens: []
       });
     }
 
     grouped.get(key).itens.push({
       nome: item.nome,
-      qtdCompra
+      qtdCompra,
+      resumo
     });
   });
 

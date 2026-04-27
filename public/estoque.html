@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao do custo unitario.</p>
+    <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao automatica do custo por unidade.</p>
     <div id="xml-status" class="status info" hidden></div>
     <div id="xml-preview" class="list" style="margin-top: 16px;"></div>
   </section>
@@ -52,7 +52,7 @@
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Novo produto</h3>
-        <p class="muted">Cadastre limites, custo unitario e fornecedor para automatizar compras e receitas.</p>
+        <p class="muted">Cadastre quantidade por embalagem e custo da compra para o sistema calcular automaticamente o custo por unidade de uso.</p>
       </div>
 
       <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
@@ -79,19 +79,52 @@
         <input id="novo_max" type="number" min="1" step="1" value="50">
       </div>
 
-      <div class="field-group">
-        <label for="novo_conv">Conversao de compra</label>
-        <input id="novo_conv" type="number" min="1" step="1" value="1">
-      </div>
+      <div class="supplier-section">
+        <div class="summary-line">
+          <span>Fornecedores do produto</span>
+          <strong>Adicione 1 ou mais opcoes e marque o principal.</strong>
+        </div>
 
-      <div class="field-group">
-        <label for="novo_custo">Custo unitario</label>
-        <input id="novo_custo" type="number" min="0" step="0.01" value="0">
-      </div>
+        <div class="form-grid" style="margin-top: 16px;">
+          <div class="field-group">
+            <label for="novo_fornecedor">Fornecedor</label>
+            <select id="novo_fornecedor"></select>
+          </div>
 
-      <div class="field-group">
-        <label for="novo_fornecedor">Fornecedor</label>
-        <select id="novo_fornecedor"></select>
+          <div class="field-group">
+            <label for="novo_conv">Quantidade por embalagem/compra</label>
+            <input id="novo_conv" type="number" min="1" step="1" value="1">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_custo">Custo da embalagem/compra</label>
+            <input id="novo_custo" type="number" min="0" step="0.01" value="0">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_unidade">Unidade de uso</label>
+            <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_custo_unitario">Custo por unidade de uso</label>
+            <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_fornecedor_principal">Fornecedor principal</label>
+            <select id="novo_fornecedor_principal">
+              <option value="sim">Sim, usar como custo padrao</option>
+              <option value="nao">Nao, deixar como alternativa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="inline-actions" style="margin-top: 16px;">
+          <button id="add-supplier-button" class="secondary" type="button">Adicionar fornecedor ao produto</button>
+        </div>
+
+        <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
       </div>
 
       <button id="create-button" type="submit">Salvar produto</button>
@@ -126,12 +159,19 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
+  calculateUnitCost,
   bindLogoutButton,
   describeProfile,
   escapeHtml,
   formatCurrency,
   formatDocumentNumber,
+  getCheapestProductSupplier,
+  getPackageQuantity,
+  getPurchaseCost,
+  getPrimaryProductSupplier,
   getUnitCost,
+  getUsageUnit,
+  normalizeProductSuppliers,
   normalizeDocumentNumber,
   normalizePhone,
   normalizeText,
@@ -149,7 +189,14 @@ const DEFAULT_IMPORTED_PRODUCT = Object.freeze({
 const form = document.getElementById("product-form");
 const resetButton = document.getElementById("reset-button");
 const createButton = document.getElementById("create-button");
+const packageQuantityInput = document.getElementById("novo_conv");
+const purchaseCostInput = document.getElementById("novo_custo");
+const usageUnitInput = document.getElementById("novo_unidade");
+const unitCostPreviewInput = document.getElementById("novo_custo_unitario");
 const supplierSelect = document.getElementById("novo_fornecedor");
+const createPrimarySelect = document.getElementById("novo_fornecedor_principal");
+const addSupplierButton = document.getElementById("add-supplier-button");
+const newSuppliersList = document.getElementById("new-suppliers-list");
 const xmlInput = document.getElementById("xml-files");
 const importXmlButton = document.getElementById("import-xml-button");
 const xmlPreview = document.getElementById("xml-preview");
@@ -164,6 +211,12 @@ userInfo.textContent = describeProfile(profile);
 let fornecedores = [];
 let produtos = [];
 let xmlImports = [];
+
+function updateCreateCostPreview() {
+  const packageQuantity = Math.max(1, toNumber(packageQuantityInput.value, 1));
+  const purchaseCost = Math.max(0, toNumber(purchaseCostInput.value, 0));
+  unitCostPreviewInput.value = formatCurrency(calculateUnitCost(purchaseCost, packageQuantity));
+}
 
 function sortByName(items) {
   return [...items].sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
@@ -194,7 +247,93 @@ async function loadSuppliers() {
   renderSupplierOptions();
 }
 
-function createField(id, label, value, type = "number", step = "1") {
+function serializeProductSuppliers(productSuppliers) {
+  return productSuppliers.map((supplier) => ({
+    fornecedorId: supplier.fornecedorId,
+    nome: supplier.nome,
+    cnpj: supplier.cnpj,
+    telefone: supplier.telefone,
+    telefoneNormalizado: supplier.telefoneNormalizado,
+    conversao: supplier.conversao,
+    custoCompra: supplier.custoCompra,
+    custoUnitario: supplier.custoUnitario,
+    unidadeUso: supplier.unidadeUso,
+    principal: supplier.principal
+  }));
+}
+
+function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
+  const normalizedSuppliers = normalizeProductSuppliers({ fornecedores: productSuppliers }, fornecedores);
+  const primarySupplier = normalizedSuppliers.find((supplier) => supplier.principal) || normalizedSuppliers[0] || null;
+
+  if (!primarySupplier) {
+    const fallbackPackageQuantity = Math.max(1, toNumber(fallbackProduct.conversao, 1));
+    const fallbackPurchaseCost = Math.max(0, toNumber(
+      fallbackProduct.custoCompra ?? getPurchaseCost(fallbackProduct),
+      getPurchaseCost(fallbackProduct)
+    ));
+    const fallbackUnitCost = Math.max(0, toNumber(
+      fallbackProduct.custoUnitario ?? fallbackProduct.custo ?? getUnitCost(fallbackProduct),
+      getUnitCost(fallbackProduct)
+    ));
+    const fallbackUsageUnit = String(
+      fallbackProduct.unidadeUso ?? fallbackProduct.unidadeCompra ?? getUsageUnit(fallbackProduct) ?? "un"
+    ).trim() || "un";
+
+    return {
+      fornecedores: [],
+      conversao: fallbackPackageQuantity,
+      custoCompra: fallbackPurchaseCost,
+      custoUnitario: fallbackUnitCost,
+      custo: fallbackUnitCost,
+      unidadeUso: fallbackUsageUnit,
+      fornecedorId: "",
+      fornecedorNome: "",
+      fornecedor: "",
+      cnpjFornecedor: ""
+    };
+  }
+
+  return {
+    fornecedores: serializeProductSuppliers(normalizedSuppliers),
+    conversao: primarySupplier.conversao,
+    custoCompra: primarySupplier.custoCompra,
+    custoUnitario: primarySupplier.custoUnitario,
+    custo: primarySupplier.custoUnitario,
+    unidadeUso: primarySupplier.unidadeUso,
+    fornecedorId: primarySupplier.fornecedorId,
+    fornecedorNome: primarySupplier.nome,
+    fornecedor: primarySupplier.nome,
+    cnpjFornecedor: primarySupplier.cnpj || ""
+  };
+}
+
+function buildSupplierEntryFromCatalog(supplier, overrides = {}) {
+  const packageQuantity = Math.max(1, toNumber(overrides.conversao, 1));
+  const purchaseCost = Math.max(0, toNumber(overrides.custoCompra, 0));
+  const usageUnit = String(overrides.unidadeUso || "un").trim() || "un";
+
+  return {
+    fornecedorId: supplier?.id || "",
+    nome: supplier?.nome || "",
+    cnpj: supplier?.cnpj || "",
+    telefone: supplier?.telefone || "",
+    telefoneNormalizado: normalizePhone(supplier?.telefone || ""),
+    conversao: packageQuantity,
+    custoCompra: purchaseCost,
+    custoUnitario: calculateUnitCost(purchaseCost, packageQuantity),
+    unidadeUso: usageUnit,
+    principal: Boolean(overrides.principal)
+  };
+}
+
+function createField(id, label, value, options = {}) {
+  const {
+    type = "number",
+    step = "1",
+    min = "0",
+    readOnly = false
+  } = options;
   const wrapper = document.createElement("label");
   wrapper.className = "field-group";
   wrapper.htmlFor = id;
@@ -204,10 +343,298 @@ function createField(id, label, value, type = "number", step = "1") {
   input.id = id;
   input.type = type;
   input.value = value;
-  input.step = step;
-  input.min = "0";
+
+  if (type === "number") {
+    input.step = step;
+    input.min = min;
+  }
+
+  input.readOnly = readOnly;
   wrapper.appendChild(input);
   return wrapper;
+}
+
+function createSupplierSelect(selectedId = "", allowEmpty = false) {
+  const select = document.createElement("select");
+  select.className = "supplier-select";
+
+  if (allowEmpty) {
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "Selecione um fornecedor";
+    emptyOption.selected = !selectedId;
+    select.appendChild(emptyOption);
+  }
+
+  if (!fornecedores.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Cadastre um fornecedor primeiro";
+    option.selected = true;
+    select.appendChild(option);
+    return select;
+  }
+
+  fornecedores.forEach((fornecedor) => {
+    const option = document.createElement("option");
+    option.value = fornecedor.id;
+    option.textContent = fornecedor.nome;
+    option.selected = fornecedor.id === selectedId;
+    select.appendChild(option);
+  });
+
+  return select;
+}
+
+function refreshSupplierListState(container, emptyMessage) {
+  const rows = container.querySelectorAll(".supplier-entry");
+  let placeholder = container.querySelector(".supplier-empty");
+
+  if (!rows.length) {
+    if (!placeholder) {
+      placeholder = document.createElement("div");
+      placeholder.className = "empty-state supplier-empty";
+      container.appendChild(placeholder);
+    }
+
+    placeholder.textContent = emptyMessage;
+    return;
+  }
+
+  if (placeholder) {
+    placeholder.remove();
+  }
+}
+
+function ensureSinglePrincipal(container) {
+  const radios = Array.from(container.querySelectorAll(".supplier-principal-radio"));
+
+  if (!radios.length) {
+    return;
+  }
+
+  if (!radios.some((radio) => radio.checked)) {
+    radios[0].checked = true;
+  }
+}
+
+function refreshSupplierEntryUnitCost(entryElement) {
+  const quantityInput = entryElement.querySelector(".supplier-package-quantity");
+  const costInput = entryElement.querySelector(".supplier-purchase-cost");
+  const unitCostInput = entryElement.querySelector(".supplier-unit-cost");
+
+  unitCostInput.value = formatCurrency(
+    calculateUnitCost(costInput.value, quantityInput.value)
+  );
+}
+
+function createSupplierEntryElement(entry = {}, options = {}) {
+  const {
+    radioName = `principal_${Date.now()}`,
+    emptyMessage = "Nenhum fornecedor vinculado."
+  } = options;
+  const wrapper = document.createElement("article");
+  wrapper.className = "card supplier-entry";
+
+  const header = document.createElement("div");
+  header.className = "summary-line";
+  header.innerHTML = `
+    <span>Fornecedor vinculado ao produto</span>
+    <strong>${entry.principal ? "Principal" : "Alternativo"}</strong>
+  `;
+
+  const fields = document.createElement("div");
+  fields.className = "form-grid";
+  fields.style.marginTop = "16px";
+
+  const supplierWrapper = document.createElement("label");
+  supplierWrapper.className = "field-group";
+  supplierWrapper.innerHTML = "<span>Fornecedor</span>";
+  const supplierField = createSupplierSelect(entry.fornecedorId || "", true);
+  supplierWrapper.appendChild(supplierField);
+  fields.appendChild(supplierWrapper);
+
+  const quantityField = createField(
+    `supplier_quantity_${Math.random().toString(36).slice(2)}`,
+    "Quantidade por embalagem",
+    Math.max(1, toNumber(entry.conversao, 1))
+  );
+  quantityField.querySelector("input").classList.add("supplier-package-quantity");
+  fields.appendChild(quantityField);
+
+  const purchaseCostField = createField(
+    `supplier_cost_${Math.random().toString(36).slice(2)}`,
+    "Custo da embalagem",
+    Math.max(0, toNumber(entry.custoCompra, 0)),
+    {
+      type: "number",
+      step: "0.01"
+    }
+  );
+  purchaseCostField.querySelector("input").classList.add("supplier-purchase-cost");
+  fields.appendChild(purchaseCostField);
+
+  const usageUnitField = createField(
+    `supplier_unit_${Math.random().toString(36).slice(2)}`,
+    "Unidade de uso",
+    entry.unidadeUso || "un",
+    {
+      type: "text"
+    }
+  );
+  usageUnitField.querySelector("input").classList.add("supplier-usage-unit");
+  fields.appendChild(usageUnitField);
+
+  const unitCostField = createField(
+    `supplier_unit_cost_${Math.random().toString(36).slice(2)}`,
+    "Custo por unidade",
+    formatCurrency(calculateUnitCost(entry.custoCompra, entry.conversao)),
+    {
+      type: "text",
+      readOnly: true
+    }
+  );
+  unitCostField.querySelector("input").classList.add("supplier-unit-cost");
+  fields.appendChild(unitCostField);
+
+  const principalWrapper = document.createElement("div");
+  principalWrapper.className = "field-group";
+  principalWrapper.innerHTML = "<span>Fornecedor principal</span>";
+
+  const principalChoice = document.createElement("label");
+  principalChoice.className = "inline-choice";
+  principalChoice.innerHTML = `
+    <input class="supplier-principal-radio" type="radio" name="${radioName}">
+    <span>Usar como custo padrao</span>
+  `;
+  const principalRadio = principalChoice.querySelector("input");
+  principalRadio.checked = Boolean(entry.principal);
+  principalWrapper.appendChild(principalChoice);
+  fields.appendChild(principalWrapper);
+
+  const actions = document.createElement("div");
+  actions.className = "inline-actions";
+  actions.style.marginTop = "16px";
+
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.className = "secondary";
+  removeButton.textContent = "Remover fornecedor";
+  removeButton.addEventListener("click", () => {
+    const container = wrapper.parentElement;
+    const wasPrincipal = principalRadio.checked;
+    wrapper.remove();
+
+    if (container) {
+      if (wasPrincipal) {
+        const fallbackRadio = container.querySelector(".supplier-principal-radio");
+
+        if (fallbackRadio) {
+          fallbackRadio.checked = true;
+        }
+      }
+
+      ensureSinglePrincipal(container);
+      refreshSupplierListState(container, emptyMessage);
+    }
+  });
+
+  actions.appendChild(removeButton);
+
+  const quantityInput = quantityField.querySelector("input");
+  const purchaseCostInput = purchaseCostField.querySelector("input");
+  quantityInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  purchaseCostInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  principalRadio.addEventListener("change", () => {
+    if (principalRadio.checked) {
+      header.querySelector("strong").textContent = "Principal";
+      const siblings = Array.from(wrapper.parentElement?.querySelectorAll(".supplier-entry") || []);
+
+      siblings.forEach((sibling) => {
+        if (sibling === wrapper) {
+          return;
+        }
+
+        sibling.querySelector(".summary-line strong").textContent = "Alternativo";
+      });
+    }
+  });
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(fields);
+  wrapper.appendChild(actions);
+
+  supplierField.addEventListener("change", () => {
+    const selectedSupplier = fornecedores.find((fornecedor) => fornecedor.id === supplierField.value);
+    const supplierLabel = header.querySelector("span");
+    supplierLabel.textContent = selectedSupplier?.nome
+      ? `Fornecedor vinculado ao produto: ${selectedSupplier.nome}`
+      : "Fornecedor vinculado ao produto";
+  });
+
+  refreshSupplierEntryUnitCost(wrapper);
+  return wrapper;
+}
+
+function appendSupplierEntry(container, entry = {}, options = {}) {
+  const row = createSupplierEntryElement(entry, options);
+  container.appendChild(row);
+  ensureSinglePrincipal(container);
+  refreshSupplierListState(container, options.emptyMessage || "Nenhum fornecedor vinculado.");
+  return row;
+}
+
+function collectSupplierEntries(container) {
+  const rows = Array.from(container.querySelectorAll(".supplier-entry"));
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const usedKeys = new Set();
+  const collected = rows.map((row) => {
+    const supplierId = row.querySelector(".supplier-select").value;
+    const selectedSupplier = fornecedores.find((fornecedor) => fornecedor.id === supplierId);
+
+    if (!selectedSupplier) {
+      throw new Error("Selecione um fornecedor valido em todas as linhas do produto.");
+    }
+
+    const duplicateKey = selectedSupplier.id
+      || normalizeDocumentNumber(selectedSupplier.cnpj)
+      || normalizeText(selectedSupplier.nome);
+
+    if (usedKeys.has(duplicateKey)) {
+      throw new Error(`O fornecedor ${selectedSupplier.nome} foi repetido no mesmo produto.`);
+    }
+
+    usedKeys.add(duplicateKey);
+
+    const conversao = Math.max(1, toNumber(
+      row.querySelector(".supplier-package-quantity").value,
+      1
+    ));
+    const custoCompra = Math.max(0, toNumber(
+      row.querySelector(".supplier-purchase-cost").value,
+      0
+    ));
+    const unidadeUso = String(
+      row.querySelector(".supplier-usage-unit").value || "un"
+    ).trim() || "un";
+
+    return buildSupplierEntryFromCatalog(selectedSupplier, {
+      conversao,
+      custoCompra,
+      unidadeUso,
+      principal: row.querySelector(".supplier-principal-radio").checked
+    });
+  });
+
+  if (collected.length && !collected.some((entry) => entry.principal)) {
+    collected[0].principal = true;
+  }
+
+  return normalizeProductSuppliers({ fornecedores: collected }, fornecedores);
 }
 
 function findSupplierMatch(candidate = {}) {
@@ -229,27 +656,6 @@ function findSupplierMatch(candidate = {}) {
   return fornecedores.find((fornecedor) => normalizeText(fornecedor.nome) === name) || null;
 }
 
-function getSupplierOption(item) {
-  if (item.fornecedorId) {
-    return fornecedores.find((fornecedor) => fornecedor.id === item.fornecedorId) || null;
-  }
-
-  if (item.cnpjFornecedor) {
-    const supplierByCnpj = fornecedores.find((fornecedor) =>
-      normalizeDocumentNumber(fornecedor.cnpj) === normalizeDocumentNumber(item.cnpjFornecedor)
-    );
-
-    if (supplierByCnpj) {
-      return supplierByCnpj;
-    }
-  }
-
-  return findSupplierMatch({
-    nome: item.fornecedorNome || item.fornecedor,
-    cnpj: item.cnpjFornecedor || ""
-  });
-}
-
 function renderProducts(items) {
   list.innerHTML = "";
 
@@ -261,8 +667,9 @@ function renderProducts(items) {
   items.forEach((item) => {
     const article = document.createElement("article");
     article.className = item.quantidade <= item.minimo ? "card critical" : "card";
-
-    const supplier = getSupplierOption(item);
+    const productSuppliers = normalizeProductSuppliers(item, fornecedores);
+    const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
+    const cheapestSupplier = getCheapestProductSupplier(item, fornecedores);
     const fields = document.createElement("div");
     fields.className = "form-grid";
     fields.style.marginTop = "16px";
@@ -270,41 +677,88 @@ function renderProducts(items) {
     fields.appendChild(createField(`qtd_${item.id}`, "Quantidade", item.quantidade));
     fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
     fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
-    fields.appendChild(createField(`conv_${item.id}`, "Conversao", item.conversao));
-    fields.appendChild(createField(`custo_${item.id}`, "Custo unitario", getUnitCost(item), "number", "0.01"));
-
-    const supplierWrapper = document.createElement("label");
-    supplierWrapper.className = "field-group";
-    supplierWrapper.htmlFor = `for_${item.id}`;
-    supplierWrapper.innerHTML = "<span>Fornecedor</span>";
-
-    const select = document.createElement("select");
-    select.id = `for_${item.id}`;
-
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
-    emptyOption.textContent = "Sem fornecedor";
-    emptyOption.selected = !supplier?.id;
-    select.appendChild(emptyOption);
-
-    fornecedores.forEach((fornecedor) => {
-      const option = document.createElement("option");
-      option.value = fornecedor.id;
-      option.textContent = fornecedor.nome;
-      option.selected = fornecedor.id === supplier?.id;
-      select.appendChild(option);
-    });
-
-    supplierWrapper.appendChild(select);
-    fields.appendChild(supplierWrapper);
 
     const summary = document.createElement("div");
     summary.className = "summary-line";
     summary.style.marginTop = "10px";
     summary.innerHTML = `
-      <span>Estoque minimo</span>
+      <span>${primarySupplier
+        ? `${formatCurrency(primarySupplier.custoCompra)} por embalagem com ${primarySupplier.conversao} ${escapeHtml(primarySupplier.unidadeUso)} | ${formatCurrency(primarySupplier.custoUnitario)} por ${escapeHtml(primarySupplier.unidadeUso)}`
+        : "Nenhum fornecedor principal definido ainda"}</span>
       <strong>${item.quantidade <= item.minimo ? "Atencao: precisa repor" : "Operacao dentro do limite"}</strong>
     `;
+
+    const supplierSummary = document.createElement("p");
+    supplierSummary.className = "muted";
+
+    if (!productSuppliers.length) {
+      supplierSummary.textContent = "Este item ainda nao tem fornecedor vinculado. Adicione pelo menos um para aparecer corretamente em Compras.";
+    } else if (cheapestSupplier && primarySupplier && cheapestSupplier.fornecedorId !== primarySupplier.fornecedorId) {
+      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier.nome}. Melhor custo atual: ${cheapestSupplier.nome} (${formatCurrency(cheapestSupplier.custoUnitario)} por ${cheapestSupplier.unidadeUso}).`;
+    } else {
+      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier?.nome || "Nao definido"} | ${productSuppliers.length} fornecedor(es) vinculado(s).`;
+    }
+
+    const supplierSection = document.createElement("div");
+    supplierSection.className = "supplier-section";
+    supplierSection.style.marginTop = "16px";
+
+    const supplierSectionHeader = document.createElement("div");
+    supplierSectionHeader.className = "summary-line";
+    supplierSectionHeader.innerHTML = `
+      <span>Fornecedores do item</span>
+      <strong>${productSuppliers.length ? `${productSuppliers.length} opcao(oes)` : "Sem fornecedores"}</strong>
+    `;
+
+    const supplierList = document.createElement("div");
+    supplierList.className = "supplier-list";
+    supplierList.style.marginTop = "16px";
+    const supplierRadioName = `principal_${item.id}`;
+    const emptySupplierMessage = "Nenhum fornecedor vinculado. Adicione um fornecedor para usar esse item na tela de compras.";
+
+    productSuppliers.forEach((supplierEntry) => {
+      appendSupplierEntry(supplierList, supplierEntry, {
+        radioName: supplierRadioName,
+        emptyMessage: emptySupplierMessage
+      });
+    });
+
+    refreshSupplierListState(supplierList, emptySupplierMessage);
+
+    const addSupplierRowButton = document.createElement("button");
+    addSupplierRowButton.type = "button";
+    addSupplierRowButton.className = "secondary";
+    addSupplierRowButton.textContent = "Adicionar fornecedor";
+    addSupplierRowButton.addEventListener("click", () => {
+      if (!fornecedores.length) {
+        setStatus("status", "Cadastre um fornecedor antes de vincular novos custos ao item.", "error");
+        return;
+      }
+
+      const fallbackSupplier = fornecedores[0];
+      const fallbackQuantity = getPackageQuantity(item);
+      const fallbackCost = getPurchaseCost(item);
+      const fallbackUnit = getUsageUnit(item);
+
+      appendSupplierEntry(supplierList, buildSupplierEntryFromCatalog(fallbackSupplier, {
+        conversao: fallbackQuantity,
+        custoCompra: fallbackCost,
+        unidadeUso: fallbackUnit,
+        principal: !supplierList.querySelector(".supplier-entry")
+      }), {
+        radioName: supplierRadioName,
+        emptyMessage: emptySupplierMessage
+      });
+    });
+
+    const supplierActions = document.createElement("div");
+    supplierActions.className = "inline-actions";
+    supplierActions.style.marginTop = "16px";
+    supplierActions.appendChild(addSupplierRowButton);
+
+    supplierSection.appendChild(supplierSectionHeader);
+    supplierSection.appendChild(supplierList);
+    supplierSection.appendChild(supplierActions);
 
     const actions = document.createElement("div");
     actions.className = "inline-actions";
@@ -314,35 +768,34 @@ function renderProducts(items) {
     saveButton.type = "button";
     saveButton.textContent = "Salvar";
     saveButton.addEventListener("click", async () => {
-      const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
-      const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
-      const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
-      const conversao = Math.max(1, toNumber(document.getElementById(`conv_${item.id}`).value, 1));
-      const custoUnitario = Math.max(0, toNumber(document.getElementById(`custo_${item.id}`).value, 0));
-      const fornecedorId = document.getElementById(`for_${item.id}`).value;
-      const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+      try {
+        const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
+        const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
+        const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
+        const nextSuppliers = collectSupplierEntries(supplierList);
 
-      if (maximo < minimo) {
-        setStatus("status", `O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`, "error");
-        return;
+        if (maximo < minimo) {
+          throw new Error(`O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`);
+        }
+
+        if (!nextSuppliers.length) {
+          throw new Error(`Adicione pelo menos um fornecedor ao item ${item.nome}.`);
+        }
+
+        await updateDoc(doc(db, "estoque", item.id), {
+          quantidade,
+          minimo,
+          maximo,
+          ...buildPrimarySupplierFields(nextSuppliers, item),
+          atualizadoEm: serverTimestamp()
+        });
+
+        setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
+        await loadProducts();
+      } catch (error) {
+        console.error(error);
+        setStatus("status", error.message || `Nao foi possivel atualizar ${item.nome}.`, "error");
       }
-
-      await updateDoc(doc(db, "estoque", item.id), {
-        quantidade,
-        minimo,
-        maximo,
-        conversao,
-        custoUnitario,
-        custo: custoUnitario,
-        fornecedorId: fornecedorSelecionado?.id || "",
-        fornecedorNome: fornecedorSelecionado?.nome || "",
-        fornecedor: fornecedorSelecionado?.nome || "",
-        cnpjFornecedor: fornecedorSelecionado?.cnpj || "",
-        atualizadoEm: serverTimestamp()
-      });
-
-      setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
-      await loadProducts();
     });
 
     const deleteButton = document.createElement("button");
@@ -371,17 +824,19 @@ function renderProducts(items) {
     actions.appendChild(saveButton);
     actions.appendChild(deleteButton);
 
-    const supplierDescription = supplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido";
-    const cnpjDescription = supplier?.cnpj || item.cnpjFornecedor
-      ? ` | CNPJ ${formatDocumentNumber(supplier?.cnpj || item.cnpjFornecedor)}`
+    const supplierDescription = primarySupplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido";
+    const cnpjDescription = primarySupplier?.cnpj || item.cnpjFornecedor
+      ? ` | CNPJ ${formatDocumentNumber(primarySupplier?.cnpj || item.cnpjFornecedor)}`
       : "";
 
     article.innerHTML = `
       <h3>${escapeHtml(item.nome)}</h3>
-      <p class="muted">Fornecedor atual: ${escapeHtml(`${supplierDescription}${cnpjDescription}`)}</p>
+      <p class="muted">Fornecedor principal atual: ${escapeHtml(`${supplierDescription}${cnpjDescription}`)}</p>
     `;
     article.appendChild(summary);
+    article.appendChild(supplierSummary);
     article.appendChild(fields);
+    article.appendChild(supplierSection);
     article.appendChild(actions);
     list.appendChild(article);
   });
@@ -397,7 +852,10 @@ async function loadProducts() {
       quantidade: toNumber(document.data().quantidade, 0),
       minimo: toNumber(document.data().minimo, 0),
       maximo: toNumber(document.data().maximo, 0),
-      conversao: Math.max(1, toNumber(document.data().conversao, 1))
+      conversao: Math.max(1, toNumber(document.data().conversao, 1)),
+      custoCompra: document.data().custoCompra,
+      unidadeUso: document.data().unidadeUso || document.data().unidadeCompra || "un",
+      fornecedores: normalizeProductSuppliers(document.data(), fornecedores)
     }))
     .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
 
@@ -600,6 +1058,58 @@ function renderXmlPreview(notes) {
   });
 }
 
+function supplierEntryMatchesSupplier(entry, supplier) {
+  if (!entry || !supplier) {
+    return false;
+  }
+
+  if (entry.fornecedorId && supplier.id && entry.fornecedorId === supplier.id) {
+    return true;
+  }
+
+  const entryCnpj = normalizeDocumentNumber(entry.cnpj);
+  const supplierCnpj = normalizeDocumentNumber(supplier.cnpj);
+
+  if (entryCnpj && supplierCnpj && entryCnpj === supplierCnpj) {
+    return true;
+  }
+
+  return normalizeText(entry.nome) === normalizeText(supplier.nome);
+}
+
+function mergeSupplierIntoProduct(product, supplier, values = {}) {
+  const currentSuppliers = normalizeProductSuppliers(product, fornecedores);
+  const nextQuantity = Math.max(1, toNumber(values.conversao, 1));
+  const nextCost = Math.max(0, toNumber(values.custoCompra, 0));
+  const nextUnit = String(values.unidadeUso || getUsageUnit(product) || "un").trim() || "un";
+  let matched = false;
+
+  const updatedSuppliers = currentSuppliers.map((entry) => {
+    if (!supplierEntryMatchesSupplier(entry, supplier)) {
+      return entry;
+    }
+
+    matched = true;
+    return buildSupplierEntryFromCatalog(supplier, {
+      conversao: nextQuantity,
+      custoCompra: nextCost,
+      unidadeUso: nextUnit,
+      principal: entry.principal
+    });
+  });
+
+  if (!matched) {
+    updatedSuppliers.push(buildSupplierEntryFromCatalog(supplier, {
+      conversao: nextQuantity,
+      custoCompra: nextCost,
+      unidadeUso: nextUnit,
+      principal: !currentSuppliers.length
+    }));
+  }
+
+  return normalizeProductSuppliers({ fornecedores: updatedSuppliers }, fornecedores);
+}
+
 async function ensureSupplierForImport(supplierData) {
   const existingSupplier = findSupplierMatch(supplierData);
 
@@ -753,37 +1263,45 @@ async function importXmlInvoices() {
 
       note.itens.forEach((importedItem) => {
         const matchedItem = findMatchingProduct(importedItem, inventoryByName, inventoryByCode);
-        const nextUnitCost = importedItem.custoUnitario > 0
-          ? importedItem.custoUnitario
-          : getUnitCost(matchedItem);
+        const importedPurchaseCost = Math.max(
+          0,
+          toNumber(importedItem.total, 0) || (toNumber(importedItem.custoUnitario, 0) * Math.max(1, toNumber(importedItem.quantidade, 1)))
+        );
+        const importedPackageQuantity = Math.max(1, toNumber(importedItem.quantidade, 1));
+        const importedUsageUnit = importedItem.unidade || matchedItem?.unidadeUso || matchedItem?.unidadeCompra || "un";
 
         if (matchedItem) {
           const nextQuantity = Math.max(0, toNumber(matchedItem.quantidade, 0) + importedItem.quantidade);
+          const nextSuppliers = mergeSupplierIntoProduct(matchedItem, supplier, {
+            conversao: importedPackageQuantity,
+            custoCompra: importedPurchaseCost,
+            unidadeUso: importedUsageUnit
+          });
+          const primarySupplierFields = buildPrimarySupplierFields(nextSuppliers, matchedItem);
 
           batch.update(doc(db, "estoque", matchedItem.id), {
             quantidade: nextQuantity,
-            custoUnitario: nextUnitCost,
-            custo: nextUnitCost,
-            unidadeCompra: importedItem.unidade || matchedItem.unidadeCompra || "",
+            ...primarySupplierFields,
+            unidadeCompra: importedUsageUnit || matchedItem.unidadeCompra || "",
             codigoProduto: importedItem.codigo || matchedItem.codigoProduto || "",
             ncm: importedItem.ncm || matchedItem.ncm || "",
-            fornecedorId: supplier.id || matchedItem.fornecedorId || "",
-            fornecedorNome: supplier.nome || matchedItem.fornecedorNome || "",
-            fornecedor: supplier.nome || matchedItem.fornecedor || "",
-            cnpjFornecedor: supplier.cnpj || matchedItem.cnpjFornecedor || "",
             atualizadoEm: serverTimestamp()
           });
 
           matchedItem.quantidade = nextQuantity;
-          matchedItem.custoUnitario = nextUnitCost;
-          matchedItem.custo = nextUnitCost;
-          matchedItem.unidadeCompra = importedItem.unidade || matchedItem.unidadeCompra || "";
+          matchedItem.fornecedores = nextSuppliers;
+          matchedItem.conversao = primarySupplierFields.conversao;
+          matchedItem.custoCompra = primarySupplierFields.custoCompra;
+          matchedItem.custoUnitario = primarySupplierFields.custoUnitario;
+          matchedItem.custo = primarySupplierFields.custo;
+          matchedItem.unidadeUso = primarySupplierFields.unidadeUso;
+          matchedItem.unidadeCompra = importedUsageUnit || matchedItem.unidadeCompra || "";
           matchedItem.codigoProduto = importedItem.codigo || matchedItem.codigoProduto || "";
           matchedItem.ncm = importedItem.ncm || matchedItem.ncm || "";
-          matchedItem.fornecedorId = supplier.id || matchedItem.fornecedorId || "";
-          matchedItem.fornecedorNome = supplier.nome || matchedItem.fornecedorNome || "";
-          matchedItem.fornecedor = supplier.nome || matchedItem.fornecedor || "";
-          matchedItem.cnpjFornecedor = supplier.cnpj || matchedItem.cnpjFornecedor || "";
+          matchedItem.fornecedorId = primarySupplierFields.fornecedorId;
+          matchedItem.fornecedorNome = primarySupplierFields.fornecedorNome;
+          matchedItem.fornecedor = primarySupplierFields.fornecedor;
+          matchedItem.cnpjFornecedor = primarySupplierFields.cnpjFornecedor;
 
           inventoryByName.set(normalizeText(matchedItem.nome), matchedItem);
 
@@ -796,22 +1314,27 @@ async function importXmlInvoices() {
         }
 
         const newProductRef = doc(collection(db, "estoque"));
+        const nextSuppliers = normalizeProductSuppliers({
+          fornecedores: [
+            buildSupplierEntryFromCatalog(supplier, {
+              conversao: importedPackageQuantity,
+              custoCompra: importedPurchaseCost,
+              unidadeUso: importedUsageUnit,
+              principal: true
+            })
+          ]
+        }, fornecedores);
+        const primarySupplierFields = buildPrimarySupplierFields(nextSuppliers);
         const newProduct = {
           nome: importedItem.nome,
           nomeNormalizado: normalizeText(importedItem.nome),
           quantidade: importedItem.quantidade,
           minimo: DEFAULT_IMPORTED_PRODUCT.minimo,
           maximo: DEFAULT_IMPORTED_PRODUCT.maximo,
-          conversao: DEFAULT_IMPORTED_PRODUCT.conversao,
-          custoUnitario: nextUnitCost,
-          custo: nextUnitCost,
-          unidadeCompra: importedItem.unidade || "",
+          ...primarySupplierFields,
+          unidadeCompra: importedUsageUnit || "",
           codigoProduto: importedItem.codigo || "",
           ncm: importedItem.ncm || "",
-          fornecedorId: supplier.id,
-          fornecedorNome: supplier.nome,
-          fornecedor: supplier.nome,
-          cnpjFornecedor: supplier.cnpj || "",
           criadoEm: serverTimestamp(),
           atualizadoEm: serverTimestamp()
         };
@@ -898,6 +1421,43 @@ async function importXmlInvoices() {
 
 xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
+packageQuantityInput.addEventListener("input", updateCreateCostPreview);
+purchaseCostInput.addEventListener("input", updateCreateCostPreview);
+addSupplierButton.addEventListener("click", () => {
+  setStatus("status", "", "info");
+
+  if (!fornecedores.length) {
+    setStatus("status", "Cadastre pelo menos um fornecedor antes de montar o produto.", "error");
+    return;
+  }
+
+  const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === supplierSelect.value) || fornecedores[0];
+  const principalSelecionado = createPrimarySelect.value !== "nao" || !newSuppliersList.querySelector(".supplier-entry");
+
+  appendSupplierEntry(newSuppliersList, buildSupplierEntryFromCatalog(fornecedorSelecionado, {
+    conversao: Math.max(1, toNumber(packageQuantityInput.value, 1)),
+    custoCompra: Math.max(0, toNumber(purchaseCostInput.value, 0)),
+    unidadeUso: String(usageUnitInput.value || "un").trim() || "un",
+    principal: principalSelecionado
+  }), {
+    radioName: "principal_novo_produto",
+    emptyMessage: "Adicione ao menos um fornecedor para salvar o produto."
+  });
+
+  if (principalSelecionado) {
+    Array.from(newSuppliersList.querySelectorAll(".supplier-entry")).forEach((row) => {
+      if (row !== newSuppliersList.lastElementChild) {
+        row.querySelector(".summary-line strong").textContent = "Alternativo";
+      }
+    });
+  }
+
+  packageQuantityInput.value = "1";
+  purchaseCostInput.value = "0";
+  usageUnitInput.value = "un";
+  createPrimarySelect.value = "nao";
+  updateCreateCostPreview();
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -907,18 +1467,9 @@ form.addEventListener("submit", async (event) => {
   const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
   const minimo = Math.max(0, toNumber(document.getElementById("novo_min").value, 0));
   const maximo = Math.max(1, toNumber(document.getElementById("novo_max").value, 1));
-  const conversao = Math.max(1, toNumber(document.getElementById("novo_conv").value, 1));
-  const custoUnitario = Math.max(0, toNumber(document.getElementById("novo_custo").value, 0));
-  const fornecedorId = supplierSelect.value;
-  const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
 
   if (!nome) {
     setStatus("status", "Informe o nome do produto.", "error");
-    return;
-  }
-
-  if (!fornecedorSelecionado) {
-    setStatus("status", "Cadastre e selecione um fornecedor antes de salvar o produto.", "error");
     return;
   }
 
@@ -937,19 +1488,19 @@ form.addEventListener("submit", async (event) => {
       throw new Error("Ja existe um produto com esse nome.");
     }
 
+    const productSuppliers = collectSupplierEntries(newSuppliersList);
+
+    if (!productSuppliers.length) {
+      throw new Error("Adicione pelo menos um fornecedor ao produto antes de salvar.");
+    }
+
     await addDoc(collection(db, "estoque"), {
       nome,
       nomeNormalizado: normalizeText(nome),
       quantidade,
       minimo,
       maximo,
-      conversao,
-      custoUnitario,
-      custo: custoUnitario,
-      fornecedorId: fornecedorSelecionado.id,
-      fornecedorNome: fornecedorSelecionado.nome,
-      fornecedor: fornecedorSelecionado.nome,
-      cnpjFornecedor: fornecedorSelecionado.cnpj || "",
+      ...buildPrimarySupplierFields(productSuppliers),
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp()
     });
@@ -960,6 +1511,11 @@ form.addEventListener("submit", async (event) => {
     document.getElementById("novo_max").value = "50";
     document.getElementById("novo_conv").value = "1";
     document.getElementById("novo_custo").value = "0";
+    document.getElementById("novo_unidade").value = "un";
+    createPrimarySelect.value = "sim";
+    newSuppliersList.innerHTML = "";
+    refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
+    updateCreateCostPreview();
 
     setStatus("status", "Produto criado com sucesso.", "success");
     await loadProducts();
@@ -1006,6 +1562,8 @@ resetButton.addEventListener("click", async () => {
 });
 
 renderXmlPreview(xmlImports);
+updateCreateCostPreview();
+refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
 await loadProducts();
 </script>
 </body>

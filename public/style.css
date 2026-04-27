@@ -346,6 +346,35 @@ pre {
   cursor: default;
 }
 
+.supplier-section {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.24);
+}
+
+.supplier-list {
+  display: grid;
+  gap: 14px;
+}
+
+.supplier-entry {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.inline-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  color: var(--text);
+}
+
+.inline-choice input {
+  width: auto;
+}
+
 .footer {
   padding: 0 20px 28px;
   text-align: center;

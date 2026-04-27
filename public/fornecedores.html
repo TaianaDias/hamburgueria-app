@@ -89,8 +89,13 @@ import {
   describeProfile,
   escapeHtml,
   formatDocumentNumber,
+  getPackageQuantity,
+  getPurchaseCost,
+  getUnitCost,
+  getUsageUnit,
   normalizeDocumentNumber,
   normalizePhone,
+  normalizeProductSuppliers,
   normalizeText,
   requireAuth,
   setStatus
@@ -110,19 +115,78 @@ let profile;
 let fornecedores = [];
 let editingSupplierId = "";
 
-function isProductLinkedToSupplier(product, supplier) {
-  if (product.fornecedorId && supplier.id && product.fornecedorId === supplier.id) {
+function supplierEntryMatchesSupplier(entry, supplier) {
+  if (entry?.fornecedorId && supplier?.id && entry.fornecedorId === supplier.id) {
     return true;
   }
 
-  const productCnpj = normalizeDocumentNumber(product.cnpjFornecedor);
-  const supplierCnpj = normalizeDocumentNumber(supplier.cnpj);
+  const productCnpj = normalizeDocumentNumber(entry?.cnpj);
+  const supplierCnpj = normalizeDocumentNumber(supplier?.cnpj);
 
   if (productCnpj && supplierCnpj && productCnpj === supplierCnpj) {
     return true;
   }
 
-  return normalizeText(product.fornecedorNome || product.fornecedor) === normalizeText(supplier.nome);
+  return normalizeText(entry?.nome) === normalizeText(supplier?.nome);
+}
+
+function serializeProductSuppliers(productSuppliers) {
+  return productSuppliers.map((entry) => ({
+    fornecedorId: entry.fornecedorId,
+    nome: entry.nome,
+    cnpj: entry.cnpj,
+    telefone: entry.telefone,
+    telefoneNormalizado: entry.telefoneNormalizado,
+    conversao: entry.conversao,
+    custoCompra: entry.custoCompra,
+    custoUnitario: entry.custoUnitario,
+    unidadeUso: entry.unidadeUso,
+    principal: entry.principal
+  }));
+}
+
+function buildStockSupplierFields(productSuppliers, fallbackProduct = {}) {
+  const primarySupplier = productSuppliers.find((entry) => entry.principal) || productSuppliers[0] || null;
+
+  if (!primarySupplier) {
+    const fallbackPackageQuantity = Math.max(1, Number(fallbackProduct.conversao ?? getPackageQuantity(fallbackProduct)) || 1);
+    const fallbackPurchaseCost = Math.max(0, Number(fallbackProduct.custoCompra ?? getPurchaseCost(fallbackProduct)) || 0);
+    const fallbackUnitCost = Math.max(0, Number(fallbackProduct.custoUnitario ?? fallbackProduct.custo ?? getUnitCost(fallbackProduct)) || 0);
+    const fallbackUsageUnit = String(
+      fallbackProduct.unidadeUso ?? fallbackProduct.unidadeCompra ?? getUsageUnit(fallbackProduct) ?? "un"
+    ).trim() || "un";
+
+    return {
+      fornecedores: [],
+      conversao: fallbackPackageQuantity,
+      custoCompra: fallbackPurchaseCost,
+      custoUnitario: fallbackUnitCost,
+      custo: fallbackUnitCost,
+      unidadeUso: fallbackUsageUnit,
+      fornecedorId: "",
+      fornecedorNome: "",
+      fornecedor: "",
+      cnpjFornecedor: ""
+    };
+  }
+
+  return {
+    fornecedores: serializeProductSuppliers(productSuppliers),
+    conversao: primarySupplier.conversao,
+    custoCompra: primarySupplier.custoCompra,
+    custoUnitario: primarySupplier.custoUnitario,
+    custo: primarySupplier.custoUnitario,
+    unidadeUso: primarySupplier.unidadeUso,
+    fornecedorId: primarySupplier.fornecedorId,
+    fornecedorNome: primarySupplier.nome,
+    fornecedor: primarySupplier.nome,
+    cnpjFornecedor: primarySupplier.cnpj || ""
+  };
+}
+
+function isProductLinkedToSupplier(product, supplier) {
+  const productSuppliers = normalizeProductSuppliers(product, fornecedores);
+  return productSuppliers.some((entry) => supplierEntryMatchesSupplier(entry, supplier));
 }
 
 function resetForm() {
@@ -161,11 +225,21 @@ async function syncLinkedProducts(supplier) {
   const batch = writeBatch(db);
 
   linkedProducts.forEach((item) => {
+    const updatedSuppliers = normalizeProductSuppliers(item, fornecedores).map((entry) => (
+      supplierEntryMatchesSupplier(entry, supplier)
+        ? {
+          ...entry,
+          fornecedorId: supplier.id,
+          nome: supplier.nome,
+          cnpj: supplier.cnpj || "",
+          telefone: supplier.telefone || "",
+          telefoneNormalizado: normalizePhone(supplier.telefone || "")
+        }
+        : entry
+    ));
+
     batch.update(doc(db, "estoque", item.id), {
-      fornecedorId: supplier.id,
-      fornecedorNome: supplier.nome,
-      fornecedor: supplier.nome,
-      cnpjFornecedor: supplier.cnpj || "",
+      ...buildStockSupplierFields(updatedSuppliers, item),
       atualizadoEm: serverTimestamp()
     });
   });
@@ -184,11 +258,17 @@ async function clearLinkedProducts(supplier) {
   const batch = writeBatch(db);
 
   linkedProducts.forEach((item) => {
+    const remainingSuppliers = normalizeProductSuppliers(item, fornecedores)
+      .filter((entry) => !supplierEntryMatchesSupplier(entry, supplier))
+      .map((entry, index, entries) => ({
+        ...entry,
+        principal: entries.some((candidate) => candidate.principal)
+          ? entry.principal
+          : index === 0
+      }));
+
     batch.update(doc(db, "estoque", item.id), {
-      fornecedorId: "",
-      fornecedorNome: "",
-      fornecedor: "",
-      cnpjFornecedor: "",
+      ...buildStockSupplierFields(remainingSuppliers, item),
       atualizadoEm: serverTimestamp()
     });
   });

@@ -137,6 +137,12 @@ export function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function calculateUnitCost(custoCompra, quantidadePorEmbalagem) {
+  const packageQuantity = Math.max(1, toNumber(quantidadePorEmbalagem, 1));
+  const purchaseCost = Math.max(0, toNumber(custoCompra, 0));
+  return purchaseCost / packageQuantity;
+}
+
 export function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -144,10 +150,6 @@ export function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
-}
-
-export function getUnitCost(item) {
-  return toNumber(item?.custoUnitario ?? item?.custo ?? 0, 0);
 }
 
 export function normalizeText(value) {
@@ -173,10 +175,247 @@ export function normalizePhone(value) {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+function findSupplierInCatalog(candidate = {}, supplierCatalog = []) {
+  const supplierId = String(candidate?.fornecedorId ?? candidate?.id ?? "").trim();
+
+  if (supplierId) {
+    const byId = supplierCatalog.find((supplier) => supplier.id === supplierId);
+
+    if (byId) {
+      return byId;
+    }
+  }
+
+  const cnpj = normalizeDocumentNumber(candidate?.cnpj ?? candidate?.cnpjFornecedor ?? "");
+
+  if (cnpj) {
+    const byDocument = supplierCatalog.find((supplier) => normalizeDocumentNumber(supplier.cnpj) === cnpj);
+
+    if (byDocument) {
+      return byDocument;
+    }
+  }
+
+  const name = normalizeText(candidate?.nome ?? candidate?.fornecedorNome ?? candidate?.fornecedor ?? "");
+
+  if (!name) {
+    return null;
+  }
+
+  return supplierCatalog.find((supplier) => normalizeText(supplier.nome) === name) || null;
+}
+
+function normalizeProductSupplierEntry(entry = {}, product = {}, supplierCatalog = []) {
+  const catalogSupplier = findSupplierInCatalog(entry, supplierCatalog);
+  const packageQuantity = Math.max(1, toNumber(
+    entry?.conversao ?? entry?.quantidadePorCompra ?? product?.conversao ?? product?.quantidadePorCompra ?? 1,
+    1
+  ));
+  const purchaseCostFromUnit = entry?.custoUnitario != null
+    ? toNumber(entry.custoUnitario, 0) * packageQuantity
+    : null;
+  const fallbackPurchaseCost = product?.custoCompra != null
+    ? toNumber(product.custoCompra, 0)
+    : toNumber(product?.custoUnitario ?? product?.custo ?? 0, 0) * packageQuantity;
+  const purchaseCost = Math.max(0, toNumber(
+    entry?.custoCompra ?? purchaseCostFromUnit ?? fallbackPurchaseCost,
+    fallbackPurchaseCost
+  ));
+  const unitCost = entry?.custoUnitario != null
+    ? Math.max(0, toNumber(entry.custoUnitario, 0))
+    : calculateUnitCost(purchaseCost, packageQuantity);
+  const supplierName = String(
+    entry?.nome ??
+    entry?.fornecedorNome ??
+    entry?.fornecedor ??
+    catalogSupplier?.nome ??
+    ""
+  ).trim();
+  const supplierPhone = String(
+    entry?.telefone ??
+    entry?.telefoneFornecedor ??
+    catalogSupplier?.telefone ??
+    ""
+  ).trim();
+
+  return {
+    fornecedorId: String(entry?.fornecedorId ?? entry?.id ?? catalogSupplier?.id ?? "").trim(),
+    nome: supplierName,
+    cnpj: normalizeDocumentNumber(entry?.cnpj ?? entry?.cnpjFornecedor ?? catalogSupplier?.cnpj ?? ""),
+    telefone: supplierPhone,
+    telefoneNormalizado: normalizePhone(entry?.telefoneNormalizado ?? supplierPhone),
+    conversao: packageQuantity,
+    custoCompra: purchaseCost,
+    custoUnitario: unitCost,
+    unidadeUso: String(
+      entry?.unidadeUso ??
+      entry?.unidadeCompra ??
+      product?.unidadeUso ??
+      product?.unidadeCompra ??
+      "un"
+    ).trim() || "un",
+    principal: Boolean(entry?.principal)
+  };
+}
+
+export function normalizeProductSuppliers(product = {}, supplierCatalog = []) {
+  const hasModernSuppliers = Array.isArray(product?.fornecedores);
+  const hasLegacySupplier = Boolean(
+    product?.fornecedorId ||
+    product?.fornecedorNome ||
+    product?.fornecedor ||
+    product?.cnpjFornecedor
+  );
+  const rawSuppliers = hasModernSuppliers
+    ? product.fornecedores
+    : hasLegacySupplier
+      ? [{
+        fornecedorId: product.fornecedorId || "",
+        nome: product.fornecedorNome || product.fornecedor || "",
+        cnpj: product.cnpjFornecedor || "",
+        conversao: product.conversao,
+        custoCompra: product.custoCompra,
+        custoUnitario: product.custoUnitario ?? product.custo,
+        unidadeUso: product.unidadeUso ?? product.unidadeCompra ?? "un",
+        principal: true
+      }]
+      : [];
+  const seen = new Set();
+  const normalized = rawSuppliers
+    .map((entry) => normalizeProductSupplierEntry(entry, product, supplierCatalog))
+    .filter((entry) => {
+      const key = entry.fornecedorId || entry.cnpj || normalizeText(entry.nome);
+
+      if (!key) {
+        return false;
+      }
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  const principalIndex = normalized.findIndex((entry) => entry.principal);
+
+  if (principalIndex >= 0) {
+    return normalized.map((entry, index) => ({
+      ...entry,
+      principal: index === principalIndex
+    }));
+  }
+
+  if (!normalized.length) {
+    return [];
+  }
+
+  return normalized.map((entry, index) => ({
+    ...entry,
+    principal: index === 0
+  }));
+}
+
+export function getPrimaryProductSupplier(item, supplierCatalog = []) {
+  const suppliers = normalizeProductSuppliers(item, supplierCatalog);
+  return suppliers.find((entry) => entry.principal) || suppliers[0] || null;
+}
+
+export function getCheapestProductSupplier(item, supplierCatalog = []) {
+  const suppliers = normalizeProductSuppliers(item, supplierCatalog);
+
+  if (!suppliers.length) {
+    return null;
+  }
+
+  return [...suppliers].sort((left, right) => {
+    const unitCostDifference = toNumber(left.custoUnitario, Number.POSITIVE_INFINITY)
+      - toNumber(right.custoUnitario, Number.POSITIVE_INFINITY);
+
+    if (unitCostDifference !== 0) {
+      return unitCostDifference;
+    }
+
+    const purchaseCostDifference = toNumber(left.custoCompra, Number.POSITIVE_INFINITY)
+      - toNumber(right.custoCompra, Number.POSITIVE_INFINITY);
+
+    if (purchaseCostDifference !== 0) {
+      return purchaseCostDifference;
+    }
+
+    return left.nome.localeCompare(right.nome, "pt-BR");
+  })[0];
+}
+
+export function summarizeProductSuppliers(item, supplierCatalog = []) {
+  const suppliers = normalizeProductSuppliers(item, supplierCatalog);
+  return {
+    suppliers,
+    primarySupplier: suppliers.find((entry) => entry.principal) || suppliers[0] || null,
+    cheapestSupplier: getCheapestProductSupplier(item, supplierCatalog)
+  };
+}
+
+export function getPackageQuantity(item) {
+  const primarySupplier = getPrimaryProductSupplier(item);
+
+  if (primarySupplier) {
+    return Math.max(1, toNumber(primarySupplier.conversao, 1));
+  }
+
+  return Math.max(1, toNumber(item?.conversao ?? item?.quantidadePorCompra ?? 1, 1));
+}
+
+export function getPurchaseCost(item) {
+  const primarySupplier = getPrimaryProductSupplier(item);
+
+  if (primarySupplier) {
+    return Math.max(0, toNumber(primarySupplier.custoCompra, 0));
+  }
+
+  if (item?.custoCompra != null) {
+    return Math.max(0, toNumber(item.custoCompra, 0));
+  }
+
+  return Math.max(0, getUnitCost(item) * getPackageQuantity(item));
+}
+
+export function getUnitCost(item) {
+  const primarySupplier = getPrimaryProductSupplier(item);
+
+  if (primarySupplier) {
+    return Math.max(0, toNumber(primarySupplier.custoUnitario, 0));
+  }
+
+  if (item?.custoCompra != null) {
+    return calculateUnitCost(item.custoCompra, getPackageQuantity(item));
+  }
+
+  return toNumber(item?.custoUnitario ?? item?.custo ?? 0, 0);
+}
+
+export function getUsageUnit(item) {
+  const primarySupplier = getPrimaryProductSupplier(item);
+
+  if (primarySupplier) {
+    return String(primarySupplier.unidadeUso || "un").trim() || "un";
+  }
+
+  return String(item?.unidadeUso ?? item?.unidadeCompra ?? "un").trim() || "un";
+}
+
 export function formatCurrency(value) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL"
+  }).format(toNumber(value, 0));
+}
+
+export function formatPercent(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
   }).format(toNumber(value, 0));
 }
 
