@@ -64,6 +64,7 @@ const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
 
 let pedidos = [];
+let sugestoes = [];
 
 function buildMessage(pedido) {
   const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns)`);
@@ -80,33 +81,30 @@ function describeSupplierOption(supplier) {
 
 function renderOrders(items) {
   list.innerHTML = "";
-  sendButton.disabled = items.length === 0;
+  sendButton.disabled = pedidos.length === 0;
 
   if (!items.length) {
     list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao neste momento.</div>';
     return;
   }
 
-  items.forEach((pedido) => {
+  items.forEach((item) => {
     const article = document.createElement("article");
     article.className = "card";
-
-    const phoneInfo = pedido.telefone ? pedido.telefone : "Telefone nao informado";
-    const supplierInfo = pedido.fornecedor || "Fornecedor nao definido";
-    const orderLines = pedido.itens
-      .map((item) => `
-        <li>
-          <strong>${escapeHtml(item.nome)}</strong>: ${item.qtdCompra} embalagem(ns)${item.resumo ? ` | ${escapeHtml(item.resumo)}` : ""}
-          <div class="muted">Distribuidores cadastrados: ${escapeHtml(item.distribuidoresTexto || "Nao informado")}</div>
-        </li>
-      `)
-      .join("");
+    const supplierColumns = item.fornecedores.length
+      ? item.fornecedores.map((supplier) => `
+        <div class="supplier-price-card${supplier.recomendado ? " best" : ""}">
+          <strong>${escapeHtml(supplier.nome || "Fornecedor nao definido")}</strong>
+          <span class="supplier-price">${formatCurrency(supplier.custoUnitario)}</span>
+          <p class="muted">${escapeHtml(`Embalagem ${formatCurrency(supplier.custoCompra)} | ${supplier.conversao} ${supplier.unidadeUso} | ${supplier.qtdCompra} embalagem(ns)`)} </p>
+        </div>
+      `).join("")
+      : '<div class="empty-state">Nenhum fornecedor cadastrado para este item.</div>';
 
     article.innerHTML = `
-      <h3>${escapeHtml(supplierInfo)}</h3>
-      <p class="muted">${escapeHtml(phoneInfo)}</p>
-      <p class="muted">${escapeHtml(pedido.descricao || "Pedido sugerido com base no menor custo cadastrado para cada item, mas exibindo todas as opcoes cadastradas.")}</p>
-      <ul class="order-items">${orderLines}</ul>
+      <h3>${escapeHtml(item.nome)}</h3>
+      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Minimo ${item.minimo} | Maximo ${item.maximo} | Reposicao sugerida ${item.repor}`)}</p>
+      <div class="supplier-price-grid">${supplierColumns}</div>
     `;
 
     list.appendChild(article);
@@ -125,6 +123,7 @@ async function loadOrders() {
   }));
 
   const grouped = new Map();
+  const productSuggestions = [];
 
   stockSnapshot.docs.forEach((document) => {
     const item = document.data();
@@ -149,43 +148,51 @@ async function loadOrders() {
     const supplierChoice = getCheapestProductSupplier(item, suppliers) || productSuppliers[0] || null;
     const key = supplierChoice?.fornecedorId || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
     const falta = Math.max(0, maximo - quantidade);
+    const sortedSuppliers = productSuppliers.map((supplier, index) => {
+      const packageQuantity = Math.max(1, toNumber(supplier.conversao, 1));
+      return {
+        ...supplier,
+        qtdCompra: Math.max(1, Math.ceil(falta / packageQuantity)),
+        recomendado: index === 0
+      };
+    });
     const packageQuantity = supplierChoice
       ? Math.max(1, toNumber(supplierChoice.conversao, 1))
       : Math.max(1, getPackageQuantity(item));
     const qtdCompra = Math.max(1, Math.ceil(falta / packageQuantity));
-    const distributorsText = productSuppliers.length
-      ? productSuppliers.map((supplier) => describeSupplierOption(supplier)).join(" | ")
-      : "Item sem fornecedor cadastrado";
-    const alternativeCount = productSuppliers.length > 1 ? productSuppliers.length - 1 : 0;
-    const resumo = supplierChoice
-      ? `${packageQuantity} ${supplierChoice.unidadeUso} por embalagem | menor custo atual com ${supplierChoice.nome}${alternativeCount ? ` | ${alternativeCount} alternativa(s)` : ""}`
-      : "Item sem fornecedor cadastrado";
 
     if (!grouped.has(key)) {
       grouped.set(key, {
         fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
         telefone: supplierChoice?.telefone || "",
         telefoneNormalizado: supplierChoice?.telefoneNormalizado || normalizePhone(supplierChoice?.telefone || ""),
-        descricao: supplierChoice
-          ? "Itens agrupados pelo fornecedor de menor custo para reposicao. Cada item mostra tambem os outros distribuidores cadastrados."
-          : "Itens sem fornecedor definido precisam de revisao no estoque.",
         itens: []
       });
     }
 
     grouped.get(key).itens.push({
       nome: item.nome,
-      qtdCompra,
-      resumo,
-      distribuidoresTexto: distributorsText
+      qtdCompra
+    });
+
+    productSuggestions.push({
+      nome: item.nome,
+      quantidade,
+      minimo,
+      maximo,
+      repor: falta,
+      fornecedores: sortedSuppliers
     });
   });
 
   pedidos = Array.from(grouped.values()).sort((left, right) =>
     left.fornecedor.localeCompare(right.fornecedor, "pt-BR")
   );
+  sugestoes = productSuggestions.sort((left, right) =>
+    left.nome.localeCompare(right.nome, "pt-BR")
+  );
 
-  renderOrders(pedidos);
+  renderOrders(sugestoes);
 }
 
 sendButton.addEventListener("click", () => {
