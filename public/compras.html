@@ -90,6 +90,33 @@
   </section>
 
   <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Lembrete do admin</h3>
+        <p class="muted">Configure o WhatsApp do admin e gere um resumo com os itens acionados por estoque minimo ou por dia programado de pedido.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label for="admin-whatsapp">WhatsApp do admin</label>
+        <input id="admin-whatsapp" type="tel" placeholder="21999999999">
+      </div>
+
+      <div class="field-group">
+        <label for="admin-reminder-preview">Resumo atual</label>
+        <input id="admin-reminder-preview" type="text" readonly value="Nenhum item pendente">
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top: 16px;">
+      <button id="send-admin-reminder" class="secondary" type="button">Enviar lembrete ao admin</button>
+    </div>
+
+    <div id="admin-reminder-status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
     <h3>Pedidos sugeridos</h3>
     <p class="muted">Cada grupo abaixo e gerado a partir do nivel minimo e do maximo configurado no estoque.</p>
     <div id="status" class="status info" hidden></div>
@@ -112,10 +139,14 @@ import {
   describeProfile,
   escapeHtml,
   formatCurrency,
+  formatWeekdayList,
   getCheapestProductSupplier,
+  getCurrentWeekdayKey,
   getEffectiveSupplierPurchaseCost,
   getEffectiveSupplierUnitCost,
   getPackageQuantity,
+  isSupplierOrderDueToday,
+  isSupplierOrderFrequencyEnabled,
   isSupplierPromotionActive,
   normalizeProductSuppliers,
   normalizePhone,
@@ -137,6 +168,10 @@ const purchaseTotalInput = document.getElementById("purchase-total");
 const purchaseNoteInput = document.getElementById("purchase-note");
 const purchaseUpdateStockCheckbox = document.getElementById("purchase-update-stock");
 const purchaseStatus = document.getElementById("purchase-status");
+const adminWhatsappInput = document.getElementById("admin-whatsapp");
+const adminReminderPreviewInput = document.getElementById("admin-reminder-preview");
+const sendAdminReminderButton = document.getElementById("send-admin-reminder");
+const adminReminderStatus = document.getElementById("admin-reminder-status");
 
 bindLogoutButton();
 
@@ -147,9 +182,10 @@ let pedidos = [];
 let sugestoes = [];
 let fornecedoresCatalogo = [];
 let produtosEstoque = [];
+const ADMIN_REMINDER_PHONE_KEY = "burgerops.admin.whatsapp";
 
 function buildMessage(pedido) {
-  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns)`);
+  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
   return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
 }
 
@@ -163,6 +199,67 @@ function getTodayDateValue(referenceDate = new Date()) {
 function getMonthKey(value) {
   const raw = String(value ?? "").trim();
   return raw.length >= 7 ? raw.slice(0, 7) : "";
+}
+
+function getStoredAdminWhatsapp() {
+  try {
+    return window.localStorage.getItem(ADMIN_REMINDER_PHONE_KEY) || "";
+  } catch (error) {
+    console.warn("Nao foi possivel ler o WhatsApp do admin salvo.", error);
+    return "";
+  }
+}
+
+function storeAdminWhatsapp(value) {
+  try {
+    window.localStorage.setItem(ADMIN_REMINDER_PHONE_KEY, value);
+  } catch (error) {
+    console.warn("Nao foi possivel salvar o WhatsApp do admin.", error);
+  }
+}
+
+function getTriggerLabel(triggers = []) {
+  if (!triggers.length) {
+    return "ajuste manual";
+  }
+
+  return triggers.join(" + ");
+}
+
+function buildAdminReminderMessage(groups) {
+  const todayLabel = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "full"
+  }).format(new Date());
+  const lines = [
+    "Lembrete de compras e pedidos",
+    todayLabel,
+    ""
+  ];
+
+  groups.forEach((group) => {
+    lines.push(`Fornecedor: ${group.fornecedor}`);
+
+    group.itens.forEach((item) => {
+      lines.push(`- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
+    });
+
+    lines.push("");
+  });
+
+  return encodeURIComponent(lines.join("\n").trim());
+}
+
+function updateAdminReminderPreview() {
+  if (!pedidos.length) {
+    adminReminderPreviewInput.value = "Nenhum item pendente";
+    sendAdminReminderButton.disabled = true;
+    return;
+  }
+
+  const supplierCount = pedidos.length;
+  const itemCount = pedidos.reduce((sum, group) => sum + group.itens.length, 0);
+  adminReminderPreviewInput.value = `${itemCount} item(ns) em ${supplierCount} fornecedor(es)`;
+  sendAdminReminderButton.disabled = false;
 }
 
 function getSortedProductSuppliers(product) {
@@ -262,9 +359,10 @@ function populatePurchaseProductOptions(preferredProductId = "") {
 function renderOrders(items) {
   list.innerHTML = "";
   sendButton.disabled = pedidos.length === 0;
+  updateAdminReminderPreview();
 
   if (!items.length) {
-    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao neste momento.</div>';
+    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao ou pedido programado neste momento.</div>';
     return;
   }
 
@@ -282,13 +380,18 @@ function renderOrders(items) {
               ? `Promocao ativa | normal ${formatCurrency(supplier.custoCompra)} | promo ${formatCurrency(supplier.custoPromocionalCompra)}`
               : `Preco normal ${formatCurrency(supplier.custoCompra)}`
           )}</p>
+          <p class="muted">${escapeHtml(
+            isSupplierOrderFrequencyEnabled(supplier)
+              ? `Pedido ${formatWeekdayList(supplier.diasPedido)} | Entrega ${formatWeekdayList(supplier.diasEntrega)} | Padrao ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)${supplier.programadoHoje ? " | pedir hoje" : ""}`
+              : "Sem frequencia programada"
+          )}</p>
         </div>
       `).join("")
       : '<div class="empty-state">Nenhum fornecedor cadastrado para este item.</div>';
 
     article.innerHTML = `
       <h3>${escapeHtml(item.nome)}</h3>
-      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Minimo ${item.minimo} | Maximo ${item.maximo} | Reposicao sugerida ${item.repor}`)}</p>
+      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Minimo ${item.minimo} | Maximo ${item.maximo} | Pedido sugerido ${item.qtdCompra} embalagem(ns) | Motivo ${getTriggerLabel(item.gatilhos)}`)}</p>
       <div class="supplier-price-grid">${supplierColumns}</div>
     `;
 
@@ -299,33 +402,69 @@ function renderOrders(items) {
 function buildOrderSuggestions() {
   const grouped = new Map();
   const productSuggestions = [];
+  const currentWeekday = getCurrentWeekdayKey(new Date());
 
   produtosEstoque.forEach((item) => {
     const quantidade = toNumber(item.quantidade, 0);
     const minimo = toNumber(item.minimo, 0);
     const maximo = Math.max(minimo, toNumber(item.maximo, 0));
+    const productSuppliers = getSortedProductSuppliers(item);
+    const falta = Math.max(0, maximo - quantidade);
+    const estoqueMinimoAtingido = quantidade <= minimo;
+    const dueSuppliers = productSuppliers.filter((supplier) => isSupplierOrderDueToday(supplier));
 
-    if (quantidade > minimo) {
+    if (!estoqueMinimoAtingido && !dueSuppliers.length) {
       return;
     }
 
-    const productSuppliers = getSortedProductSuppliers(item);
-    const supplierChoice = getCheapestProductSupplier(item, fornecedoresCatalogo) || productSuppliers[0] || null;
+    const supplierChoice = dueSuppliers[0]
+      || getCheapestProductSupplier(item, fornecedoresCatalogo)
+      || productSuppliers[0]
+      || null;
     const key = supplierChoice?.fornecedorId || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
-    const falta = Math.max(0, maximo - quantidade);
-    const sortedSuppliers = productSuppliers.map((supplier, index) => {
-      const packageQuantity = Math.max(1, toNumber(supplier.conversao, 1));
-      return {
-        ...supplier,
-        qtdCompra: Math.max(1, Math.ceil(falta / packageQuantity)),
-        recomendado: index === 0,
-        promocaoAplicada: isSupplierPromotionActive(supplier)
-      };
-    });
-    const packageQuantity = supplierChoice
+    const chosenPackageQuantity = supplierChoice
       ? Math.max(1, toNumber(supplierChoice.conversao, 1))
       : Math.max(1, getPackageQuantity(item));
-    const qtdCompra = Math.max(1, Math.ceil(falta / packageQuantity));
+    const stockBasedQuantity = Math.max(1, Math.ceil(falta / chosenPackageQuantity));
+    const defaultScheduledQuantity = supplierChoice?.frequenciaAtiva
+      ? Math.max(1, toNumber(supplierChoice.quantidadePedidoPadrao, 1))
+      : 0;
+    const qtdCompra = Math.max(
+      estoqueMinimoAtingido ? stockBasedQuantity : 0,
+      dueSuppliers.length ? defaultScheduledQuantity : 0,
+      1
+    );
+    const gatilhos = [];
+
+    if (dueSuppliers.length) {
+      gatilhos.push(`dia programado (${formatWeekdayList([currentWeekday])})`);
+    }
+
+    if (estoqueMinimoAtingido) {
+      gatilhos.push("estoque minimo");
+    }
+
+    const sortedSuppliers = productSuppliers.map((supplier, index) => {
+      const packageQuantity = Math.max(1, toNumber(supplier.conversao, 1));
+      const stockSuggestion = Math.max(1, Math.ceil(falta / packageQuantity));
+      const scheduledSuggestion = supplier.frequenciaAtiva
+        ? Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))
+        : 0;
+      const programadoHoje = isSupplierOrderDueToday(supplier);
+      return {
+        ...supplier,
+        qtdCompra: Math.max(
+          estoqueMinimoAtingido ? stockSuggestion : 0,
+          programadoHoje ? scheduledSuggestion : 0,
+          1
+        ),
+        recomendado: supplierChoice
+          ? supplier.fornecedorId === supplierChoice.fornecedorId
+          : index === 0,
+        promocaoAplicada: isSupplierPromotionActive(supplier),
+        programadoHoje
+      };
+    });
 
     if (!grouped.has(key)) {
       grouped.set(key, {
@@ -338,7 +477,8 @@ function buildOrderSuggestions() {
 
     grouped.get(key).itens.push({
       nome: item.nome,
-      qtdCompra
+      qtdCompra,
+      gatilhos
     });
 
     productSuggestions.push({
@@ -347,6 +487,8 @@ function buildOrderSuggestions() {
       minimo,
       maximo,
       repor: falta,
+      qtdCompra,
+      gatilhos,
       fornecedores: sortedSuppliers
     });
   });
@@ -421,6 +563,32 @@ sendButton.addEventListener("click", () => {
   }
 
   setStatus("status", "Nenhum pedido foi enviado porque faltam telefones validos.", "error");
+});
+
+adminWhatsappInput.addEventListener("change", () => {
+  const normalized = normalizePhone(adminWhatsappInput.value);
+  adminWhatsappInput.value = normalized;
+  storeAdminWhatsapp(normalized);
+  setStatus("admin-reminder-status", normalized ? "WhatsApp do admin salvo neste navegador." : "", "success");
+});
+
+sendAdminReminderButton.addEventListener("click", () => {
+  if (!pedidos.length) {
+    setStatus("admin-reminder-status", "Nao ha lembretes pendentes para enviar ao admin.", "info");
+    return;
+  }
+
+  const phone = normalizePhone(adminWhatsappInput.value);
+
+  if (!phone) {
+    setStatus("admin-reminder-status", "Informe o WhatsApp do admin para enviar o lembrete.", "error");
+    return;
+  }
+
+  storeAdminWhatsapp(phone);
+  const url = `https://wa.me/${phone}?text=${buildAdminReminderMessage(pedidos)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+  setStatus("admin-reminder-status", "Lembrete do admin aberto no WhatsApp.", "success");
 });
 
 purchaseProductSelect.addEventListener("change", () => syncPurchaseSupplierOptions());
@@ -520,6 +688,7 @@ purchaseForm.addEventListener("submit", async (event) => {
   }
 });
 
+adminWhatsappInput.value = getStoredAdminWhatsapp();
 purchaseDateInput.value = getTodayDateValue();
 await loadPageData({ preserveProduct: false, preserveSupplier: false });
 </script>

@@ -141,6 +141,29 @@
             <label for="novo_promocao_fim">Fim da promocao</label>
             <input id="novo_promocao_fim" type="date">
           </div>
+
+          <div class="field-group">
+            <label for="novo_frequencia_ativa">Frequencia de pedido</label>
+            <select id="novo_frequencia_ativa">
+              <option value="nao">Nao</option>
+              <option value="sim">Sim</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
+            <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
+          </div>
+
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <span>Dias para pedir</span>
+            <div id="novo_dias_pedido" class="weekday-selector"></div>
+          </div>
+
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <span>Dias de entrega</span>
+            <div id="novo_dias_entrega" class="weekday-selector"></div>
+          </div>
         </div>
 
         <div class="inline-actions" style="margin-top: 16px;">
@@ -182,10 +205,12 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
+  ORDER_WEEKDAYS,
   calculateUnitCost,
   bindLogoutButton,
   describeProfile,
   escapeHtml,
+  formatWeekdayList,
   formatCurrency,
   formatDocumentNumber,
   getCheapestProductSupplier,
@@ -198,6 +223,7 @@ import {
   getUsageUnit,
   isSupplierPromotionActive,
   normalizeProductSuppliers,
+  normalizeWeekdayList,
   normalizeDocumentNumber,
   normalizePhone,
   normalizeText,
@@ -225,6 +251,10 @@ const createPrimarySelect = document.getElementById("novo_fornecedor_principal")
 const createPromotionActiveSelect = document.getElementById("novo_promocao_ativa");
 const createPromotionStartInput = document.getElementById("novo_promocao_inicio");
 const createPromotionEndInput = document.getElementById("novo_promocao_fim");
+const createFrequencyActiveSelect = document.getElementById("novo_frequencia_ativa");
+const createOrderQuantityInput = document.getElementById("novo_qtd_pedido_padrao");
+const createOrderDaysContainer = document.getElementById("novo_dias_pedido");
+const createDeliveryDaysContainer = document.getElementById("novo_dias_entrega");
 const addSupplierButton = document.getElementById("add-supplier-button");
 const newSuppliersList = document.getElementById("new-suppliers-list");
 const xmlInput = document.getElementById("xml-files");
@@ -253,8 +283,52 @@ function updateCreateCostPreview() {
   unitCostPreviewInput.value = formatCurrency(calculateUnitCost(purchaseCost, packageQuantity));
 }
 
+function syncCreateFrequencyState() {
+  const enabled = createFrequencyActiveSelect.value === "sim";
+  createOrderQuantityInput.disabled = !enabled;
+  setWeekdaySelectorDisabled(createOrderDaysContainer, !enabled);
+  setWeekdaySelectorDisabled(createDeliveryDaysContainer, !enabled);
+}
+
 function sortByName(items) {
   return [...items].sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+}
+
+function populateWeekdaySelector(container, selectedDays = [], inputName = `weekday_${Date.now()}`) {
+  container.innerHTML = "";
+  const normalizedDays = new Set(normalizeWeekdayList(selectedDays));
+
+  ORDER_WEEKDAYS.forEach((weekday) => {
+    const label = document.createElement("label");
+    label.className = "weekday-choice";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = inputName;
+    input.value = weekday.key;
+    input.checked = normalizedDays.has(weekday.key);
+
+    const text = document.createElement("span");
+    text.textContent = weekday.label;
+
+    label.appendChild(input);
+    label.appendChild(text);
+    container.appendChild(label);
+  });
+}
+
+function readWeekdaySelector(container) {
+  return normalizeWeekdayList(
+    Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value)
+  );
+}
+
+function setWeekdaySelectorDisabled(container, disabled) {
+  container.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.disabled = disabled;
+  });
+
+  container.classList.toggle("weekday-selector-disabled", disabled);
 }
 
 function renderSupplierOptions() {
@@ -297,6 +371,10 @@ function serializeProductSuppliers(productSuppliers) {
     promocaoAtiva: Boolean(supplier.promocaoAtiva),
     promocaoInicio: supplier.promocaoInicio || "",
     promocaoFim: supplier.promocaoFim || "",
+    frequenciaAtiva: Boolean(supplier.frequenciaAtiva),
+    diasPedido: normalizeWeekdayList(supplier.diasPedido),
+    diasEntrega: normalizeWeekdayList(supplier.diasEntrega),
+    quantidadePedidoPadrao: Math.max(0, toNumber(supplier.quantidadePedidoPadrao, 0)),
     unidadeUso: supplier.unidadeUso,
     principal: supplier.principal
   }));
@@ -331,6 +409,10 @@ function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
       promocaoAtiva: false,
       promocaoInicio: "",
       promocaoFim: "",
+      frequenciaAtiva: false,
+      diasPedido: [],
+      diasEntrega: [],
+      quantidadePedidoPadrao: 0,
       unidadeUso: fallbackUsageUnit,
       fornecedorId: "",
       fornecedorNome: "",
@@ -350,6 +432,10 @@ function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
     promocaoAtiva: Boolean(primarySupplier.promocaoAtiva),
     promocaoInicio: primarySupplier.promocaoInicio || "",
     promocaoFim: primarySupplier.promocaoFim || "",
+    frequenciaAtiva: Boolean(primarySupplier.frequenciaAtiva),
+    diasPedido: normalizeWeekdayList(primarySupplier.diasPedido),
+    diasEntrega: normalizeWeekdayList(primarySupplier.diasEntrega),
+    quantidadePedidoPadrao: Math.max(0, toNumber(primarySupplier.quantidadePedidoPadrao, 0)),
     unidadeUso: primarySupplier.unidadeUso,
     fornecedorId: primarySupplier.fornecedorId,
     fornecedorNome: primarySupplier.nome,
@@ -365,6 +451,10 @@ function buildSupplierEntryFromCatalog(supplier, overrides = {}) {
     ? null
     : Math.max(0, toNumber(overrides.custoPromocionalCompra, 0));
   const usageUnit = String(overrides.unidadeUso || "un").trim() || "un";
+  const frequencyEnabled = Boolean(overrides.frequenciaAtiva);
+  const orderDays = normalizeWeekdayList(overrides.diasPedido);
+  const deliveryDays = normalizeWeekdayList(overrides.diasEntrega);
+  const defaultOrderQuantity = Math.max(0, toNumber(overrides.quantidadePedidoPadrao, 0));
 
   return {
     fornecedorId: supplier?.id || "",
@@ -382,6 +472,10 @@ function buildSupplierEntryFromCatalog(supplier, overrides = {}) {
     promocaoAtiva: Boolean(overrides.promocaoAtiva),
     promocaoInicio: String(overrides.promocaoInicio || "").trim(),
     promocaoFim: String(overrides.promocaoFim || "").trim(),
+    frequenciaAtiva: frequencyEnabled && orderDays.length > 0,
+    diasPedido: orderDays,
+    diasEntrega: deliveryDays,
+    quantidadePedidoPadrao: frequencyEnabled && orderDays.length > 0 ? Math.max(1, defaultOrderQuantity || 1) : 0,
     unidadeUso: usageUnit,
     principal: Boolean(overrides.principal)
   };
@@ -516,6 +610,41 @@ function refreshSupplierEntryUnitCost(entryElement) {
   }
 }
 
+function refreshSupplierEntryFrequencyState(entryElement) {
+  const frequencySelect = entryElement.querySelector(".supplier-frequency-active");
+  const orderQuantityInput = entryElement.querySelector(".supplier-order-quantity");
+  const orderDaysContainer = entryElement.querySelector(".supplier-order-days");
+  const deliveryDaysContainer = entryElement.querySelector(".supplier-delivery-days");
+  const helper = entryElement.querySelector(".supplier-frequency-helper");
+  const enabled = frequencySelect?.value === "sim";
+
+  if (orderQuantityInput) {
+    orderQuantityInput.disabled = !enabled;
+  }
+
+  if (orderDaysContainer) {
+    setWeekdaySelectorDisabled(orderDaysContainer, !enabled);
+  }
+
+  if (deliveryDaysContainer) {
+    setWeekdaySelectorDisabled(deliveryDaysContainer, !enabled);
+  }
+
+  if (!helper) {
+    return;
+  }
+
+  if (!enabled) {
+    helper.textContent = "Sem frequencia programada para este fornecedor.";
+    return;
+  }
+
+  const orderDays = formatWeekdayList(readWeekdaySelector(orderDaysContainer));
+  const deliveryDays = formatWeekdayList(readWeekdaySelector(deliveryDaysContainer));
+  const quantity = Math.max(1, toNumber(orderQuantityInput?.value, 1));
+  helper.textContent = `Pedido: ${orderDays} | Entrega: ${deliveryDays} | Qtd. padrao ${quantity} embalagem(ns)`;
+}
+
 function createSupplierEntryElement(entry = {}, options = {}) {
   const {
     radioName = `principal_${Date.now()}`,
@@ -632,6 +761,55 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   promotionEndField.querySelector("input").classList.add("supplier-promotion-end");
   fields.appendChild(promotionEndField);
 
+  const frequencyActiveWrapper = document.createElement("label");
+  frequencyActiveWrapper.className = "field-group";
+  frequencyActiveWrapper.innerHTML = "<span>Tem frequencia de pedido?</span>";
+  const frequencyActiveField = document.createElement("select");
+  frequencyActiveField.className = "supplier-frequency-active";
+  frequencyActiveField.innerHTML = `
+    <option value="nao">Nao</option>
+    <option value="sim">Sim</option>
+  `;
+  frequencyActiveField.value = entry.frequenciaAtiva ? "sim" : "nao";
+  frequencyActiveWrapper.appendChild(frequencyActiveField);
+  fields.appendChild(frequencyActiveWrapper);
+
+  const orderQuantityField = createField(
+    `supplier_order_quantity_${Math.random().toString(36).slice(2)}`,
+    "Quantidade padrao por pedido",
+    Math.max(1, toNumber(entry.quantidadePedidoPadrao, 1))
+  );
+  orderQuantityField.querySelector("input").classList.add("supplier-order-quantity");
+  fields.appendChild(orderQuantityField);
+
+  const orderDaysWrapper = document.createElement("div");
+  orderDaysWrapper.className = "field-group";
+  orderDaysWrapper.style.gridColumn = "1 / -1";
+  orderDaysWrapper.innerHTML = "<span>Dias para pedir</span>";
+  const orderDaysField = document.createElement("div");
+  orderDaysField.className = "weekday-selector supplier-order-days";
+  populateWeekdaySelector(
+    orderDaysField,
+    entry.diasPedido || [],
+    `order_days_${Math.random().toString(36).slice(2)}`
+  );
+  orderDaysWrapper.appendChild(orderDaysField);
+  fields.appendChild(orderDaysWrapper);
+
+  const deliveryDaysWrapper = document.createElement("div");
+  deliveryDaysWrapper.className = "field-group";
+  deliveryDaysWrapper.style.gridColumn = "1 / -1";
+  deliveryDaysWrapper.innerHTML = "<span>Dias de entrega</span>";
+  const deliveryDaysField = document.createElement("div");
+  deliveryDaysField.className = "weekday-selector supplier-delivery-days";
+  populateWeekdaySelector(
+    deliveryDaysField,
+    entry.diasEntrega || [],
+    `delivery_days_${Math.random().toString(36).slice(2)}`
+  );
+  deliveryDaysWrapper.appendChild(deliveryDaysField);
+  fields.appendChild(deliveryDaysWrapper);
+
   const principalWrapper = document.createElement("div");
   principalWrapper.className = "field-group";
   principalWrapper.innerHTML = "<span>Fornecedor principal</span>";
@@ -654,6 +832,10 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   const costHelper = document.createElement("p");
   costHelper.className = "muted supplier-cost-helper";
   costHelper.style.margin = "14px 0 0";
+
+  const frequencyHelper = document.createElement("p");
+  frequencyHelper.className = "muted supplier-frequency-helper";
+  frequencyHelper.style.margin = "10px 0 0";
 
   const removeButton = document.createElement("button");
   removeButton.type = "button";
@@ -683,12 +865,21 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   const quantityInput = quantityField.querySelector("input");
   const purchaseCostInput = purchaseCostField.querySelector("input");
   const promotionalCostEntryInput = promotionalCostField.querySelector("input");
+  const orderQuantityInput = orderQuantityField.querySelector("input");
   quantityInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   purchaseCostInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   promotionalCostEntryInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   promotionActiveField.addEventListener("change", () => refreshSupplierEntryUnitCost(wrapper));
   promotionStartField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   promotionEndField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  frequencyActiveField.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+  orderQuantityInput.addEventListener("input", () => refreshSupplierEntryFrequencyState(wrapper));
+  orderDaysField.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+  });
+  deliveryDaysField.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+  });
   principalRadio.addEventListener("change", () => {
     if (principalRadio.checked) {
       header.querySelector("strong").textContent = "Principal";
@@ -707,6 +898,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   wrapper.appendChild(header);
   wrapper.appendChild(fields);
   wrapper.appendChild(costHelper);
+  wrapper.appendChild(frequencyHelper);
   wrapper.appendChild(actions);
 
   supplierField.addEventListener("change", () => {
@@ -718,6 +910,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   });
 
   refreshSupplierEntryUnitCost(wrapper);
+  refreshSupplierEntryFrequencyState(wrapper);
   return wrapper;
 }
 
@@ -769,6 +962,21 @@ function collectSupplierEntries(container) {
     const unidadeUso = String(
       row.querySelector(".supplier-usage-unit").value || "un"
     ).trim() || "un";
+    const frequenciaAtiva = row.querySelector(".supplier-frequency-active").value === "sim";
+    const diasPedido = readWeekdaySelector(row.querySelector(".supplier-order-days"));
+    const diasEntrega = readWeekdaySelector(row.querySelector(".supplier-delivery-days"));
+    const quantidadePedidoPadrao = Math.max(1, toNumber(
+      row.querySelector(".supplier-order-quantity").value,
+      1
+    ));
+
+    if (frequenciaAtiva && !diasPedido.length) {
+      throw new Error(`Defina pelo menos um dia de pedido para o fornecedor ${selectedSupplier.nome}.`);
+    }
+
+    if (frequenciaAtiva && !diasEntrega.length) {
+      throw new Error(`Defina pelo menos um dia de entrega para o fornecedor ${selectedSupplier.nome}.`);
+    }
 
     return buildSupplierEntryFromCatalog(selectedSupplier, {
       conversao,
@@ -777,6 +985,10 @@ function collectSupplierEntries(container) {
       promocaoAtiva: row.querySelector(".supplier-promotion-active").value === "sim",
       promocaoInicio: row.querySelector(".supplier-promotion-start").value || "",
       promocaoFim: row.querySelector(".supplier-promotion-end").value || "",
+      frequenciaAtiva,
+      diasPedido,
+      diasEntrega,
+      quantidadePedidoPadrao,
       unidadeUso,
       principal: row.querySelector(".supplier-principal-radio").checked
     });
@@ -822,6 +1034,7 @@ function renderProducts(items) {
     const productSuppliers = normalizeProductSuppliers(item, fornecedores);
     const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
     const cheapestSupplier = getCheapestProductSupplier(item, fornecedores);
+    const scheduledSuppliers = productSuppliers.filter((supplier) => supplier.frequenciaAtiva);
     const fields = document.createElement("div");
     fields.className = "form-grid";
     fields.style.marginTop = "16px";
@@ -850,6 +1063,14 @@ function renderProducts(items) {
     } else {
       supplierSummary.textContent = `Fornecedor principal: ${primarySupplier?.nome || "Nao definido"} | ${productSuppliers.length} fornecedor(es) vinculado(s).`;
     }
+
+    const frequencySummary = document.createElement("p");
+    frequencySummary.className = "muted";
+    frequencySummary.textContent = scheduledSuppliers.length
+      ? scheduledSuppliers
+        .map((supplier) => `${supplier.nome}: pedir ${formatWeekdayList(supplier.diasPedido)} | entregar ${formatWeekdayList(supplier.diasEntrega)} | ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)`)
+        .join(" | ")
+      : "Nenhuma frequencia de pedido cadastrada para este item.";
 
     const supplierSection = document.createElement("div");
     supplierSection.className = "supplier-section";
@@ -987,6 +1208,7 @@ function renderProducts(items) {
     `;
     article.appendChild(summary);
     article.appendChild(supplierSummary);
+    article.appendChild(frequencySummary);
     article.appendChild(fields);
     article.appendChild(supplierSection);
     article.appendChild(actions);
@@ -1245,6 +1467,14 @@ function mergeSupplierIntoProduct(product, supplier, values = {}) {
     return buildSupplierEntryFromCatalog(supplier, {
       conversao: nextQuantity,
       custoCompra: nextCost,
+      custoPromocionalCompra: entry.custoPromocionalCompra,
+      promocaoAtiva: entry.promocaoAtiva,
+      promocaoInicio: entry.promocaoInicio,
+      promocaoFim: entry.promocaoFim,
+      frequenciaAtiva: entry.frequenciaAtiva,
+      diasPedido: entry.diasPedido,
+      diasEntrega: entry.diasEntrega,
+      quantidadePedidoPadrao: entry.quantidadePedidoPadrao,
       unidadeUso: nextUnit,
       principal: entry.principal
     });
@@ -1636,11 +1866,22 @@ promotionalCostInput.addEventListener("input", updateCreateCostPreview);
 createPromotionActiveSelect.addEventListener("change", updateCreateCostPreview);
 createPromotionStartInput.addEventListener("input", updateCreateCostPreview);
 createPromotionEndInput.addEventListener("input", updateCreateCostPreview);
+createFrequencyActiveSelect.addEventListener("change", syncCreateFrequencyState);
 addSupplierButton.addEventListener("click", () => {
   setStatus("status", "", "info");
 
   if (!fornecedores.length) {
     setStatus("status", "Cadastre pelo menos um fornecedor antes de montar o produto.", "error");
+    return;
+  }
+
+  if (createFrequencyActiveSelect.value === "sim" && !readWeekdaySelector(createOrderDaysContainer).length) {
+    setStatus("status", "Selecione pelo menos um dia para pedir quando a frequencia estiver ativa.", "error");
+    return;
+  }
+
+  if (createFrequencyActiveSelect.value === "sim" && !readWeekdaySelector(createDeliveryDaysContainer).length) {
+    setStatus("status", "Selecione pelo menos um dia de entrega quando a frequencia estiver ativa.", "error");
     return;
   }
 
@@ -1656,6 +1897,10 @@ addSupplierButton.addEventListener("click", () => {
     promocaoAtiva: createPromotionActiveSelect.value === "sim",
     promocaoInicio: createPromotionStartInput.value || "",
     promocaoFim: createPromotionEndInput.value || "",
+    frequenciaAtiva: createFrequencyActiveSelect.value === "sim",
+    diasPedido: readWeekdaySelector(createOrderDaysContainer),
+    diasEntrega: readWeekdaySelector(createDeliveryDaysContainer),
+    quantidadePedidoPadrao: Math.max(1, toNumber(createOrderQuantityInput.value, 1)),
     unidadeUso: String(usageUnitInput.value || "un").trim() || "un",
     principal: principalSelecionado
   }), {
@@ -1679,6 +1924,11 @@ addSupplierButton.addEventListener("click", () => {
   createPromotionActiveSelect.value = "nao";
   createPromotionStartInput.value = "";
   createPromotionEndInput.value = "";
+  createFrequencyActiveSelect.value = "nao";
+  createOrderQuantityInput.value = "1";
+  populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+  populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
+  syncCreateFrequencyState();
   updateCreateCostPreview();
 });
 
@@ -1740,6 +1990,11 @@ form.addEventListener("submit", async (event) => {
     createPromotionActiveSelect.value = "nao";
     createPromotionStartInput.value = "";
     createPromotionEndInput.value = "";
+    createFrequencyActiveSelect.value = "nao";
+    createOrderQuantityInput.value = "1";
+    populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+    populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
+    syncCreateFrequencyState();
     newSuppliersList.innerHTML = "";
     refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
     updateCreateCostPreview();
@@ -1789,7 +2044,10 @@ resetButton.addEventListener("click", async () => {
 });
 
 renderXmlPreview(xmlImports);
+populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
 updateCreateCostPreview();
+syncCreateFrequencyState();
 refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
 await loadProducts();
 </script>

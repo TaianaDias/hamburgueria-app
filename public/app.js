@@ -205,6 +205,75 @@ function getTodayDateKey(referenceDate = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+export const ORDER_WEEKDAYS = Object.freeze([
+  { key: "seg", label: "Seg", fullLabel: "Segunda", jsDay: 1 },
+  { key: "ter", label: "Ter", fullLabel: "Terca", jsDay: 2 },
+  { key: "qua", label: "Qua", fullLabel: "Quarta", jsDay: 3 },
+  { key: "qui", label: "Qui", fullLabel: "Quinta", jsDay: 4 },
+  { key: "sex", label: "Sex", fullLabel: "Sexta", jsDay: 5 },
+  { key: "sab", label: "Sab", fullLabel: "Sabado", jsDay: 6 },
+  { key: "dom", label: "Dom", fullLabel: "Domingo", jsDay: 0 }
+]);
+
+const ORDER_WEEKDAY_KEYS = new Map(ORDER_WEEKDAYS.map((entry) => [entry.key, entry]));
+
+export function normalizeWeekdayList(values = []) {
+  const rawValues = Array.isArray(values)
+    ? values
+    : String(values ?? "")
+      .split(/[,\s;|/]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  const selected = new Set();
+
+  rawValues.forEach((value) => {
+    const normalizedValue = normalizeText(value).slice(0, 3);
+
+    for (const weekday of ORDER_WEEKDAYS) {
+      if (normalizeText(weekday.key) === normalizedValue || normalizeText(weekday.fullLabel).startsWith(normalizedValue)) {
+        selected.add(weekday.key);
+      }
+    }
+  });
+
+  return ORDER_WEEKDAYS
+    .map((weekday) => weekday.key)
+    .filter((key) => selected.has(key));
+}
+
+export function formatWeekdayList(values = [], format = "short") {
+  const selectedDays = normalizeWeekdayList(values);
+
+  if (!selectedDays.length) {
+    return "Nao definido";
+  }
+
+  return selectedDays
+    .map((key) => {
+      const weekday = ORDER_WEEKDAY_KEYS.get(key);
+      return format === "long" ? weekday?.fullLabel || key : weekday?.label || key;
+    })
+    .join(", ");
+}
+
+export function getCurrentWeekdayKey(referenceDate = new Date()) {
+  const weekday = ORDER_WEEKDAYS.find((entry) => entry.jsDay === referenceDate.getDay());
+  return weekday?.key || "";
+}
+
+export function isSupplierOrderFrequencyEnabled(entry = {}) {
+  return Boolean(entry?.frequenciaAtiva) && normalizeWeekdayList(entry?.diasPedido).length > 0;
+}
+
+export function isSupplierOrderDueToday(entry = {}, referenceDate = new Date()) {
+  if (!isSupplierOrderFrequencyEnabled(entry)) {
+    return false;
+  }
+
+  const currentWeekday = getCurrentWeekdayKey(referenceDate);
+  return normalizeWeekdayList(entry?.diasPedido).includes(currentWeekday);
+}
+
 export function isSupplierPromotionActive(entry = {}, referenceDate = new Date()) {
   if (!entry?.promocaoAtiva) {
     return false;
@@ -347,6 +416,10 @@ function normalizeProductSupplierEntry(entry = {}, product = {}, supplierCatalog
     promocaoAplicada: promotionApplies,
     custoCompraEfetivo: effectivePurchaseCost,
     custoUnitarioEfetivo: effectiveUnitCost,
+    frequenciaAtiva: Boolean(entry?.frequenciaAtiva),
+    diasPedido: normalizeWeekdayList(entry?.diasPedido),
+    diasEntrega: normalizeWeekdayList(entry?.diasEntrega),
+    quantidadePedidoPadrao: Math.max(0, toNumber(entry?.quantidadePedidoPadrao, 0)),
     unidadeUso: String(
       entry?.unidadeUso ??
       entry?.unidadeCompra ??
