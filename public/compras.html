@@ -24,6 +24,7 @@
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="analise-compras.html">Analise</a>
       <button id="send-button" type="button">Enviar pedidos</button>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
@@ -347,6 +348,13 @@ function renderMonthlyPurchases() {
     article.className = "card";
     const sourceLabel = purchase.origem === "xml" ? "Importacao XML" : "Registro manual";
     const stockLabel = purchase.atualizouEstoque ? "Entrou no estoque" : "Sem movimentar estoque";
+    const discountValue = Math.max(0, toNumber(
+      purchase.descontoTotal,
+      Math.max(
+        0,
+        toNumber(purchase.valorReferenciaTotal, 0) - toNumber(purchase.valorTotal, 0)
+      )
+    ));
 
     article.innerHTML = `
       <div class="summary-line">
@@ -355,6 +363,7 @@ function renderMonthlyPurchases() {
       </div>
       <h3 style="margin-top: 12px;">${escapeHtml(purchase.produtoNome || "Produto nao informado")}</h3>
       <p class="muted">${escapeHtml(`${purchase.fornecedorNome || "Fornecedor nao informado"} | ${purchase.quantidadeEmbalagens || 0} embalagem(ns) | ${stockLabel}`)}</p>
+      <p class="muted">${escapeHtml(`Desconto desta compra: ${formatCurrency(discountValue)}`)}</p>
       <p class="muted">${escapeHtml(purchase.observacao || "Sem observacoes adicionais.")}</p>
     `;
 
@@ -562,6 +571,8 @@ purchaseForm.addEventListener("submit", async (event) => {
 
   const quantidadeUnidades = quantidadeEmbalagens * Math.max(1, toNumber(supplier.conversao, 1));
   const valorTotal = quantidadeEmbalagens * valorEmbalagem;
+  const valorReferenciaTotal = quantidadeEmbalagens * Math.max(0, toNumber(supplier.custoCompra, 0));
+  const descontoTotal = Math.max(0, valorReferenciaTotal - valorTotal);
 
   try {
     const atualizarEstoque = purchaseUpdateStockCheckbox.checked;
@@ -580,6 +591,8 @@ purchaseForm.addEventListener("submit", async (event) => {
       valorEmbalagem,
       valorUnitarioUso: quantidadeUnidades > 0 ? (valorTotal / quantidadeUnidades) : 0,
       valorTotal,
+      valorReferenciaTotal,
+      descontoTotal,
       promocaoAplicada: Boolean(supplier.promocaoAplicada),
       valorNormalEmbalagem: supplier.custoCompra,
       valorPromocionalEmbalagem: supplier.custoPromocionalCompra ?? null,
