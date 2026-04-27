@@ -87,37 +87,6 @@
     </form>
 
     <div id="purchase-status" class="status info" hidden></div>
-
-    <div class="page-header" style="margin: 24px 0 12px;">
-      <div>
-        <h3>Resumo do mes</h3>
-        <p class="muted">Escolha o mes para consultar o total gasto e os itens comprados.</p>
-      </div>
-
-      <div class="field-group" style="min-width: 220px;">
-        <label for="purchase-month-filter">Mes de consulta</label>
-        <input id="purchase-month-filter" type="month">
-      </div>
-    </div>
-
-    <section class="stats-grid">
-      <article class="card">
-        <span class="muted">Total gasto no mes</span>
-        <strong id="monthly-total" class="metric-value">R$ 0,00</strong>
-      </article>
-
-      <article class="card">
-        <span class="muted">Compras registradas</span>
-        <strong id="monthly-count" class="metric-value">0</strong>
-      </article>
-
-      <article class="card">
-        <span class="muted">Produtos comprados</span>
-        <strong id="monthly-products" class="metric-value">0</strong>
-      </article>
-    </section>
-
-    <div id="monthly-purchases-list" class="list" style="margin-top: 16px;"></div>
   </section>
 
   <section class="panel">
@@ -168,11 +137,6 @@ const purchaseTotalInput = document.getElementById("purchase-total");
 const purchaseNoteInput = document.getElementById("purchase-note");
 const purchaseUpdateStockCheckbox = document.getElementById("purchase-update-stock");
 const purchaseStatus = document.getElementById("purchase-status");
-const purchaseMonthFilter = document.getElementById("purchase-month-filter");
-const monthlyTotal = document.getElementById("monthly-total");
-const monthlyCount = document.getElementById("monthly-count");
-const monthlyProducts = document.getElementById("monthly-products");
-const monthlyPurchasesList = document.getElementById("monthly-purchases-list");
 
 bindLogoutButton();
 
@@ -183,7 +147,6 @@ let pedidos = [];
 let sugestoes = [];
 let fornecedoresCatalogo = [];
 let produtosEstoque = [];
-let comprasRegistradas = [];
 
 function buildMessage(pedido) {
   const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns)`);
@@ -197,27 +160,9 @@ function getTodayDateValue(referenceDate = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function getCurrentMonthValue(referenceDate = new Date()) {
-  return getTodayDateValue(referenceDate).slice(0, 7);
-}
-
 function getMonthKey(value) {
   const raw = String(value ?? "").trim();
   return raw.length >= 7 ? raw.slice(0, 7) : "";
-}
-
-function formatPurchaseDate(value) {
-  if (!value) {
-    return "Data nao informada";
-  }
-
-  const parsed = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(parsed);
 }
 
 function getSortedProductSuppliers(product) {
@@ -312,64 +257,6 @@ function populatePurchaseProductOptions(preferredProductId = "") {
       option.textContent = product.nome;
       purchaseProductSelect.appendChild(option);
     });
-}
-
-function renderMonthlyPurchases() {
-  const selectedMonth = purchaseMonthFilter.value || getCurrentMonthValue();
-  const filteredPurchases = comprasRegistradas
-    .filter((purchase) => getMonthKey(purchase.mesReferencia || purchase.dataCompra) === selectedMonth)
-    .sort((left, right) => {
-      const leftDate = left.dataCompra || "";
-      const rightDate = right.dataCompra || "";
-
-      if (leftDate !== rightDate) {
-        return rightDate.localeCompare(leftDate);
-      }
-
-      const leftCreated = left.criadoEm?.seconds || 0;
-      const rightCreated = right.criadoEm?.seconds || 0;
-      return rightCreated - leftCreated;
-    });
-
-  const totalSpent = filteredPurchases.reduce((sum, purchase) => sum + toNumber(purchase.valorTotal, 0), 0);
-  const uniqueProducts = new Set(filteredPurchases.map((purchase) => purchase.produtoId || purchase.produtoNome));
-
-  monthlyTotal.textContent = formatCurrency(totalSpent);
-  monthlyCount.textContent = String(filteredPurchases.length);
-  monthlyProducts.textContent = String(uniqueProducts.size);
-  monthlyPurchasesList.innerHTML = "";
-
-  if (!filteredPurchases.length) {
-    monthlyPurchasesList.innerHTML = '<div class="empty-state">Nenhuma compra registrada para o mes selecionado.</div>';
-    return;
-  }
-
-  filteredPurchases.forEach((purchase) => {
-    const article = document.createElement("article");
-    article.className = "card";
-    const sourceLabel = purchase.origem === "xml" ? "Importacao XML" : "Registro manual";
-    const stockLabel = purchase.atualizouEstoque ? "Entrou no estoque" : "Sem movimentar estoque";
-    const discountValue = Math.max(0, toNumber(
-      purchase.descontoTotal,
-      Math.max(
-        0,
-        toNumber(purchase.valorReferenciaTotal, 0) - toNumber(purchase.valorTotal, 0)
-      )
-    ));
-
-    article.innerHTML = `
-      <div class="summary-line">
-        <span>${escapeHtml(`${formatPurchaseDate(purchase.dataCompra)} | ${sourceLabel}`)}</span>
-        <strong>${formatCurrency(purchase.valorTotal)}</strong>
-      </div>
-      <h3 style="margin-top: 12px;">${escapeHtml(purchase.produtoNome || "Produto nao informado")}</h3>
-      <p class="muted">${escapeHtml(`${purchase.fornecedorNome || "Fornecedor nao informado"} | ${purchase.quantidadeEmbalagens || 0} embalagem(ns) | ${stockLabel}`)}</p>
-      <p class="muted">${escapeHtml(`Desconto desta compra: ${formatCurrency(discountValue)}`)}</p>
-      <p class="muted">${escapeHtml(purchase.observacao || "Sem observacoes adicionais.")}</p>
-    `;
-
-    monthlyPurchasesList.appendChild(article);
-  });
 }
 
 function renderOrders(items) {
@@ -478,10 +365,9 @@ async function loadPageData(options = {}) {
   const { preserveProduct = true, preserveSupplier = true } = options;
   const previousProductId = preserveProduct ? purchaseProductSelect.value : "";
   const previousSupplierId = preserveSupplier ? purchaseSupplierSelect.value : "";
-  const [supplierSnapshot, stockSnapshot, purchaseSnapshot] = await Promise.all([
+  const [supplierSnapshot, stockSnapshot] = await Promise.all([
     getDocs(collection(db, "fornecedores")),
-    getDocs(collection(db, "estoque")),
-    getDocs(collection(db, "comprasMensais"))
+    getDocs(collection(db, "estoque"))
   ]);
 
   fornecedoresCatalogo = supplierSnapshot.docs.map((document) => ({
@@ -497,15 +383,9 @@ async function loadPageData(options = {}) {
     maximo: toNumber(document.data().maximo, 0)
   }));
 
-  comprasRegistradas = purchaseSnapshot.docs.map((document) => ({
-    id: document.id,
-    ...document.data()
-  }));
-
   populatePurchaseProductOptions(previousProductId);
   syncPurchaseSupplierOptions(previousSupplierId);
   buildOrderSuggestions();
-  renderMonthlyPurchases();
 }
 
 sendButton.addEventListener("click", () => {
@@ -547,7 +427,6 @@ purchaseProductSelect.addEventListener("change", () => syncPurchaseSupplierOptio
 purchaseSupplierSelect.addEventListener("change", applySelectedSupplierPrice);
 purchasePackagesInput.addEventListener("input", updatePurchaseTotalPreview);
 purchasePriceInput.addEventListener("input", updatePurchaseTotalPreview);
-purchaseMonthFilter.addEventListener("change", renderMonthlyPurchases);
 
 purchaseForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -642,7 +521,6 @@ purchaseForm.addEventListener("submit", async (event) => {
 });
 
 purchaseDateInput.value = getTodayDateValue();
-purchaseMonthFilter.value = getCurrentMonthValue();
 await loadPageData({ preserveProduct: false, preserveSupplier: false });
 </script>
 
