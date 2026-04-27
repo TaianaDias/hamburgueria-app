@@ -1,4 +1,4 @@
-const CACHE_NAME = "hamburgueria-app-v6";
+const CACHE_NAME = "hamburgueria-app-v7";
 const APP_SHELL = [
   "/",
   "/login.html",
@@ -16,7 +16,11 @@ const APP_SHELL = [
   "/app.js",
   "/runtime-config.json",
   "/manifest.json",
-  "/icon.svg"
+  "/icon.svg",
+  "/favicon-32.png",
+  "/apple-touch-icon.png",
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
