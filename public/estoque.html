@@ -30,6 +30,72 @@
     </div>
   </header>
 
+  <section class="panel quick-box-panel">
+    <div class="page-header compact-header">
+      <div>
+        <h3>Operacao por caixa</h3>
+        <p class="muted">Bipe o codigo, confira o produto e movimente somente caixas.</p>
+      </div>
+    </div>
+
+    <div class="quick-box-scan">
+      <div class="field-group">
+        <label for="quick_barcode">Codigo de barras</label>
+        <input id="quick_barcode" inputmode="numeric" placeholder="Bipe ou digite o codigo" autocomplete="off">
+      </div>
+      <button id="quick-focus-barcode" class="secondary" type="button">Bipar codigo</button>
+      <button id="quick-lookup-barcode" type="button">Buscar produto</button>
+    </div>
+
+    <div id="quick-box-product" class="quick-box-product" hidden>
+      <div class="summary-line">
+        <span id="quick-product-state">Produto</span>
+        <strong id="quick-product-stock">0 caixas</strong>
+      </div>
+
+      <div class="form-grid quick-box-grid">
+        <div class="field-group">
+          <label for="quick_name">Nome</label>
+          <input id="quick_name" placeholder="Maionese Heinz Sache 7g">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_brand">Marca</label>
+          <input id="quick_brand" placeholder="Heinz">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_category">Categoria</label>
+          <input id="quick_category" placeholder="Molhos">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_units_per_box">Quantidade por caixa</label>
+          <input id="quick_units_per_box" type="number" min="1" step="1" value="1">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_min_boxes">Minimo em caixas</label>
+          <input id="quick_min_boxes" type="number" min="0" step="1" value="2">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_box_price">Valor pago pela caixa</label>
+          <input id="quick_box_price" type="number" min="0" step="0.01" placeholder="86,40">
+        </div>
+      </div>
+
+      <p id="quick-unit-cost-preview" class="muted quick-cost-preview">Custo unitario calculado: R$ 0,00</p>
+
+      <div class="quick-box-actions">
+        <button id="quick-entry-box" type="button">Entrada de caixa</button>
+        <button id="quick-exit-box" class="secondary" type="button">Saida de caixa</button>
+      </div>
+    </div>
+
+    <div id="quick-box-status" class="status info" hidden></div>
+  </section>
+
   <section class="panel">
     <details class="section-accordion">
       <summary class="section-accordion-summary">
@@ -395,6 +461,21 @@ const barcodeStatus = document.getElementById("barcode-status");
 const barcodeReader = document.getElementById("barcode-reader");
 const list = document.getElementById("lista");
 const userInfo = document.getElementById("user-info");
+const quickBarcodeInput = document.getElementById("quick_barcode");
+const quickFocusBarcodeButton = document.getElementById("quick-focus-barcode");
+const quickLookupBarcodeButton = document.getElementById("quick-lookup-barcode");
+const quickBoxProduct = document.getElementById("quick-box-product");
+const quickProductState = document.getElementById("quick-product-state");
+const quickProductStock = document.getElementById("quick-product-stock");
+const quickNameInput = document.getElementById("quick_name");
+const quickBrandInput = document.getElementById("quick_brand");
+const quickCategoryInput = document.getElementById("quick_category");
+const quickUnitsPerBoxInput = document.getElementById("quick_units_per_box");
+const quickMinBoxesInput = document.getElementById("quick_min_boxes");
+const quickBoxPriceInput = document.getElementById("quick_box_price");
+const quickUnitCostPreview = document.getElementById("quick-unit-cost-preview");
+const quickEntryBoxButton = document.getElementById("quick-entry-box");
+const quickExitBoxButton = document.getElementById("quick-exit-box");
 
 bindLogoutButton();
 
@@ -416,6 +497,11 @@ let produtos = [];
 let xmlImports = [];
 let barcodeScanner = null;
 let barcodeScannerLoaded = false;
+let quickBoxState = {
+  barcode: "",
+  product: null,
+  externalProduct: null
+};
 
 function normalizeBarcode(value) {
   return String(value ?? "").replace(/\D/g, "").slice(0, 24);
@@ -423,6 +509,298 @@ function normalizeBarcode(value) {
 
 function normalizeLookupField(value) {
   return String(value ?? "").trim();
+}
+
+function getBoxOperationBarcode(product = {}) {
+  return normalizeBarcode(product.codigoBarras || product.codigoBarrasNormalizado || product.barcode);
+}
+
+function getBoxOperationStock(product = {}) {
+  if (product.stock_boxes != null) {
+    return Math.max(0, toNumber(product.stock_boxes, 0));
+  }
+
+  return Math.max(0, toNumber(product.quantidade, 0));
+}
+
+function getBoxOperationUnits(product = {}) {
+  return Math.max(1, toNumber(
+    product.units_per_box ?? product.unitsPerBox ?? product.conteudoPorCaixa ?? product.conversao,
+    1
+  ));
+}
+
+function getBoxOperationMinimum(product = {}) {
+  return Math.max(0, toNumber(product.minimum_boxes ?? product.minimo, 2));
+}
+
+function inferUnitsPerBoxFromText(...values) {
+  const text = values
+    .map((value) => String(value ?? "").toLowerCase())
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, " ");
+  const patterns = [
+    /(?:caixa|cx|display|fardo|pacote)\s*(?:com|c\/|de)?\s*(\d{1,5})\s*(?:unidades|unidade|unds|unid|un|saches|sache|sach|pcs|pecas|itens)/i,
+    /(\d{1,5})\s*(?:unidades|unidade|unds|unid|un|saches|sache|sach|pcs|pecas|itens)\s*(?:por|na|no|em|\/)?\s*(?:caixa|cx|display|fardo|pacote)/i,
+    /(?:c\/|com)\s*(\d{1,5})\s*(?:unidades|unidade|unds|unid|un|saches|sache|sach)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const parsed = match ? Number(match[1]) : 0;
+
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 1;
+}
+
+function getQuickBoxUnitCost() {
+  const unitsPerBox = Math.max(1, toNumber(quickUnitsPerBoxInput.value, 1));
+  const boxPrice = Math.max(0, toNumber(quickBoxPriceInput.value, 0));
+  return boxPrice > 0 ? boxPrice / unitsPerBox : 0;
+}
+
+function updateQuickBoxCostPreview() {
+  quickUnitCostPreview.textContent = `Custo unitario calculado: ${formatCurrency(getQuickBoxUnitCost())}`;
+}
+
+function findProductByBarcode(barcode) {
+  const normalizedBarcode = normalizeBarcode(barcode);
+  return produtos.find((product) => getBoxOperationBarcode(product) === normalizedBarcode) || null;
+}
+
+function syncQuickBoxProductView(product = null, externalProduct = null) {
+  const fallbackUnitsPerBox = inferUnitsPerBoxFromText(
+    externalProduct?.nome,
+    externalProduct?.name,
+    product?.nome,
+    product?.name,
+    product?.categoria
+  );
+  const unitsPerBox = product ? getBoxOperationUnits(product) : fallbackUnitsPerBox;
+  const stockBoxes = product ? getBoxOperationStock(product) : 0;
+
+  quickBoxProduct.hidden = false;
+  quickProductState.textContent = product ? "Produto encontrado" : "Produto novo";
+  quickProductStock.textContent = `${stockBoxes} caixa(s)`;
+  quickNameInput.value = product?.nome || externalProduct?.nome || "";
+  quickBrandInput.value = product?.marca || externalProduct?.marca || "";
+  quickCategoryInput.value = product?.categoria || externalProduct?.categoria || "";
+  quickUnitsPerBoxInput.value = String(unitsPerBox);
+  quickMinBoxesInput.value = String(product ? getBoxOperationMinimum(product) : 2);
+  quickBoxPriceInput.value = product?.last_box_price || product?.custoCompra
+    ? String(toNumber(product.last_box_price ?? product.custoCompra, 0).toFixed(2))
+    : "";
+  quickBoxState.product = product;
+  quickBoxState.externalProduct = externalProduct;
+  updateQuickBoxCostPreview();
+}
+
+async function lookupQuickBoxProduct() {
+  const barcode = normalizeBarcode(quickBarcodeInput.value);
+
+  if (!barcode) {
+    setStatus("quick-box-status", "Bipe ou digite um codigo de barras valido.", "error");
+    quickBarcodeInput.focus();
+    return null;
+  }
+
+  quickBarcodeInput.value = barcode;
+  quickBoxState.barcode = barcode;
+  setStatus("quick-box-status", "Buscando produto pelo codigo de barras...", "info");
+
+  let product = findProductByBarcode(barcode);
+
+  if (!product) {
+    const snapshot = await getDocs(query(
+      collection(db, "estoque"),
+      where("codigoBarrasNormalizado", "==", barcode),
+      limit(1)
+    ));
+
+    if (!snapshot.empty) {
+      product = {
+        id: snapshot.docs[0].id,
+        ...snapshot.docs[0].data()
+      };
+    }
+  }
+
+  if (product) {
+    syncQuickBoxProductView(product, null);
+    setStatus("quick-box-status", "Produto encontrado. Informe o valor da caixa para entrada ou registre a saida.", "success");
+    return product;
+  }
+
+  const cachedProduct = await getCachedBarcodeProduct(barcode).catch(() => null);
+  const externalProduct = cachedProduct?.nome
+    ? cachedProduct
+    : await apiFetch(`/api/barcodes/${barcode}`)
+      .then((response) => ({
+        barcode,
+        nome: normalizeLookupField(response?.product?.nome),
+        marca: normalizeLookupField(response?.product?.marca),
+        categoria: normalizeLookupField(response?.product?.categoria),
+        fonte: response?.source || "codigo-barras"
+      }))
+      .catch((error) => {
+        console.warn("Nao foi possivel consultar codigo externo.", error);
+        return {
+          barcode,
+          nome: "",
+          marca: "",
+          categoria: "",
+          fonte: "manual"
+        };
+      });
+
+  if (externalProduct.nome) {
+    await saveCachedBarcodeProduct(externalProduct).catch(() => null);
+  }
+
+  syncQuickBoxProductView(null, externalProduct);
+  setStatus(
+    "quick-box-status",
+    externalProduct.nome
+      ? "Produto identificado. Confira a quantidade por caixa e informe o valor da caixa."
+      : "Produto nao encontrado. Preencha nome, marca, categoria e quantidade por caixa.",
+    externalProduct.nome ? "success" : "info"
+  );
+  return null;
+}
+
+function buildQuickBoxProductPayload(nextStockBoxes) {
+  const barcode = quickBoxState.barcode || normalizeBarcode(quickBarcodeInput.value);
+  const nome = quickNameInput.value.trim();
+  const marca = quickBrandInput.value.trim();
+  const categoria = quickCategoryInput.value.trim();
+  const unitsPerBox = Math.max(1, toNumber(quickUnitsPerBoxInput.value, 1));
+  const minimumBoxes = Math.max(0, toNumber(quickMinBoxesInput.value, 2));
+  const boxPrice = Math.max(0, toNumber(quickBoxPriceInput.value, 0));
+  const currentBoxPrice = toNumber(quickBoxState.product?.last_box_price ?? quickBoxState.product?.custoCompra, 0);
+  const currentUnitCost = toNumber(quickBoxState.product?.unit_cost ?? quickBoxState.product?.custoUnitario, 0);
+  const unitCost = boxPrice > 0 ? boxPrice / unitsPerBox : currentUnitCost;
+
+  if (!barcode) {
+    throw new Error("Bipe ou digite o codigo de barras antes de movimentar.");
+  }
+
+  if (!nome) {
+    throw new Error("Informe o nome do produto.");
+  }
+
+  if (unitsPerBox <= 0) {
+    throw new Error("Informe uma quantidade por caixa valida.");
+  }
+
+  return {
+    codigoBarras: barcode,
+    codigoBarrasNormalizado: barcode,
+    barcode,
+    nome,
+    name: nome,
+    nomeNormalizado: normalizeText(nome),
+    marca,
+    brand: marca,
+    categoria,
+    category: categoria,
+    purchase_unit: "caixa",
+    units_per_box: unitsPerBox,
+    last_box_price: boxPrice || currentBoxPrice,
+    unit_cost: unitCost,
+    stock_boxes: nextStockBoxes,
+    quantidade: nextStockBoxes,
+    minimo: minimumBoxes,
+    minimum_boxes: minimumBoxes,
+    maximo: Math.max(minimumBoxes + 1, toNumber(quickBoxState.product?.maximo, Math.max(50, nextStockBoxes))),
+    unidadeMedida: "caixa",
+    unidadeUso: "un",
+    conversao: unitsPerBox,
+    custoCompra: boxPrice || currentBoxPrice,
+    custoUnitario: unitCost,
+    custo: unitCost,
+    origemCadastro: "codigo_barras_caixa",
+    atualizadoEm: serverTimestamp()
+  };
+}
+
+async function recordQuickBoxMovement(type) {
+  const isEntry = type === "entrada_caixa";
+  const currentProduct = quickBoxState.product || await lookupQuickBoxProduct();
+
+  if (!isEntry && !currentProduct) {
+    setStatus("quick-box-status", "Produto ainda nao cadastrado. Faca uma entrada de caixa para criar o cadastro.", "error");
+    return;
+  }
+
+  const currentStockBoxes = currentProduct ? getBoxOperationStock(currentProduct) : 0;
+
+  if (!isEntry && currentStockBoxes <= 0) {
+    setStatus("quick-box-status", "Nao ha caixas em estoque para registrar saida.", "error");
+    return;
+  }
+
+  if (isEntry && toNumber(quickBoxPriceInput.value, 0) <= 0) {
+    setStatus("quick-box-status", "Informe o valor pago pela caixa para registrar a entrada.", "error");
+    quickBoxPriceInput.focus();
+    return;
+  }
+
+  const nextStockBoxes = isEntry ? currentStockBoxes + 1 : currentStockBoxes - 1;
+  const payload = buildQuickBoxProductPayload(nextStockBoxes);
+  const productRef = currentProduct
+    ? doc(db, "estoque", currentProduct.id)
+    : null;
+
+  quickEntryBoxButton.disabled = true;
+  quickExitBoxButton.disabled = true;
+
+  try {
+    let productId = currentProduct?.id || "";
+
+    if (productRef) {
+      await updateDoc(productRef, payload);
+    } else {
+      const createdRef = await addDoc(collection(db, "estoque"), {
+        ...payload,
+        criadoEm: serverTimestamp()
+      });
+      productId = createdRef.id;
+    }
+
+    await addDoc(collection(db, "historico"), {
+      tipo: type,
+      itemId: productId,
+      itemNome: payload.nome,
+      codigoBarras: payload.codigoBarras,
+      caixas: 1,
+      estoqueCaixas: nextStockBoxes,
+      valorCaixa: payload.last_box_price,
+      unidadesPorCaixa: payload.units_per_box,
+      custoUnitario: payload.unit_cost,
+      responsavel: profile.email,
+      data: serverTimestamp()
+    });
+
+    triggerReplenishmentEvaluation(isEntry ? "entrada_caixa" : "saida_caixa").catch(() => null);
+    setStatus(
+      "quick-box-status",
+      `${isEntry ? "Entrada" : "Saida"} registrada: estoque atual ${nextStockBoxes} caixa(s).`,
+      "success"
+    );
+    await loadProducts();
+    syncQuickBoxProductView(findProductByBarcode(payload.codigoBarras), null);
+  } catch (error) {
+    console.error(error);
+    setStatus("quick-box-status", error.message || "Nao foi possivel registrar a movimentacao.", "error");
+  } finally {
+    quickEntryBoxButton.disabled = false;
+    quickExitBoxButton.disabled = false;
+  }
 }
 
 function syncUnitMeasureFields() {
@@ -1679,7 +2057,7 @@ function renderProducts(items) {
 
   items.forEach((item) => {
     const article = document.createElement("article");
-    article.className = item.quantidade <= item.minimo ? "card critical" : "card";
+    article.className = getBoxOperationStock(item) <= getBoxOperationMinimum(item) ? "card critical" : "card";
     const productSuppliers = normalizeProductSuppliers(item, fornecedores);
     const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
     const cheapestSupplier = getCheapestProductSupplier(item, fornecedores);
@@ -1709,11 +2087,17 @@ function renderProducts(items) {
     const suppliersSummary = getSupplierNamesSummary(productSuppliers);
     const currentCostLabel = cheapestSupplier
       ? formatCurrency(getEffectiveSupplierPurchaseCost(cheapestSupplier))
-      : "Nao definido";
+      : item.purchase_unit === "caixa" && item.last_box_price
+        ? formatCurrency(item.last_box_price)
+        : "Nao definido";
     const currentCostDetails = cheapestSupplier
       ? `${cheapestSupplier.nome}${cheapestSupplier.promocaoAplicada ? " | promocao ativa" : ""}`
-      : "Cadastre um fornecedor para calcular custo";
-    const stockStatusLabel = item.quantidade <= item.minimo
+      : item.purchase_unit === "caixa"
+        ? `${getBoxOperationUnits(item)} unidade(s) por caixa`
+        : "Cadastre um fornecedor para calcular custo";
+    const stockBoxes = getBoxOperationStock(item);
+    const minimumBoxes = getBoxOperationMinimum(item);
+    const stockStatusLabel = stockBoxes <= minimumBoxes
       ? "Atencao para reposicao"
       : "Operacao dentro do limite";
 
@@ -1954,7 +2338,9 @@ function renderProducts(items) {
           ${escapeHtml(buildOperationalSummaryLine([
             {
               label: "Estoque",
-              value: `${toNumber(item.quantidade, 0)} ${item.unidadeMedida || getUsageUnit(item)}`
+              value: item.purchase_unit === "caixa"
+                ? `${stockBoxes} caixa(s)`
+                : `${toNumber(item.quantidade, 0)} ${item.unidadeMedida || getUsageUnit(item)}`
             },
             {
               label: "Compra",
@@ -2040,6 +2426,13 @@ async function loadProducts() {
       quantidade: toNumber(document.data().quantidade, 0),
       minimo: toNumber(document.data().minimo, 0),
       maximo: toNumber(document.data().maximo, 0),
+      purchase_unit: document.data().purchase_unit || "",
+      units_per_box: Math.max(1, toNumber(document.data().units_per_box ?? document.data().conversao, 1)),
+      last_box_price: toNumber(document.data().last_box_price, 0),
+      unit_cost: toNumber(document.data().unit_cost ?? document.data().custoUnitario, 0),
+      stock_boxes: document.data().stock_boxes != null
+        ? toNumber(document.data().stock_boxes, 0)
+        : toNumber(document.data().quantidade, 0),
       conversao: Math.max(1, toNumber(document.data().conversao, 1)),
       custoCompra: document.data().custoCompra,
       unidadeMedida: document.data().unidadeMedida || document.data().unidadeUso || document.data().unidadeCompra || "un",
@@ -2734,6 +3127,31 @@ async function importXmlInvoices() {
 
 xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
+quickBarcodeInput.addEventListener("input", () => {
+  quickBarcodeInput.value = normalizeBarcode(quickBarcodeInput.value);
+});
+quickBarcodeInput.addEventListener("keydown", async (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    await lookupQuickBoxProduct();
+  }
+});
+quickFocusBarcodeButton.addEventListener("click", () => {
+  quickBarcodeInput.focus();
+  quickBarcodeInput.select();
+  setStatus("quick-box-status", "Leitor pronto. Bipe o codigo ou digite e pressione Enter.", "info");
+});
+quickLookupBarcodeButton.addEventListener("click", async () => {
+  await lookupQuickBoxProduct();
+});
+quickUnitsPerBoxInput.addEventListener("input", updateQuickBoxCostPreview);
+quickBoxPriceInput.addEventListener("input", updateQuickBoxCostPreview);
+quickEntryBoxButton.addEventListener("click", async () => {
+  await recordQuickBoxMovement("entrada_caixa");
+});
+quickExitBoxButton.addEventListener("click", async () => {
+  await recordQuickBoxMovement("saida_caixa");
+});
 barcodeInput.addEventListener("input", () => {
   barcodeInput.value = normalizeBarcode(barcodeInput.value);
   updateBarcodeAccordionSummary();

@@ -295,6 +295,45 @@ h3 {
   white-space: nowrap;
 }
 
+.quick-box-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.quick-box-scan,
+.quick-box-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.quick-box-scan .field-group {
+  flex: 1 1 260px;
+}
+
+.quick-box-scan button,
+.quick-box-actions button {
+  min-height: 46px;
+}
+
+.quick-box-product {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.quick-box-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.quick-cost-preview {
+  margin: 0;
+}
+
 .product-create-panel {
   padding-bottom: 20px;
 }
