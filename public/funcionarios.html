@@ -52,7 +52,6 @@
         <select id="tipo">
           <option value="admin">Admin</option>
           <option value="estoque">Estoque</option>
-          <option value="caixa">Caixa</option>
         </select>
       </div>
 
@@ -65,7 +64,7 @@
   <section class="panel">
     <h3>Lista de acessos</h3>
     <p class="muted" style="margin-top: 8px;">
-      Permissoes atuais: Admin (acesso total), Estoque (Reposicao para producao e Compras com lembrete/pedidos sugeridos), Caixa (acesso operacional basico).
+      Permissoes atuais: Admin (acesso total), Estoque (Reposicao para producao e Compras com lembrete/pedidos sugeridos).
     </p>
     <div id="lista" class="list" style="margin-top: 16px;"></div>
   </section>
@@ -97,10 +96,6 @@ function describeAccessScope(tipo) {
 
   if (tipo === "estoque") {
     return "Acesso somente a Reposicao para producao e Compras (lembrete do admin e pedidos sugeridos).";
-  }
-
-  if (tipo === "caixa") {
-    return "Acesso operacional basico (sem administracao).";
   }
 
   return "Escopo de acesso nao mapeado.";
