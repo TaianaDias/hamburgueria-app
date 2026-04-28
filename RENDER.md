@@ -20,7 +20,8 @@ O mesmo `server.js` serve a interface e a API no mesmo dominio.
 4. Conecte o repositorio.
 5. O Render vai ler o arquivo `render.yaml`.
 6. Quando ele pedir o valor de `FIREBASE_SERVICE_ACCOUNT_JSON`, cole o JSON completo da sua service account em uma unica linha.
-7. Finalize a criacao.
+7. Quando ele pedir `COSMOS_API_TOKEN`, cole o token da API Cosmos/Bluesoft.
+8. Finalize a criacao.
 
 Configuracao incluida no `render.yaml`:
 
@@ -30,6 +31,8 @@ Configuracao incluida no `render.yaml`:
 - `startCommand: npm start`
 - `healthCheckPath: /api/health`
 - `NODE_VERSION=20`
+- `COSMOS_API_TOKEN` como valor secreto
+- `COSMOS_USER_AGENT=HamburgueriaApp/1.0`
 
 ## Opcao alternativa: criar o Web Service manualmente
 
@@ -51,6 +54,8 @@ Health Check Path: /api/health
 ```text
 NODE_VERSION=20
 FIREBASE_SERVICE_ACCOUNT_JSON=...json completo...
+COSMOS_API_TOKEN=...token do Cosmos...
+COSMOS_USER_AGENT=HamburgueriaApp/1.0
 ```
 
 ## Como obter o `FIREBASE_SERVICE_ACCOUNT_JSON`

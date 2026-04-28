@@ -154,6 +154,10 @@ textarea:focus {
   margin-bottom: 24px;
 }
 
+.compact-header {
+  margin-bottom: 16px;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: var(--brand-soft);
@@ -221,6 +225,10 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.compact-actions {
+  margin-top: 16px;
 }
 
 .field-group {
@@ -384,6 +392,15 @@ h3 {
 
 .summary-line strong {
   color: var(--text);
+}
+
+.compact-meta {
+  margin-top: 12px;
+}
+
+.notification-preview {
+  margin-top: 16px;
+  min-height: 150px;
 }
 
 pre {

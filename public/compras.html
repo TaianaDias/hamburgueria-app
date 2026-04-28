@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -91,10 +91,10 @@
   </section>
 
   <section class="panel">
-    <div class="page-header" style="margin-bottom: 16px;">
+    <div class="page-header compact-header">
       <div>
-        <h3>Lembrete do admin</h3>
-        <p id="admin-reminder-description" class="muted">Configure o WhatsApp do admin e gere um resumo com os itens acionados por estoque minimo ou por dia programado de pedido.</p>
+        <h3>Sugestao ao admin</h3>
+        <p id="admin-reminder-description" class="muted">Gere uma sugestao rastreavel com os itens acionados por estoque minimo ou dia programado de pedido.</p>
       </div>
     </div>
 
@@ -114,13 +114,13 @@
       </div>
 
       <div class="field-group">
-        <label for="admin-reminder-preview">Resumo atual</label>
+        <label for="admin-reminder-preview">Resumo da sugestao</label>
         <input id="admin-reminder-preview" type="text" readonly value="Nenhum item pendente">
       </div>
     </div>
 
-    <div class="actions" style="margin-top: 16px;">
-      <button id="send-admin-reminder" class="secondary" type="button">Enviar lembrete ao admin</button>
+    <div class="actions compact-actions">
+      <button id="send-admin-reminder" class="secondary" type="button">Sugerir ao admin</button>
     </div>
 
     <div id="admin-reminder-status" class="status info" hidden></div>
@@ -152,6 +152,7 @@ import {
   escapeHtml,
   formatCurrency,
   formatWeekdayList,
+  apiFetch,
   getCheapestProductSupplier,
   getCurrentWeekdayKey,
   getEffectiveSupplierPurchaseCost,
@@ -301,7 +302,7 @@ function getTriggerLabel(triggers = []) {
   return triggers.join(" + ");
 }
 
-function buildAdminReminderMessage(groups) {
+function buildAdminReminderMessageText(groups) {
   const reminderReason = String(adminReminderReasonSelect.value || "").trim() || "Reposicao urgente";
   const todayLabel = new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "full"
@@ -323,7 +324,7 @@ function buildAdminReminderMessage(groups) {
     lines.push("");
   });
 
-  return encodeURIComponent(lines.join("\n").trim());
+  return lines.join("\n").trim();
 }
 
 function updateAdminReminderPreview() {
@@ -553,6 +554,7 @@ function buildOrderSuggestions() {
     }
 
     grouped.get(key).itens.push({
+      productId: item.id,
       nome: item.nome,
       qtdCompra,
       gatilhos
@@ -647,23 +649,44 @@ adminWhatsappInput.addEventListener("change", () => {
   adminWhatsappInput.value = normalized;
 });
 
-sendAdminReminderButton.addEventListener("click", () => {
+sendAdminReminderButton.addEventListener("click", async () => {
   if (!pedidos.length) {
-    setStatus("admin-reminder-status", "Nao ha lembretes pendentes para enviar ao admin.", "info");
+    setStatus("admin-reminder-status", "Nao ha sugestoes pendentes para enviar ao admin.", "info");
     return;
   }
 
   const phone = normalizePhone(adminWhatsappInput.value);
 
   if (!phone) {
-    setStatus("admin-reminder-status", "Informe o WhatsApp do admin para enviar o lembrete.", "error");
+    setStatus("admin-reminder-status", "Informe o WhatsApp do admin para enviar a sugestao.", "error");
     return;
   }
 
-  persistAdminWhatsapp(phone).catch(() => null);
-  const url = `https://wa.me/${phone}?text=${buildAdminReminderMessage(pedidos)}`;
+  sendAdminReminderButton.disabled = true;
+  const reason = String(adminReminderReasonSelect.value || "").trim() || "Reposicao urgente";
+  const message = buildAdminReminderMessageText(pedidos);
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   window.open(url, "_blank", "noopener,noreferrer");
-  setStatus("admin-reminder-status", "Lembrete do admin aberto no WhatsApp.", "success");
+
+  try {
+    await persistAdminWhatsapp(phone);
+    await apiFetch("/api/admin-alerts/manual-suggestion", {
+      method: "POST",
+      body: JSON.stringify({
+        recipient: phone,
+        reason,
+        message,
+        groups: pedidos
+      })
+    });
+    setStatus("admin-reminder-status", "WhatsApp aberto e sugestao registrada no historico.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus("admin-reminder-status", "WhatsApp aberto, mas nao foi possivel registrar a sugestao no sistema.", "error");
+  } finally {
+    sendAdminReminderButton.disabled = false;
+    updateAdminReminderPreview();
+  }
 });
 
 adminReminderReasonSelect.addEventListener("change", updateAdminReminderPreview);
@@ -807,4 +830,3 @@ await loadPageData({ preserveProduct: false, preserveSupplier: false });
 </footer>
 </body>
 </html>
-

@@ -250,7 +250,59 @@ function formatNotificationStatus(notification) {
     return "WhatsApp do admin nao configurado";
   }
 
+  if (status === "opened_in_whatsapp") {
+    return "Aberto no WhatsApp";
+  }
+
   return status || "Sem status";
+}
+
+function formatEventOrigin(entry = {}) {
+  const eventType = String(entry.eventType || "").trim();
+
+  if (eventType === "manual_purchase_suggestion") {
+    return "Sugestao manual da aba Compras";
+  }
+
+  if (eventType === "resolved_manual") {
+    return "Resolucao manual";
+  }
+
+  if (eventType === "resolved_auto") {
+    return "Avaliacao automatica";
+  }
+
+  if (["opened", "updated", "escalated"].includes(eventType)) {
+    return "Avaliacao automatica";
+  }
+
+  return "Evento do sistema";
+}
+
+function formatEventDetail(entry = {}) {
+  const details = [];
+
+  if (entry.reason) {
+    details.push(`Motivo: ${entry.reason}`);
+  }
+
+  if (entry.level) {
+    details.push(`Nivel: ${formatAlertLevel(entry.level)}`);
+  }
+
+  if (entry.supplierName) {
+    details.push(`Fornecedor: ${entry.supplierName}`);
+  }
+
+  if (toNumber(entry.quantity, 0) > 0) {
+    details.push(`Qtd sugerida: ${toNumber(entry.quantity, 0)} embalagem(ns)`);
+  }
+
+  if (Array.isArray(entry.triggers) && entry.triggers.length) {
+    details.push(`Gatilho: ${entry.triggers.join(" + ")}`);
+  }
+
+  return details.join(" | ") || "Sem detalhe adicional";
 }
 
 function syncConfigForm(config = {}, adminWhatsapp = "") {
@@ -389,9 +441,14 @@ function renderNotificationCard(data) {
       <span>Ultimo consolidado</span>
       <strong>${escapeHtml(formatNotificationStatus(notification))}</strong>
     </div>
-    <p class="muted" style="margin-top: 12px;">${escapeHtml(formatDateTime(notification.createdAt))} | ${escapeHtml(notification.provider || "log")} | ${toNumber(notification.itemCount, 0)} item(ns)</p>
-    <textarea readonly style="margin-top: 16px; min-height: 150px;">${notification.message || "Sem mensagem registrada."}</textarea>
-    <div class="inline-actions" style="margin-top: 16px;">
+    <p class="muted compact-meta">${escapeHtml([
+      formatDateTime(notification.createdAt),
+      notification.type === "manual_purchase_suggestion" ? "Sugestao manual da aba Compras" : notification.provider || "log",
+      notification.reason ? `Motivo: ${notification.reason}` : "",
+      `${toNumber(notification.itemCount, 0)} item(ns)`
+    ].filter(Boolean).join(" | "))}</p>
+    <textarea readonly class="notification-preview">${notification.message || "Sem mensagem registrada."}</textarea>
+    <div class="inline-actions compact-actions">
       <button type="button" id="open-admin-preview" ${notification.previewUrl ? "" : "disabled"}>Abrir preview no WhatsApp</button>
     </div>
   `;
@@ -419,13 +476,10 @@ function renderHistory(data) {
     article.innerHTML = `
       <div class="summary-line">
         <span>${escapeHtml(entry.productName || "Produto")}</span>
-        <strong>${escapeHtml(entry.eventType || "evento")}</strong>
+        <strong>${escapeHtml(formatEventOrigin(entry))}</strong>
       </div>
-      <p class="muted" style="margin-top: 12px;">
-        ${escapeHtml(entry.actor || "sistema")}
-        | ${escapeHtml(entry.level || entry.reason || "sem detalhe")}
-        | ${escapeHtml(formatDateTime(entry.createdAt))}
-      </p>
+      <p class="muted compact-meta">${escapeHtml(formatEventDetail(entry))}</p>
+      <p class="muted compact-meta">${escapeHtml(entry.actor || "sistema")} | ${escapeHtml(formatDateTime(entry.createdAt))}</p>
     `;
     historyList.appendChild(article);
   });

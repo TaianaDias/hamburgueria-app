@@ -352,9 +352,9 @@ async function lookupOpenFoodFactsProduct(barcode) {
 
 async function lookupCosmosProduct(barcode) {
   const cosmosToken = String(process.env.COSMOS_API_TOKEN ?? "").trim();
-  const cosmosUserAgent = String(process.env.COSMOS_USER_AGENT ?? "").trim();
+  const cosmosUserAgent = String(process.env.COSMOS_USER_AGENT ?? "BurgerOps/1.0 (barcode lookup)").trim();
 
-  if (!cosmosToken || !cosmosUserAgent) {
+  if (!cosmosToken) {
     return null;
   }
 
@@ -388,6 +388,15 @@ async function lookupCosmosProduct(barcode) {
   };
 }
 
+async function tryLookupBarcodeSource(sourceName, lookupFn, barcode) {
+  try {
+    return await lookupFn(barcode);
+  } catch (error) {
+    console.warn(`Falha ao consultar codigo de barras em ${sourceName}.`, error);
+    return null;
+  }
+}
+
 async function barcodeLookup(req, res) {
   const barcode = normalizeBarcode(req.params?.barcode);
 
@@ -396,18 +405,7 @@ async function barcodeLookup(req, res) {
   }
 
   try {
-    const openFoodFactsProduct = await lookupOpenFoodFactsProduct(barcode);
-
-    if (openFoodFactsProduct?.nome) {
-      return res.json({
-        ok: true,
-        found: true,
-        source: openFoodFactsProduct.fonte,
-        product: openFoodFactsProduct
-      });
-    }
-
-    const cosmosProduct = await lookupCosmosProduct(barcode);
+    const cosmosProduct = await tryLookupBarcodeSource("cosmos", lookupCosmosProduct, barcode);
 
     if (cosmosProduct?.nome) {
       return res.json({
@@ -415,6 +413,17 @@ async function barcodeLookup(req, res) {
         found: true,
         source: cosmosProduct.fonte,
         product: cosmosProduct
+      });
+    }
+
+    const openFoodFactsProduct = await tryLookupBarcodeSource("open-food-facts", lookupOpenFoodFactsProduct, barcode);
+
+    if (openFoodFactsProduct?.nome) {
+      return res.json({
+        ok: true,
+        found: true,
+        source: openFoodFactsProduct.fonte,
+        product: openFoodFactsProduct
       });
     }
 
@@ -653,6 +662,25 @@ async function evaluateAdminAlerts(req, res) {
   }
 }
 
+async function recordManualAdminSuggestion(req, res) {
+  try {
+    const notification = await stockAlertService.recordManualAdminSuggestion({
+      reason: normalizeLookupText(req.body?.reason || "Reposicao urgente"),
+      recipient: req.body?.recipient,
+      message: req.body?.message,
+      groups: Array.isArray(req.body?.groups) ? req.body.groups : []
+    }, req.profile?.email || req.user?.email || "usuario");
+
+    return res.json({
+      ok: true,
+      notification
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Nao foi possivel registrar a sugestao ao admin." });
+  }
+}
+
 async function updateAdminAlertConfig(req, res) {
   try {
     const nextConfig = sanitizeAlertConfigPayload(req.body);
@@ -709,6 +737,7 @@ app.post("/api/usuarios", requireAdmin, createUser);
 app.get("/api/barcodes/:barcode", requireAuthenticated, barcodeLookup);
 app.get("/api/admin-alerts/dashboard", requireAdmin, getAdminAlertsDashboard);
 app.post("/api/admin-alerts/evaluate", requireAuthenticated, evaluateAdminAlerts);
+app.post("/api/admin-alerts/manual-suggestion", requireAuthenticated, recordManualAdminSuggestion);
 app.post("/api/admin-alerts/config", requireAdmin, updateAdminAlertConfig);
 app.post("/api/admin-alerts/:productId/resolve", requireAdmin, resolveAdminAlert);
 app.post("/criar-usuario", requireAdmin, createUser);

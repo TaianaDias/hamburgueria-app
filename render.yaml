@@ -13,3 +13,7 @@ services:
         value: "20"
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: COSMOS_API_TOKEN
+        sync: false
+      - key: COSMOS_USER_AGENT
+        value: "HamburgueriaApp/1.0"

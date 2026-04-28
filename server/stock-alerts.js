@@ -11,6 +11,11 @@ const SUPPLIERS_COLLECTION = "fornecedores";
 const DEFAULT_EVALUATION_INTERVAL_MS = 15 * 60 * 1000;
 const CONSUMPTION_LOOKBACK_DAYS = 30;
 const WEEKLY_REPORT_LOOKBACK_DAYS = 7;
+const MANUAL_SUGGESTION_REASONS = new Set([
+  "Reposicao urgente",
+  "Compra preventiva",
+  "Pedido programado"
+]);
 
 const ORDER_WEEKDAYS = Object.freeze([
   { key: "seg", fullLabel: "Segunda", jsDay: 1 },
@@ -1049,6 +1054,71 @@ export function createStockAlertService(options = {}) {
     };
   }
 
+  async function recordManualAdminSuggestion(payload = {}, actor = "usuario") {
+    const referenceDate = new Date();
+    const reason = MANUAL_SUGGESTION_REASONS.has(String(payload.reason || "").trim())
+      ? String(payload.reason).trim()
+      : "Reposicao urgente";
+    const recipient = normalizePhone(payload.recipient || "");
+    const groups = Array.isArray(payload.groups) ? payload.groups : [];
+    const items = groups.flatMap((group) =>
+      (Array.isArray(group.itens) ? group.itens : []).map((item) => ({
+        productId: String(item.productId || "").trim(),
+        productName: String(item.nome || item.productName || "Produto").trim().slice(0, 120),
+        supplierName: String(group.fornecedor || "Fornecedor nao informado").trim().slice(0, 120),
+        quantity: Math.max(0, toNumber(item.qtdCompra || item.quantity, 0)),
+        triggers: Array.isArray(item.gatilhos || item.triggers)
+          ? (item.gatilhos || item.triggers).map((trigger) => String(trigger).trim()).filter(Boolean)
+          : []
+      }))
+    );
+    const message = String(payload.message || "").trim().slice(0, 5000);
+    const createdAt = referenceDate.toISOString();
+
+    const notificationPayload = {
+      channel: "whatsapp",
+      provider: "manual",
+      recipient,
+      message,
+      previewUrl: recipient && message ? buildWhatsAppPreviewUrl(recipient, message) : "",
+      status: recipient ? "opened_in_whatsapp" : "missing_recipient",
+      delivered: false,
+      trigger: "manual_purchase_suggestion",
+      type: "manual_purchase_suggestion",
+      reason,
+      actor,
+      itemCount: items.length,
+      alerts: items.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        supplierName: item.supplierName,
+        quantity: item.quantity,
+        triggers: item.triggers
+      })),
+      createdAt
+    };
+
+    const docRef = await firestore.collection(OUTBOUND_NOTIFICATIONS_COLLECTION).add(notificationPayload);
+
+    await Promise.all(items.map((item) => appendHistoryEvent(item.productId || item.productName, {
+      productId: item.productId || null,
+      productName: item.productName,
+      eventType: "manual_purchase_suggestion",
+      actor,
+      reason,
+      supplierName: item.supplierName,
+      quantity: item.quantity,
+      triggers: item.triggers,
+      notificationId: docRef.id,
+      createdAt
+    })));
+
+    return {
+      id: docRef.id,
+      ...notificationPayload
+    };
+  }
+
   function buildWeeklyReport(purchases, alerts, referenceDate = new Date()) {
     const lowerBound = new Date(referenceDate);
     lowerBound.setDate(lowerBound.getDate() - WEEKLY_REPORT_LOOKBACK_DAYS);
@@ -1430,6 +1500,7 @@ export function createStockAlertService(options = {}) {
   return {
     getDashboardData,
     evaluateAlerts,
+    recordManualAdminSuggestion,
     getSystemConfig,
     updateAlertConfig,
     markAlertResolved,
