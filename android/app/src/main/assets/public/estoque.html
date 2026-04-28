@@ -457,8 +457,10 @@ function getSupplierNamesSummary(productSuppliers) {
 function buildOperationalMetric(label, value, details = "") {
   return `
     <article class="operational-metric-card">
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value)}</strong>
+      <div class="operational-metric-main">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
       ${details ? `<p class="muted">${escapeHtml(details)}</p>` : ""}
     </article>
   `;

@@ -434,34 +434,46 @@ pre {
 
 .product-operational-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 18px;
   margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .operational-metric-card {
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.68), rgba(15, 23, 42, 0.46));
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid rgba(148, 163, 184, 0.18);
+}
+
+.operational-metric-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .operational-metric-card span {
-  display: block;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .operational-metric-card strong {
-  display: block;
-  margin-top: 10px;
-  font-size: 1.05rem;
+  display: inline;
+  font-size: 1rem;
   line-height: 1.35;
   color: var(--text);
 }
 
 .operational-metric-card .muted {
-  margin-top: 10px;
+  margin: 0;
+  font-size: 0.92rem;
 }
 
 .advanced-config-section {
