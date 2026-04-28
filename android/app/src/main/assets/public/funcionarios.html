@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Funcionarios | Hamburgueria</title>
@@ -25,6 +32,11 @@
   <section class="panel">
     <h3>Criar novo acesso</h3>
     <form id="employee-form" class="form-grid" style="margin-top: 16px;">
+      <div class="field-group">
+        <label for="nome">Nome</label>
+        <input id="nome" type="text" placeholder="Nome do funcionario">
+      </div>
+
       <div class="field-group">
         <label for="email">Email</label>
         <input id="email" type="email" placeholder="novo@empresa.com">
@@ -91,7 +103,8 @@ async function loadEmployees() {
       const article = document.createElement("article");
       article.className = "card";
       article.innerHTML = `
-        <h3>${escapeHtml(usuario.email)}</h3>
+        <h3>${escapeHtml(usuario.nome || usuario.email)}</h3>
+        <p class="muted">${escapeHtml(usuario.email)}</p>
         <p class="muted">Perfil: ${escapeHtml(usuario.tipo)}</p>
       `;
       list.appendChild(article);
@@ -106,12 +119,13 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("status", "", "info");
 
+  const nome = document.getElementById("nome").value.trim();
   const email = document.getElementById("email").value.trim().toLowerCase();
   const senha = document.getElementById("senha").value;
   const tipo = document.getElementById("tipo").value;
 
-  if (!email || !senha) {
-    setStatus("status", "Preencha email e senha.", "error");
+  if (!nome || !email || !senha) {
+    setStatus("status", "Preencha nome, email e senha.", "error");
     return;
   }
 
@@ -125,7 +139,7 @@ form.addEventListener("submit", async (event) => {
   try {
     await apiFetch("/api/usuarios", {
       method: "POST",
-      body: JSON.stringify({ email, senha, tipo })
+      body: JSON.stringify({ nome, email, senha, tipo })
     });
 
     form.reset();
@@ -144,3 +158,4 @@ await loadEmployees();
 </script>
 </body>
 </html>
+

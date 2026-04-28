@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Login | Hamburgueria</title>
@@ -67,6 +74,10 @@
   </section>
 </main>
 
+<footer class="footer">
+  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
+</footer>
+
 <script type="module">
 import { auth } from "./firebase.js";
 import {
@@ -80,181 +91,184 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-const loginTab = document.getElementById("login-tab");
-const registerTab = document.getElementById("register-tab");
-const loginPanel = document.getElementById("login-panel");
-const registerPanel = document.getElementById("register-panel");
-const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
-const loginButton = document.getElementById("submit-button");
-const registerButton = document.getElementById("register-button");
-const registerNote = document.getElementById("register-note");
+async function init() {
+  const loginTab = document.getElementById("login-tab");
+  const registerTab = document.getElementById("register-tab");
+  const loginPanel = document.getElementById("login-panel");
+  const registerPanel = document.getElementById("register-panel");
+  const loginForm = document.getElementById("login-form");
+  const registerForm = document.getElementById("register-form");
+  const loginButton = document.getElementById("submit-button");
+  const registerButton = document.getElementById("register-button");
+  const registerNote = document.getElementById("register-note");
 
-let bootstrapStatus = {
-  initialized: true,
-  canCreateFirstAccount: false,
-  unknown: false
-};
+  let bootstrapStatus = {
+    initialized: true,
+    canCreateFirstAccount: false,
+    unknown: false
+  };
 
-registerServiceWorker();
+  registerServiceWorker();
 
-function setActiveTab(tab) {
-  const showLogin = tab === "login";
+  function setActiveTab(tab) {
+    const showLogin = tab === "login";
 
-  loginTab.classList.toggle("active", showLogin);
-  registerTab.classList.toggle("active", !showLogin);
-  loginTab.setAttribute("aria-selected", String(showLogin));
-  registerTab.setAttribute("aria-selected", String(!showLogin));
-  loginPanel.classList.toggle("active", showLogin);
-  registerPanel.classList.toggle("active", !showLogin);
-  loginPanel.hidden = !showLogin;
-  registerPanel.hidden = showLogin;
+    loginTab.classList.toggle("active", showLogin);
+    registerTab.classList.toggle("active", !showLogin);
+    loginTab.setAttribute("aria-selected", String(showLogin));
+    registerTab.setAttribute("aria-selected", String(!showLogin));
+    loginPanel.classList.toggle("active", showLogin);
+    registerPanel.classList.toggle("active", !showLogin);
+    loginPanel.hidden = !showLogin;
+    registerPanel.hidden = showLogin;
+  }
+
+  function updateRegisterState() {
+    const canCreate = bootstrapStatus.canCreateFirstAccount || bootstrapStatus.unknown;
+
+    registerButton.disabled = !canCreate;
+    document.getElementById("register-nome").disabled = !canCreate;
+    document.getElementById("register-email").disabled = !canCreate;
+    document.getElementById("register-senha").disabled = !canCreate;
+    document.getElementById("register-confirmar-senha").disabled = !canCreate;
+
+    if (bootstrapStatus.unknown) {
+      registerNote.textContent = "Nao foi possivel verificar automaticamente o status inicial. Voce ainda pode tentar criar a primeira conta e o backend vai validar isso.";
+      return;
+    }
+
+    registerNote.textContent = bootstrapStatus.canCreateFirstAccount
+      ? "A primeira conta criada aqui vira admin automaticamente e libera o cadastro dos demais funcionarios."
+      : "O sistema ja foi inicializado. Depois do primeiro acesso, novas contas devem ser criadas por um administrador na tela de Funcionarios.";
+  }
+
+  async function loadBootstrapStatus() {
+    try {
+      const data = await apiFetchPublic("/api/bootstrap/status");
+
+      bootstrapStatus = {
+        initialized: Boolean(data.initialized),
+        canCreateFirstAccount: Boolean(data.canCreateFirstAccount),
+        unknown: false
+      };
+    } catch (error) {
+      console.error(error);
+      bootstrapStatus = {
+        initialized: false,
+        canCreateFirstAccount: false,
+        unknown: true
+      };
+      setStatus("status", error.message || "Nao foi possivel verificar se o sistema ja tem conta inicial.", "info");
+    }
+
+    updateRegisterState();
+  }
+
+  async function redirectIfAlreadyLoggedIn() {
+    const context = await getUserContext();
+
+    if (context?.user && !context.profile) {
+      await signOut(auth);
+      return;
+    }
+
+    if (context?.profile) {
+      window.location.href = "index.html";
+    }
+  }
+
+  loginTab.addEventListener("click", () => setActiveTab("login"));
+  registerTab.addEventListener("click", () => setActiveTab("register"));
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setStatus("status", "", "info");
+
+    const email = document.getElementById("login-email").value.trim().toLowerCase();
+    const senha = document.getElementById("login-senha").value;
+
+    if (!email || !senha) {
+      setStatus("status", "Preencha email e senha para continuar.", "error");
+      return;
+    }
+
+    loginButton.disabled = true;
+    setStatus("status", "Validando acesso...", "info");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+      setStatus("status", "Login realizado. Redirecionando...", "success");
+      window.location.href = "index.html";
+    } catch (error) {
+      console.error(error);
+      setStatus("status", "Login invalido. Confira email e senha.", "error");
+    } finally {
+      loginButton.disabled = false;
+    }
+  });
+
+  registerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setStatus("status", "", "info");
+
+    if (bootstrapStatus.initialized && !bootstrapStatus.canCreateFirstAccount && !bootstrapStatus.unknown) {
+      setStatus("status", "A conta inicial ja existe. Entre no sistema e use a tela de Funcionarios para novos acessos.", "error");
+      return;
+    }
+
+    const nome = document.getElementById("register-nome").value.trim();
+    const email = document.getElementById("register-email").value.trim().toLowerCase();
+    const senha = document.getElementById("register-senha").value;
+    const confirmarSenha = document.getElementById("register-confirmar-senha").value;
+
+    if (!nome || !email || !senha || !confirmarSenha) {
+      setStatus("status", "Preencha todos os campos para criar a conta inicial.", "error");
+      return;
+    }
+
+    if (senha.length < 6) {
+      setStatus("status", "A senha precisa ter pelo menos 6 caracteres.", "error");
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      setStatus("status", "As senhas nao conferem.", "error");
+      return;
+    }
+
+    registerButton.disabled = true;
+    setStatus("status", "Criando conta inicial e salvando perfil...", "info");
+
+    try {
+      await apiFetchPublic("/api/bootstrap/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ nome, email, senha })
+      });
+
+      await signInWithEmailAndPassword(auth, email, senha);
+      setStatus("status", "Conta criada com sucesso. Redirecionando...", "success");
+      window.location.href = "index.html";
+    } catch (error) {
+      console.error(error);
+      setStatus("status", error.message || "Nao foi possivel criar a conta inicial.", "error");
+    } finally {
+      registerButton.disabled = false;
+      await loadBootstrapStatus();
+    }
+  });
+
+  await loadBootstrapStatus();
+  await redirectIfAlreadyLoggedIn();
 }
 
-function updateRegisterState() {
-  const canCreate = bootstrapStatus.canCreateFirstAccount || bootstrapStatus.unknown;
-
-  registerButton.disabled = !canCreate;
-  document.getElementById("register-nome").disabled = !canCreate;
-  document.getElementById("register-email").disabled = !canCreate;
-  document.getElementById("register-senha").disabled = !canCreate;
-  document.getElementById("register-confirmar-senha").disabled = !canCreate;
-
-  if (bootstrapStatus.unknown) {
-    registerNote.textContent = "Nao foi possivel verificar automaticamente o status inicial. Voce ainda pode tentar criar a primeira conta e o backend vai validar isso.";
-    return;
-  }
-
-  registerNote.textContent = canCreate
-    ? "A primeira conta criada aqui vira admin automaticamente e libera o cadastro dos demais funcionarios."
-    : "O sistema ja foi inicializado. Depois do primeiro acesso, novas contas devem ser criadas por um administrador na tela de Funcionarios.";
-}
-
-async function loadBootstrapStatus() {
-  try {
-    const data = await apiFetchPublic("/api/bootstrap/status");
-
-    bootstrapStatus = {
-      initialized: Boolean(data.initialized),
-      canCreateFirstAccount: Boolean(data.canCreateFirstAccount),
-      unknown: false
-    };
-  } catch (error) {
-    console.error(error);
-    bootstrapStatus = {
-      initialized: false,
-      canCreateFirstAccount: false,
-      unknown: true
-    };
-    setStatus("status", error.message || "Nao foi possivel verificar se o sistema ja tem conta inicial.", "info");
-  }
-
-  updateRegisterState();
-}
-
-async function redirectIfAlreadyLoggedIn() {
-  const context = await getUserContext();
-
-  if (context?.user && !context.profile) {
-    await signOut(auth);
-    return;
-  }
-
-  if (context?.profile) {
-    window.location.href = "index.html";
-  }
-}
-
-loginTab.addEventListener("click", () => setActiveTab("login"));
-registerTab.addEventListener("click", () => setActiveTab("register"));
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  setStatus("status", "", "info");
-
-  const email = document.getElementById("login-email").value.trim().toLowerCase();
-  const senha = document.getElementById("login-senha").value;
-
-  if (!email || !senha) {
-    setStatus("status", "Preencha email e senha para continuar.", "error");
-    return;
-  }
-
-  loginButton.disabled = true;
-  setStatus("status", "Validando acesso...", "info");
-
-  try {
-    await signInWithEmailAndPassword(auth, email, senha);
-    setStatus("status", "Login realizado. Redirecionando...", "success");
-    window.location.href = "index.html";
-  } catch (error) {
-    console.error(error);
-    setStatus("status", "Login invalido. Confira email e senha.", "error");
-  } finally {
-    loginButton.disabled = false;
-  }
+init().catch((error) => {
+  console.error(error);
+  setStatus("status", "Nao foi possivel inicializar a tela de acesso.", "error");
 });
-
-registerForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  setStatus("status", "", "info");
-
-  if (bootstrapStatus.initialized && !bootstrapStatus.canCreateFirstAccount && !bootstrapStatus.unknown) {
-    setStatus("status", "A conta inicial ja existe. Entre no sistema e use a tela de Funcionarios para novos acessos.", "error");
-    return;
-  }
-
-  const nome = document.getElementById("register-nome").value.trim();
-  const email = document.getElementById("register-email").value.trim().toLowerCase();
-  const senha = document.getElementById("register-senha").value;
-  const confirmarSenha = document.getElementById("register-confirmar-senha").value;
-
-  if (!nome || !email || !senha || !confirmarSenha) {
-    setStatus("status", "Preencha todos os campos para criar a conta inicial.", "error");
-    return;
-  }
-
-  if (senha.length < 6) {
-    setStatus("status", "A senha precisa ter pelo menos 6 caracteres.", "error");
-    return;
-  }
-
-  if (senha !== confirmarSenha) {
-    setStatus("status", "As senhas nao conferem.", "error");
-    return;
-  }
-
-  registerButton.disabled = true;
-  setStatus("status", "Criando conta inicial e salvando perfil...", "info");
-
-  try {
-    await apiFetchPublic("/api/bootstrap/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ nome, email, senha })
-    });
-
-    await signInWithEmailAndPassword(auth, email, senha);
-    setStatus("status", "Conta criada com sucesso. Redirecionando...", "success");
-    window.location.href = "index.html";
-  } catch (error) {
-    console.error(error);
-    setStatus("status", error.message || "Nao foi possivel criar a conta inicial.", "error");
-  } finally {
-    registerButton.disabled = false;
-    await loadBootstrapStatus();
-  }
-});
-
-await loadBootstrapStatus();
-await redirectIfAlreadyLoggedIn();
-
-<footer class="footer">
-  🚀 Desenvolvido por <strong>Taiana Dias</strong> • Sistema Interno
-</footer>
-
 </script>
 </body>
 </html>
+

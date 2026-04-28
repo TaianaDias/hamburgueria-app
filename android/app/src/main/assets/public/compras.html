@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Compras | Hamburgueria</title>
@@ -18,10 +25,98 @@
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
+      <a id="alerts-link" class="button secondary" href="alertas-reposicao.html" hidden>Alertas</a>
+      <a class="button secondary" href="dashboard-compras.html">Dashboard</a>
+      <a class="button secondary" href="analise-compras.html">Analise</a>
       <button id="send-button" type="button">Enviar pedidos</button>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Registro mensal de compras</h3>
+        <p class="muted">Lance compras manuais, acompanhe o gasto do mes e, se quiser, ja atualize o estoque no mesmo registro.</p>
+      </div>
+    </div>
+
+    <form id="purchase-form" class="form-grid">
+      <div class="field-group">
+        <label for="purchase-product">Produto</label>
+        <select id="purchase-product"></select>
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-supplier">Fornecedor</label>
+        <select id="purchase-supplier"></select>
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-date">Data da compra</label>
+        <input id="purchase-date" type="date">
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-packages">Quantidade de embalagens</label>
+        <input id="purchase-packages" type="number" min="1" step="1" value="1">
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-price">Valor por embalagem</label>
+        <input id="purchase-price" type="number" min="0" step="0.01" value="0">
+      </div>
+
+      <div class="field-group">
+        <label for="purchase-total">Valor total</label>
+        <input id="purchase-total" type="text" value="R$ 0,00" readonly>
+      </div>
+
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <label for="purchase-note">Observacao</label>
+        <textarea id="purchase-note" placeholder="Ex.: promocao do mes, compra emergencial, pedido dividido..."></textarea>
+      </div>
+
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <span>Atualizacao de estoque</span>
+        <label class="inline-choice">
+          <input id="purchase-update-stock" type="checkbox" checked>
+          <span>Dar entrada no estoque ao registrar esta compra</span>
+        </label>
+      </div>
+
+      <button id="purchase-save-button" type="submit">Registrar compra</button>
+    </form>
+
+    <div id="purchase-status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Lembrete do admin</h3>
+        <p class="muted">Configure o WhatsApp do admin e gere um resumo com os itens acionados por estoque minimo ou por dia programado de pedido.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label for="admin-whatsapp">WhatsApp do admin</label>
+        <input id="admin-whatsapp" type="tel" placeholder="21999999999">
+      </div>
+
+      <div class="field-group">
+        <label for="admin-reminder-preview">Resumo atual</label>
+        <input id="admin-reminder-preview" type="text" readonly value="Nenhum item pendente">
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top: 16px;">
+      <button id="send-admin-reminder" class="secondary" type="button">Enviar lembrete ao admin</button>
+    </div>
+
+    <div id="admin-reminder-status" class="status info" hidden></div>
+  </section>
 
   <section class="panel">
     <h3>Pedidos sugeridos</h3>
@@ -33,116 +128,461 @@
 
 <script type="module">
 import { db } from "./firebase.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
   describeProfile,
   escapeHtml,
+  formatCurrency,
+  formatWeekdayList,
+  getCheapestProductSupplier,
+  getCurrentWeekdayKey,
+  getEffectiveSupplierPurchaseCost,
+  getEffectiveSupplierUnitCost,
+  getPackageQuantity,
+  isSupplierOrderDueToday,
+  isSupplierOrderFrequencyEnabled,
+  isSupplierPromotionActive,
+  normalizeProductSuppliers,
   normalizePhone,
   requireAuth,
   setStatus,
-  toNumber
+  toNumber,
+  triggerReplenishmentEvaluation
 } from "./app.js";
 
 const list = document.getElementById("lista");
 const sendButton = document.getElementById("send-button");
 const userInfo = document.getElementById("user-info");
+const purchaseForm = document.getElementById("purchase-form");
+const purchaseProductSelect = document.getElementById("purchase-product");
+const purchaseSupplierSelect = document.getElementById("purchase-supplier");
+const purchaseDateInput = document.getElementById("purchase-date");
+const purchasePackagesInput = document.getElementById("purchase-packages");
+const purchasePriceInput = document.getElementById("purchase-price");
+const purchaseTotalInput = document.getElementById("purchase-total");
+const purchaseNoteInput = document.getElementById("purchase-note");
+const purchaseUpdateStockCheckbox = document.getElementById("purchase-update-stock");
+const purchaseStatus = document.getElementById("purchase-status");
+const adminWhatsappInput = document.getElementById("admin-whatsapp");
+const adminReminderPreviewInput = document.getElementById("admin-reminder-preview");
+const sendAdminReminderButton = document.getElementById("send-admin-reminder");
+const adminReminderStatus = document.getElementById("admin-reminder-status");
+const alertsLink = document.getElementById("alerts-link");
 
 bindLogoutButton();
 
 const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
+alertsLink.hidden = profile.tipo !== "admin";
 
 let pedidos = [];
+let sugestoes = [];
+let fornecedoresCatalogo = [];
+let produtosEstoque = [];
+const ADMIN_REMINDER_PHONE_KEY = "burgerops.admin.whatsapp";
+const SYSTEM_SETTINGS_REF = doc(db, "configuracoes", "sistema");
 
 function buildMessage(pedido) {
-  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra}`);
+  const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
   return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
+}
+
+function getTodayDateValue(referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getMonthKey(value) {
+  const raw = String(value ?? "").trim();
+  return raw.length >= 7 ? raw.slice(0, 7) : "";
+}
+
+function getStoredAdminWhatsapp() {
+  try {
+    return window.localStorage.getItem(ADMIN_REMINDER_PHONE_KEY) || "";
+  } catch (error) {
+    console.warn("Nao foi possivel ler o WhatsApp do admin salvo.", error);
+    return "";
+  }
+}
+
+function storeAdminWhatsapp(value) {
+  try {
+    window.localStorage.setItem(ADMIN_REMINDER_PHONE_KEY, value);
+  } catch (error) {
+    console.warn("Nao foi possivel salvar o WhatsApp do admin.", error);
+  }
+}
+
+async function loadSharedAdminWhatsapp() {
+  try {
+    const snapshot = await getDoc(SYSTEM_SETTINGS_REF);
+    const sharedValue = normalizePhone(snapshot.data()?.adminWhatsapp || "");
+
+    if (sharedValue) {
+      storeAdminWhatsapp(sharedValue);
+      return {
+        value: sharedValue,
+        source: "sistema"
+      };
+    }
+  } catch (error) {
+    console.warn("Nao foi possivel carregar o WhatsApp compartilhado do admin.", error);
+  }
+
+  const localValue = normalizePhone(getStoredAdminWhatsapp());
+  return {
+    value: localValue,
+    source: localValue ? "navegador" : ""
+  };
+}
+
+async function persistAdminWhatsapp(value) {
+  const normalized = normalizePhone(value);
+  storeAdminWhatsapp(normalized);
+
+  try {
+    await setDoc(SYSTEM_SETTINGS_REF, {
+      adminWhatsapp: normalized,
+      atualizadoEm: serverTimestamp(),
+      atualizadoPor: profile.email
+    }, { merge: true });
+
+    return {
+      value: normalized,
+      source: "sistema"
+    };
+  } catch (error) {
+    console.warn("Nao foi possivel salvar o WhatsApp do admin no sistema. Mantendo fallback local.", error);
+    return {
+      value: normalized,
+      source: normalized ? "navegador" : ""
+    };
+  }
+}
+
+function getTriggerLabel(triggers = []) {
+  if (!triggers.length) {
+    return "ajuste manual";
+  }
+
+  return triggers.join(" + ");
+}
+
+function buildAdminReminderMessage(groups) {
+  const todayLabel = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "full"
+  }).format(new Date());
+  const lines = [
+    "Lembrete de compras e pedidos",
+    todayLabel,
+    ""
+  ];
+
+  groups.forEach((group) => {
+    lines.push(`Fornecedor: ${group.fornecedor}`);
+
+    group.itens.forEach((item) => {
+      lines.push(`- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
+    });
+
+    lines.push("");
+  });
+
+  return encodeURIComponent(lines.join("\n").trim());
+}
+
+function updateAdminReminderPreview() {
+  if (!pedidos.length) {
+    adminReminderPreviewInput.value = "Nenhum item pendente";
+    sendAdminReminderButton.disabled = true;
+    return;
+  }
+
+  const supplierCount = pedidos.length;
+  const itemCount = pedidos.reduce((sum, group) => sum + group.itens.length, 0);
+  adminReminderPreviewInput.value = `${itemCount} item(ns) em ${supplierCount} fornecedor(es)`;
+  sendAdminReminderButton.disabled = false;
+}
+
+function getSortedProductSuppliers(product) {
+  return normalizeProductSuppliers(product, fornecedoresCatalogo).sort((left, right) => {
+    const unitCostDifference = getEffectiveSupplierUnitCost(left) - getEffectiveSupplierUnitCost(right);
+
+    if (unitCostDifference !== 0) {
+      return unitCostDifference;
+    }
+
+    return left.nome.localeCompare(right.nome, "pt-BR");
+  });
+}
+
+function getProductById(productId) {
+  return produtosEstoque.find((item) => item.id === productId) || null;
+}
+
+function getSelectedPurchaseSupplier() {
+  const product = getProductById(purchaseProductSelect.value);
+
+  if (!product) {
+    return null;
+  }
+
+  return getSortedProductSuppliers(product).find((supplier) =>
+    supplier.fornecedorId === purchaseSupplierSelect.value
+  ) || null;
+}
+
+function updatePurchaseTotalPreview() {
+  const packageCount = Math.max(1, toNumber(purchasePackagesInput.value, 1));
+  const packagePrice = Math.max(0, toNumber(purchasePriceInput.value, 0));
+  purchaseTotalInput.value = formatCurrency(packageCount * packagePrice);
+}
+
+function applySelectedSupplierPrice() {
+  const selectedSupplier = getSelectedPurchaseSupplier();
+  purchasePriceInput.value = selectedSupplier
+    ? String(getEffectiveSupplierPurchaseCost(selectedSupplier).toFixed(2))
+    : "0";
+  updatePurchaseTotalPreview();
+}
+
+function syncPurchaseSupplierOptions(preferredSupplierId = "") {
+  purchaseSupplierSelect.innerHTML = "";
+  const product = getProductById(purchaseProductSelect.value);
+
+  if (!product) {
+    purchaseSupplierSelect.innerHTML = '<option value="">Selecione um produto</option>';
+    applySelectedSupplierPrice();
+    return;
+  }
+
+  const suppliers = getSortedProductSuppliers(product);
+
+  if (!suppliers.length) {
+    purchaseSupplierSelect.innerHTML = '<option value="">Produto sem fornecedor cadastrado</option>';
+    applySelectedSupplierPrice();
+    return;
+  }
+
+  suppliers.forEach((supplier, index) => {
+    const option = document.createElement("option");
+    option.value = supplier.fornecedorId;
+    option.selected = preferredSupplierId
+      ? supplier.fornecedorId === preferredSupplierId
+      : index === 0;
+    option.textContent = `${supplier.nome} | embalagem ${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))}${supplier.promocaoAplicada ? " | promo ativa" : ""}`;
+    purchaseSupplierSelect.appendChild(option);
+  });
+
+  applySelectedSupplierPrice();
+}
+
+function populatePurchaseProductOptions(preferredProductId = "") {
+  purchaseProductSelect.innerHTML = "";
+
+  if (!produtosEstoque.length) {
+    purchaseProductSelect.innerHTML = '<option value="">Nenhum produto cadastrado</option>';
+    syncPurchaseSupplierOptions();
+    return;
+  }
+
+  produtosEstoque
+    .slice()
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"))
+    .forEach((product, index) => {
+      const option = document.createElement("option");
+      option.value = product.id;
+      option.selected = preferredProductId ? product.id === preferredProductId : index === 0;
+      option.textContent = product.nome;
+      purchaseProductSelect.appendChild(option);
+    });
 }
 
 function renderOrders(items) {
   list.innerHTML = "";
-  sendButton.disabled = items.length === 0;
+  sendButton.disabled = pedidos.length === 0;
+  updateAdminReminderPreview();
 
   if (!items.length) {
-    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao neste momento.</div>';
+    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao ou pedido programado neste momento.</div>';
     return;
   }
 
-  items.forEach((pedido) => {
+  items.forEach((item) => {
     const article = document.createElement("article");
     article.className = "card";
-
-    const phoneInfo = pedido.telefone ? pedido.telefone : "Telefone nao informado";
-    const supplierInfo = pedido.fornecedor || "Fornecedor nao definido";
-    const orderLines = pedido.itens
-      .map((item) => `<li>${escapeHtml(item.nome)}: ${item.qtdCompra}</li>`)
-      .join("");
+    const supplierColumns = item.fornecedores.length
+      ? item.fornecedores.map((supplier) => `
+        <div class="supplier-price-card${supplier.recomendado ? " best" : ""}">
+          <strong>${escapeHtml(supplier.nome || "Fornecedor nao definido")}</strong>
+          <span class="supplier-price">${formatCurrency(getEffectiveSupplierUnitCost(supplier))}</span>
+          <p class="muted">${escapeHtml(`Embalagem ${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))} | ${supplier.conversao} ${supplier.unidadeUso} | ${supplier.qtdCompra} embalagem(ns)`)} </p>
+          <p class="muted">${escapeHtml(
+            supplier.promocaoAplicada && supplier.custoPromocionalCompra != null
+              ? `Promocao ativa | normal ${formatCurrency(supplier.custoCompra)} | promo ${formatCurrency(supplier.custoPromocionalCompra)}`
+              : `Preco normal ${formatCurrency(supplier.custoCompra)}`
+          )}</p>
+          <p class="muted">${escapeHtml(
+            isSupplierOrderFrequencyEnabled(supplier)
+              ? `Pedido ${formatWeekdayList(supplier.diasPedido)} | Entrega ${formatWeekdayList(supplier.diasEntrega)} | Padrao ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)${supplier.programadoHoje ? " | pedir hoje" : ""}`
+              : "Sem frequencia programada"
+          )}</p>
+        </div>
+      `).join("")
+      : '<div class="empty-state">Nenhum fornecedor cadastrado para este item.</div>';
 
     article.innerHTML = `
-      <h3>${escapeHtml(supplierInfo)}</h3>
-      <p class="muted">${escapeHtml(phoneInfo)}</p>
-      <ul class="order-items">${orderLines}</ul>
+      <h3>${escapeHtml(item.nome)}</h3>
+      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Minimo ${item.minimo} | Maximo ${item.maximo} | Pedido sugerido ${item.qtdCompra} embalagem(ns) | Motivo ${getTriggerLabel(item.gatilhos)}`)}</p>
+      <div class="supplier-price-grid">${supplierColumns}</div>
     `;
 
     list.appendChild(article);
   });
 }
 
-async function loadOrders() {
-  const [supplierSnapshot, stockSnapshot] = await Promise.all([
-    getDocs(collection(db, "fornecedores")),
-    getDocs(collection(db, "estoque"))
-  ]);
-
-  const suppliers = supplierSnapshot.docs.map((document) => ({
-    id: document.id,
-    ...document.data()
-  }));
-
+function buildOrderSuggestions() {
   const grouped = new Map();
+  const productSuggestions = [];
+  const currentWeekday = getCurrentWeekdayKey(new Date());
 
-  stockSnapshot.docs.forEach((document) => {
-    const item = document.data();
+  produtosEstoque.forEach((item) => {
     const quantidade = toNumber(item.quantidade, 0);
     const minimo = toNumber(item.minimo, 0);
     const maximo = Math.max(minimo, toNumber(item.maximo, 0));
-    const conversao = Math.max(1, toNumber(item.conversao, 1));
+    const productSuppliers = getSortedProductSuppliers(item);
+    const falta = Math.max(0, maximo - quantidade);
+    const estoqueMinimoAtingido = quantidade <= minimo;
+    const dueSuppliers = productSuppliers.filter((supplier) => isSupplierOrderDueToday(supplier));
 
-    if (quantidade > minimo) {
+    if (!estoqueMinimoAtingido && !dueSuppliers.length) {
       return;
     }
 
-    const fornecedor = suppliers.find((supplier) =>
-      supplier.id === item.fornecedorId ||
-      supplier.nome === item.fornecedorNome ||
-      supplier.nome === item.fornecedor
+    const supplierChoice = dueSuppliers[0]
+      || getCheapestProductSupplier(item, fornecedoresCatalogo)
+      || productSuppliers[0]
+      || null;
+    const key = supplierChoice?.fornecedorId || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
+    const chosenPackageQuantity = supplierChoice
+      ? Math.max(1, toNumber(supplierChoice.conversao, 1))
+      : Math.max(1, getPackageQuantity(item));
+    const stockBasedQuantity = Math.max(1, Math.ceil(falta / chosenPackageQuantity));
+    const defaultScheduledQuantity = supplierChoice?.frequenciaAtiva
+      ? Math.max(1, toNumber(supplierChoice.quantidadePedidoPadrao, 1))
+      : 0;
+    const qtdCompra = Math.max(
+      estoqueMinimoAtingido ? stockBasedQuantity : 0,
+      dueSuppliers.length ? defaultScheduledQuantity : 0,
+      1
     );
+    const gatilhos = [];
 
-    const key = fornecedor?.id || item.fornecedorId || item.fornecedorNome || item.fornecedor || "sem-fornecedor";
-    const falta = Math.max(0, maximo - quantidade);
-    const qtdCompra = Math.max(1, Math.ceil(falta / conversao));
+    if (dueSuppliers.length) {
+      gatilhos.push(`dia programado (${formatWeekdayList([currentWeekday])})`);
+    }
+
+    if (estoqueMinimoAtingido) {
+      gatilhos.push("estoque minimo");
+    }
+
+    const sortedSuppliers = productSuppliers.map((supplier, index) => {
+      const packageQuantity = Math.max(1, toNumber(supplier.conversao, 1));
+      const stockSuggestion = Math.max(1, Math.ceil(falta / packageQuantity));
+      const scheduledSuggestion = supplier.frequenciaAtiva
+        ? Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))
+        : 0;
+      const programadoHoje = isSupplierOrderDueToday(supplier);
+      return {
+        ...supplier,
+        qtdCompra: Math.max(
+          estoqueMinimoAtingido ? stockSuggestion : 0,
+          programadoHoje ? scheduledSuggestion : 0,
+          1
+        ),
+        recomendado: supplierChoice
+          ? supplier.fornecedorId === supplierChoice.fornecedorId
+          : index === 0,
+        promocaoAplicada: isSupplierPromotionActive(supplier),
+        programadoHoje
+      };
+    });
 
     if (!grouped.has(key)) {
       grouped.set(key, {
-        fornecedor: fornecedor?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
-        telefone: fornecedor?.telefone || "",
-        telefoneNormalizado: fornecedor?.telefoneNormalizado || normalizePhone(fornecedor?.telefone || ""),
+        fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
+        telefone: supplierChoice?.telefone || "",
+        telefoneNormalizado: supplierChoice?.telefoneNormalizado || normalizePhone(supplierChoice?.telefone || ""),
         itens: []
       });
     }
 
     grouped.get(key).itens.push({
       nome: item.nome,
-      qtdCompra
+      qtdCompra,
+      gatilhos
+    });
+
+    productSuggestions.push({
+      nome: item.nome,
+      quantidade,
+      minimo,
+      maximo,
+      repor: falta,
+      qtdCompra,
+      gatilhos,
+      fornecedores: sortedSuppliers
     });
   });
 
   pedidos = Array.from(grouped.values()).sort((left, right) =>
     left.fornecedor.localeCompare(right.fornecedor, "pt-BR")
   );
+  sugestoes = productSuggestions.sort((left, right) =>
+    left.nome.localeCompare(right.nome, "pt-BR")
+  );
 
-  renderOrders(pedidos);
+  renderOrders(sugestoes);
+}
+
+async function loadPageData(options = {}) {
+  const { preserveProduct = true, preserveSupplier = true } = options;
+  const previousProductId = preserveProduct ? purchaseProductSelect.value : "";
+  const previousSupplierId = preserveSupplier ? purchaseSupplierSelect.value : "";
+  const [supplierSnapshot, stockSnapshot] = await Promise.all([
+    getDocs(collection(db, "fornecedores")),
+    getDocs(collection(db, "estoque"))
+  ]);
+
+  fornecedoresCatalogo = supplierSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data()
+  }));
+
+  produtosEstoque = stockSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
+    quantidade: toNumber(document.data().quantidade, 0),
+    minimo: toNumber(document.data().minimo, 0),
+    maximo: toNumber(document.data().maximo, 0)
+  }));
+
+  populatePurchaseProductOptions(previousProductId);
+  syncPurchaseSupplierOptions(previousSupplierId);
+  buildOrderSuggestions();
 }
 
 sendButton.addEventListener("click", () => {
@@ -180,12 +620,167 @@ sendButton.addEventListener("click", () => {
   setStatus("status", "Nenhum pedido foi enviado porque faltam telefones validos.", "error");
 });
 
-await loadOrders();
+adminWhatsappInput.addEventListener("change", () => {
+  const normalized = normalizePhone(adminWhatsappInput.value);
+  adminWhatsappInput.value = normalized;
+});
+
+sendAdminReminderButton.addEventListener("click", () => {
+  if (!pedidos.length) {
+    setStatus("admin-reminder-status", "Nao ha lembretes pendentes para enviar ao admin.", "info");
+    return;
+  }
+
+  const phone = normalizePhone(adminWhatsappInput.value);
+
+  if (!phone) {
+    setStatus("admin-reminder-status", "Informe o WhatsApp do admin para enviar o lembrete.", "error");
+    return;
+  }
+
+  persistAdminWhatsapp(phone).catch(() => null);
+  const url = `https://wa.me/${phone}?text=${buildAdminReminderMessage(pedidos)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+  setStatus("admin-reminder-status", "Lembrete do admin aberto no WhatsApp.", "success");
+});
+
+purchaseProductSelect.addEventListener("change", () => syncPurchaseSupplierOptions());
+purchaseSupplierSelect.addEventListener("change", applySelectedSupplierPrice);
+purchasePackagesInput.addEventListener("input", updatePurchaseTotalPreview);
+purchasePriceInput.addEventListener("input", updatePurchaseTotalPreview);
+
+purchaseForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus("purchase-status", "", "info");
+
+  const product = getProductById(purchaseProductSelect.value);
+  const supplier = getSelectedPurchaseSupplier();
+  const dataCompra = purchaseDateInput.value || getTodayDateValue();
+  const quantidadeEmbalagens = Math.max(1, toNumber(purchasePackagesInput.value, 1));
+  const valorEmbalagem = Math.max(0, toNumber(purchasePriceInput.value, 0));
+  const observacao = purchaseNoteInput.value.trim();
+
+  if (!product) {
+    setStatus("purchase-status", "Selecione um produto para registrar a compra.", "error");
+    return;
+  }
+
+  if (!supplier) {
+    setStatus("purchase-status", "Selecione um fornecedor valido para registrar a compra.", "error");
+    return;
+  }
+
+  const quantidadeUnidades = quantidadeEmbalagens * Math.max(1, toNumber(supplier.conversao, 1));
+  const valorTotal = quantidadeEmbalagens * valorEmbalagem;
+  const valorReferenciaTotal = quantidadeEmbalagens * Math.max(0, toNumber(supplier.custoCompra, 0));
+  const descontoTotal = Math.max(0, valorReferenciaTotal - valorTotal);
+
+  try {
+    const atualizarEstoque = purchaseUpdateStockCheckbox.checked;
+
+    await addDoc(collection(db, "comprasMensais"), {
+      produtoId: product.id,
+      produtoNome: product.nome,
+      fornecedorId: supplier.fornecedorId,
+      fornecedorNome: supplier.nome,
+      dataCompra,
+      mesReferencia: getMonthKey(dataCompra),
+      quantidadeEmbalagens,
+      quantidadeUnidades,
+      conversao: supplier.conversao,
+      unidadeUso: supplier.unidadeUso,
+      valorEmbalagem,
+      valorUnitarioUso: quantidadeUnidades > 0 ? (valorTotal / quantidadeUnidades) : 0,
+      valorTotal,
+      valorReferenciaTotal,
+      descontoTotal,
+      promocaoAplicada: Boolean(supplier.promocaoAplicada),
+      valorNormalEmbalagem: supplier.custoCompra,
+      valorPromocionalEmbalagem: supplier.custoPromocionalCompra ?? null,
+      atualizouEstoque: atualizarEstoque,
+      observacao,
+      origem: "manual",
+      responsavel: profile.email,
+      criadoEm: serverTimestamp()
+    });
+
+    if (atualizarEstoque) {
+      await updateDoc(doc(db, "estoque", product.id), {
+        quantidade: Math.max(0, toNumber(product.quantidade, 0) + quantidadeUnidades),
+        atualizadoEm: serverTimestamp()
+      });
+    }
+
+    await addDoc(collection(db, "historico"), {
+      tipo: "compra_manual",
+      itemId: product.id,
+      itemNome: product.nome,
+      fornecedorNome: supplier.nome,
+      totalCompra: valorTotal,
+      responsavel: profile.email,
+      data: serverTimestamp()
+    });
+
+    purchasePackagesInput.value = "1";
+    purchaseNoteInput.value = "";
+    purchaseUpdateStockCheckbox.checked = true;
+    applySelectedSupplierPrice();
+
+    setStatus(
+      "purchase-status",
+      atualizarEstoque
+        ? "Compra registrada com sucesso e estoque atualizado."
+        : "Compra registrada com sucesso no controle mensal.",
+      "success"
+    );
+
+    triggerReplenishmentEvaluation("compra_registrada").catch(() => null);
+    await loadPageData({ preserveProduct: true, preserveSupplier: true });
+  } catch (error) {
+    console.error(error);
+    setStatus("purchase-status", error.message || "Nao foi possivel registrar a compra.", "error");
+  }
+});
+
+const adminWhatsappState = await loadSharedAdminWhatsapp();
+adminWhatsappInput.value = adminWhatsappState.value;
+
+if (adminWhatsappState.value) {
+  setStatus(
+    "admin-reminder-status",
+    adminWhatsappState.source === "sistema"
+      ? "WhatsApp do admin carregado do sistema."
+      : "WhatsApp do admin carregado do navegador deste dispositivo.",
+    "info"
+  );
+}
+
+adminWhatsappInput.addEventListener("blur", async () => {
+  const normalized = normalizePhone(adminWhatsappInput.value);
+  adminWhatsappInput.value = normalized;
+
+  if (!normalized) {
+    setStatus("admin-reminder-status", "", "info");
+    return;
+  }
+
+  const persisted = await persistAdminWhatsapp(normalized);
+  setStatus(
+    "admin-reminder-status",
+    persisted.source === "sistema"
+      ? "WhatsApp do admin salvo no sistema."
+      : "WhatsApp do admin salvo apenas neste navegador.",
+    "success"
+  );
+});
+
+purchaseDateInput.value = getTodayDateValue();
+await loadPageData({ preserveProduct: false, preserveSupplier: false });
+</script>
 
 <footer class="footer">
-  🚀 Desenvolvido por <strong>Taiana Dias</strong> • Sistema Interno
+  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
 </footer>
-
-</script>
 </body>
 </html>
+

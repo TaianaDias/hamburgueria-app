@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Receitas | Hamburgueria</title>
@@ -29,6 +36,38 @@
         <div class="field-group">
           <label for="nome">Nome do lanche</label>
           <input id="nome" placeholder="Burger da casa">
+        </div>
+
+        <div class="field-group" style="margin-top: 16px;">
+          <label for="descricao">Receita escrita</label>
+          <textarea id="descricao" placeholder="Ex.: Pao brioche, blend 160g, queijo, molho da casa e salada. Use este campo para deixar a montagem e o rendimento descritos por escrito."></textarea>
+        </div>
+
+        <div class="form-grid" style="margin-top: 18px;">
+          <div class="field-group">
+            <label for="preco_venda">Preco de venda</label>
+            <input id="preco_venda" type="number" min="0" step="0.01" value="0">
+          </div>
+
+          <div class="field-group">
+            <label for="custo_total">Custo total dos insumos</label>
+            <input id="custo_total" type="text" value="R$ 0,00" readonly>
+          </div>
+
+          <div class="field-group">
+            <label for="lucro_estimado">Lucro bruto estimado</label>
+            <input id="lucro_estimado" type="text" value="R$ 0,00" readonly>
+          </div>
+
+          <div class="field-group">
+            <label for="margem_lucro">Margem bruta</label>
+            <input id="margem_lucro" type="text" value="0,0%" readonly>
+          </div>
+        </div>
+
+        <div class="summary-line" style="margin-top: 16px;">
+          <span id="cost-summary">Cadastre os insumos do lanche para ver o custo automatico.</span>
+          <strong id="profit-summary">Informe o preco de venda para visualizar o lucro.</strong>
         </div>
 
         <div style="margin-top: 18px;">
@@ -68,7 +107,9 @@ import {
   describeProfile,
   escapeHtml,
   formatCurrency,
+  formatPercent,
   getUnitCost,
+  getUsageUnit,
   normalizeText,
   parseRecipeIngredients,
   requireAuth,
@@ -82,15 +123,18 @@ const recipesList = document.getElementById("lista");
 const recipeForm = document.getElementById("recipe-form");
 const saveButton = document.getElementById("save-button");
 const recipeNameInput = document.getElementById("nome");
+const recipeDescriptionInput = document.getElementById("descricao");
+const salePriceInput = document.getElementById("preco_venda");
+const totalCostInput = document.getElementById("custo_total");
+const profitInput = document.getElementById("lucro_estimado");
+const marginInput = document.getElementById("margem_lucro");
+const costSummary = document.getElementById("cost-summary");
+const profitSummary = document.getElementById("profit-summary");
 const userInfo = document.getElementById("user-info");
-
-bindLogoutButton();
-
-const { profile } = await requireAuth();
-userInfo.textContent = describeProfile(profile);
 
 let estoque = [];
 let selecionados = [];
+let profile;
 
 function findStockItemByName(nome) {
   return estoque.find((item) => normalizeText(item.nome) === normalizeText(nome));
@@ -101,6 +145,23 @@ function calculateRecipeCost(ingredientes) {
     const item = findStockItemByName(ingrediente.nome);
     return total + (getUnitCost(item) * toNumber(ingrediente.qtd, 0));
   }, 0);
+}
+
+function getSalePrice() {
+  return Math.max(0, toNumber(salePriceInput.value, 0));
+}
+
+function updateRecipeSummary() {
+  const custoTotal = calculateRecipeCost(selecionados);
+  const precoVenda = getSalePrice();
+  const lucroBruto = precoVenda - custoTotal;
+  const margemBruta = precoVenda > 0 ? lucroBruto / precoVenda : 0;
+
+  totalCostInput.value = formatCurrency(custoTotal);
+  profitInput.value = formatCurrency(lucroBruto);
+  marginInput.value = formatPercent(margemBruta);
+  costSummary.textContent = `Custo total dos insumos: ${formatCurrency(custoTotal)}`;
+  profitSummary.textContent = `Lucro bruto estimado: ${formatCurrency(lucroBruto)}`;
 }
 
 function renderStock() {
@@ -126,6 +187,7 @@ function renderStock() {
       }
 
       renderSelected();
+      updateRecipeSummary();
     });
 
     stockList.appendChild(button);
@@ -142,14 +204,18 @@ function renderSelected() {
 
   selecionados.forEach((ingrediente, index) => {
     const stockItem = findStockItemByName(ingrediente.nome);
+    const unitCost = getUnitCost(stockItem);
+    const usageUnit = getUsageUnit(stockItem);
+    const subtotal = unitCost * toNumber(ingrediente.qtd, 0);
     const card = document.createElement("article");
     card.className = "card";
 
     card.innerHTML = `
       <div class="summary-line">
         <strong>${escapeHtml(ingrediente.nome)}</strong>
-        <span>${formatCurrency(getUnitCost(stockItem))} por unidade</span>
+        <span>${formatCurrency(unitCost)} por ${escapeHtml(usageUnit)}</span>
       </div>
+      <p class="muted" style="margin: 10px 0 0;">Usando ${ingrediente.qtd} ${escapeHtml(usageUnit)} = ${formatCurrency(subtotal)}</p>
     `;
 
     const actions = document.createElement("div");
@@ -167,6 +233,8 @@ function renderSelected() {
     qtyInput.value = ingrediente.qtd;
     qtyInput.addEventListener("change", () => {
       ingrediente.qtd = Math.max(0.1, toNumber(qtyInput.value, 1));
+      renderSelected();
+      updateRecipeSummary();
     });
     qtyField.appendChild(qtyInput);
 
@@ -177,6 +245,7 @@ function renderSelected() {
     removeButton.addEventListener("click", () => {
       selecionados.splice(index, 1);
       renderSelected();
+      updateRecipeSummary();
     });
 
     actions.appendChild(qtyField);
@@ -209,9 +278,22 @@ async function loadRecipes() {
 
   receitas.forEach((receita) => {
     const ingredientes = parseRecipeIngredients(receita);
-    const custo = calculateRecipeCost(ingredientes);
+    const custo = Math.max(0, toNumber(receita.custoTotalEstimado, calculateRecipeCost(ingredientes)));
+    const precoVenda = Math.max(0, toNumber(
+      receita.precoVenda,
+      receita.valorPorUnidade ?? receita.valorTotalVenda ?? 0
+    ));
+    const lucroBruto = toNumber(receita.lucroBrutoEstimado, precoVenda - custo);
+    const margemBruta = precoVenda > 0
+      ? toNumber(receita.margemBruta, lucroBruto / precoVenda)
+      : 0;
     const detalhes = ingredientes
-      .map((ingrediente) => `${ingrediente.nome}: ${ingrediente.qtd}`)
+      .map((ingrediente) => {
+        const item = findStockItemByName(ingrediente.nome);
+        const usageUnit = getUsageUnit(item);
+        const subtotal = getUnitCost(item) * toNumber(ingrediente.qtd, 0);
+        return `${ingrediente.nome}: ${ingrediente.qtd} ${usageUnit} = ${formatCurrency(subtotal)}`;
+      })
       .join("\n");
 
     const article = document.createElement("article");
@@ -219,8 +301,10 @@ async function loadRecipes() {
     article.innerHTML = `
       <div class="summary-line">
         <strong>${escapeHtml(receita.nome)}</strong>
-        <span>${formatCurrency(custo)}</span>
+        <span>Venda: ${formatCurrency(precoVenda)}</span>
       </div>
+      <p class="muted" style="margin: 10px 0 0;">Custo: ${formatCurrency(custo)} | Lucro bruto: ${formatCurrency(lucroBruto)} | Margem: ${formatPercent(margemBruta)}</p>
+      ${receita.descricao ? `<p class="recipe-note">${escapeHtml(receita.descricao)}</p>` : ""}
       <pre>${escapeHtml(detalhes || "Sem ingredientes detalhados.")}</pre>
     `;
     recipesList.appendChild(article);
@@ -232,14 +316,16 @@ recipeForm.addEventListener("submit", async (event) => {
   setStatus("status", "", "info");
 
   const nome = recipeNameInput.value.trim();
+  const descricao = recipeDescriptionInput.value.trim();
+  const precoVenda = getSalePrice();
 
   if (!nome) {
     setStatus("status", "Informe o nome da receita.", "error");
     return;
   }
 
-  if (!selecionados.length) {
-    setStatus("status", "Selecione ao menos um ingrediente.", "error");
+  if (!descricao && !selecionados.length) {
+    setStatus("status", "Adicione uma descricao escrita ou selecione ao menos um ingrediente.", "error");
     return;
   }
 
@@ -259,20 +345,34 @@ recipeForm.addEventListener("submit", async (event) => {
       nome: ingrediente.nome,
       qtd: Math.max(0.1, toNumber(ingrediente.qtd, 1))
     }));
+    const custoTotalEstimado = calculateRecipeCost(ingredientes);
+    const lucroBrutoEstimado = precoVenda - custoTotalEstimado;
+    const margemBruta = precoVenda > 0 ? lucroBrutoEstimado / precoVenda : 0;
 
     await addDoc(collection(db, "receitas"), {
       nome,
+      descricao,
       nomeNormalizado: normalizeText(nome),
       ingredientes,
       itens: ingredientes.map((ingrediente) => `${ingrediente.nome}:${ingrediente.qtd}`).join("\n"),
-      custoTotalEstimado: calculateRecipeCost(ingredientes),
+      custoTotalEstimado,
+      precoVenda,
+      lucroBrutoEstimado,
+      margemBruta,
+      valorTotalVenda: precoVenda,
+      valorPorUnidade: precoVenda,
+      rendimentoQuantidade: 1,
+      rendimentoUnidade: "lanche",
+      custoPorUnidadeEstimado: custoTotalEstimado,
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp()
     });
 
     recipeForm.reset();
     selecionados = [];
+    salePriceInput.value = "0";
     renderSelected();
+    updateRecipeSummary();
     setStatus("status", "Receita salva com sucesso.", "success");
     await loadRecipes();
   } catch (error) {
@@ -283,9 +383,25 @@ recipeForm.addEventListener("submit", async (event) => {
   }
 });
 
-await loadStock();
-renderSelected();
-await loadRecipes();
+salePriceInput.addEventListener("input", updateRecipeSummary);
+
+async function init() {
+  bindLogoutButton();
+  const authContext = await requireAuth();
+  profile = authContext.profile;
+  userInfo.textContent = describeProfile(profile);
+  salePriceInput.value = "0";
+  await loadStock();
+  renderSelected();
+  updateRecipeSummary();
+  await loadRecipes();
+}
+
+init().catch((error) => {
+  console.error(error);
+  setStatus("status", "Nao foi possivel carregar a tela de receitas.", "error");
+});
 </script>
 </body>
 </html>
+

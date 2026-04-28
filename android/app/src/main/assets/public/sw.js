@@ -1,4 +1,4 @@
-const CACHE_NAME = "hamburgueria-app-v1";
+const CACHE_NAME = "hamburgueria-app-v9";
 const APP_SHELL = [
   "/",
   "/login.html",
@@ -6,14 +6,23 @@ const APP_SHELL = [
   "/estoque.html",
   "/receitas.html",
   "/compras.html",
+  "/alertas-reposicao.html",
+  "/analise-compras.html",
+  "/dashboard-compras.html",
   "/fornecedores.html",
   "/dashboard.html",
   "/funcionarios.html",
   "/style.css",
   "/firebase.js",
   "/app.js",
+  "/barcode-cache.js",
   "/runtime-config.json",
-  "/manifest.json"
+  "/manifest.json",
+  "/icon.svg",
+  "/favicon-32.png",
+  "/apple-touch-icon.png",
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {

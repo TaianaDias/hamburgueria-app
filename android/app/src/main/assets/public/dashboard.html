@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Dashboard | Hamburgueria</title>
@@ -18,6 +25,7 @@
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
+      <a id="alerts-link" class="button secondary" href="alertas-reposicao.html" hidden>Alertas</a>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
@@ -66,6 +74,7 @@
 import { db } from "./firebase.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
+  apiFetch,
   bindLogoutButton,
   describeProfile,
   escapeHtml,
@@ -79,6 +88,7 @@ bindLogoutButton();
 
 const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = describeProfile(profile);
+document.getElementById("alerts-link").hidden = profile.tipo !== "admin";
 
 const [stockSnapshot, recipeSnapshot, supplierSnapshot, historySnapshot] = await Promise.all([
   getDocs(collection(db, "estoque")),
@@ -105,9 +115,15 @@ document.getElementById("metric-receitas").textContent = String(receitas.length)
 document.getElementById("metric-fornecedores").textContent = String(fornecedores.length);
 
 const lowStockList = document.getElementById("low-stock-list");
-if (!itensEmBaixa.length) {
-  lowStockList.innerHTML = '<div class="empty-state">Nenhum item abaixo do nivel minimo.</div>';
-} else {
+
+function renderLowStockFallback() {
+  lowStockList.innerHTML = "";
+
+  if (!itensEmBaixa.length) {
+    lowStockList.innerHTML = '<div class="empty-state">Nenhum item abaixo do nivel minimo.</div>';
+    return;
+  }
+
   itensEmBaixa
     .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"))
     .forEach((item) => {
@@ -119,6 +135,33 @@ if (!itensEmBaixa.length) {
       `;
       lowStockList.appendChild(article);
     });
+}
+
+if (profile.tipo === "admin") {
+  try {
+    const alertDashboard = await apiFetch("/api/admin-alerts/dashboard");
+    const alerts = Array.isArray(alertDashboard.activeAlerts) ? alertDashboard.activeAlerts.slice(0, 6) : [];
+
+    if (!alerts.length) {
+      lowStockList.innerHTML = '<div class="empty-state">Nenhum alerta inteligente de reposicao neste momento.</div>';
+    } else {
+      alerts.forEach((alert) => {
+        const article = document.createElement("article");
+        article.className = `card ${alert.level === "urgent" ? "critical" : ""}`;
+        article.innerHTML = `
+          <h3>${escapeHtml(alert.productName)}</h3>
+          <p class="muted">Estoque: ${toNumber(alert.currentStock, 0)} | Minimo: ${toNumber(alert.minimumStock, 0)} | Fornecedor: ${escapeHtml(alert.recommendedSupplier?.nome || "Nao definido")}</p>
+          <p class="muted">Sugestao: ${toNumber(alert.suggestedPurchase?.packagesToBuy, 0)} embalagem(ns) | Cobertura: ${alert.daysCoverage == null ? "nao calculada" : `${toNumber(alert.daysCoverage, 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dia(s)`}</p>
+        `;
+        lowStockList.appendChild(article);
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    renderLowStockFallback();
+  }
+} else {
+  renderLowStockFallback();
 }
 
 const historyList = document.getElementById("history-list");
@@ -145,3 +188,4 @@ if (!historico.length) {
 </script>
 </body>
 </html>
+

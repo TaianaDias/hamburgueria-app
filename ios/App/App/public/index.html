@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Inicio | Hamburgueria</title>
@@ -12,7 +19,7 @@
   <header class="page-header">
     <div>
       <p class="eyebrow">Painel principal</p>
-      <h1>Sistema da hamburgueria</h1>
+      <h1>Sistema Carioca's</h1>
       <p id="user-info" class="muted"></p>
     </div>
 
@@ -38,6 +45,21 @@
       <p class="muted">Veja reposicoes necessarias e envie pedidos rapido.</p>
     </a>
 
+    <a class="card" href="analise-compras.html">
+      <h3>Analise de compras</h3>
+      <p class="muted">Compare meses, gastos totais e descontos acumulados.</p>
+    </a>
+
+    <a class="card" href="dashboard-compras.html">
+      <h3>Dashboard de compras</h3>
+      <p class="muted">Veja a evolucao mensal em grafico e os itens que mais pesam em cada mes.</p>
+    </a>
+
+    <a id="alerts-link" class="card" href="alertas-reposicao.html" hidden>
+      <h3>Alertas de reposicao</h3>
+      <p class="muted">Painel inteligente com criticidade, historico e WhatsApp do admin.</p>
+    </a>
+
     <a class="card" href="fornecedores.html">
       <h3>Fornecedores</h3>
       <p class="muted">Organize contatos e referencia de cada item.</p>
@@ -55,6 +77,10 @@
   </section>
 </main>
 
+<footer class="footer">
+  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
+</footer>
+
 <script type="module">
 import {
   bindLogoutButton,
@@ -63,20 +89,24 @@ import {
   requireAuth
 } from "./app.js";
 
-const userInfo = document.getElementById("user-info");
-const employeesLink = document.getElementById("employees-link");
+async function init() {
+  const userInfo = document.getElementById("user-info");
+  const employeesLink = document.getElementById("employees-link");
+  const alertsLink = document.getElementById("alerts-link");
 
-registerServiceWorker();
-bindLogoutButton();
+  registerServiceWorker();
+  bindLogoutButton();
 
-const { profile } = await requireAuth();
-userInfo.textContent = describeProfile(profile);
-employeesLink.hidden = profile.tipo !== "admin";
+  const { profile } = await requireAuth();
+  userInfo.textContent = describeProfile(profile);
+  employeesLink.hidden = profile.tipo !== "admin";
+  alertsLink.hidden = profile.tipo !== "admin";
+}
 
-<footer class="footer">
-  🚀 Desenvolvido por <strong>Taiana Dias</strong> • Sistema Interno
-</footer>
-
+init().catch((error) => {
+  console.error(error);
+});
 </script>
 </body>
 </html>
+

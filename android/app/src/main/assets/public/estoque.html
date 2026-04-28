@@ -1,8 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <title>Estoque | Hamburgueria</title>
@@ -26,14 +33,88 @@
   <section class="panel">
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
+        <h3>Importar nota fiscal XML</h3>
+        <p class="muted">Selecione XMLs de NF-e para dar entrada no estoque com base nos itens da nota.</p>
+      </div>
+
+      <div class="actions">
+        <label for="xml-files" class="button secondary">Selecionar XMLs</label>
+        <input id="xml-files" class="file-input" type="file" accept=".xml,text/xml,application/xml" multiple>
+        <button id="import-xml-button" class="secondary" type="button" disabled>Importar para estoque</button>
+      </div>
+    </div>
+
+    <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao automatica do custo por unidade.</p>
+    <div id="xml-status" class="status info" hidden></div>
+    <div id="xml-preview" class="list" style="margin-top: 16px;"></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
         <h3>Novo produto</h3>
-        <p class="muted">Cadastre limites, custo unitario e fornecedor para automatizar compras e receitas.</p>
+        <p class="muted">Cadastre quantidade por embalagem e custo da compra para o sistema calcular automaticamente o custo por unidade de uso.</p>
       </div>
 
       <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
     </div>
 
     <form id="product-form" class="form-grid">
+      <div class="supplier-section">
+        <div class="summary-line">
+          <span>Cadastro por codigo de barras</span>
+          <strong>Leia pela camera ou digite manualmente.</strong>
+        </div>
+
+        <div class="form-grid" style="margin-top: 16px;">
+          <div class="field-group">
+            <label for="novo_codigo_barras">Codigo de barras</label>
+            <input id="novo_codigo_barras" inputmode="numeric" placeholder="789..." autocomplete="off">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_marca">Marca</label>
+            <input id="novo_marca" placeholder="Ex.: Heinz, Coca-Cola, Bimbo">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_categoria">Categoria</label>
+            <input id="novo_categoria" list="product-categories" placeholder="Ex.: molho, embalagem, bebida, insumo">
+            <datalist id="product-categories">
+              <option value="molho"></option>
+              <option value="embalagem"></option>
+              <option value="bebida"></option>
+              <option value="insumo"></option>
+              <option value="proteina"></option>
+              <option value="laticinio"></option>
+              <option value="panificacao"></option>
+              <option value="hortifruti"></option>
+              <option value="limpeza"></option>
+              <option value="descartavel"></option>
+            </datalist>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_unidade_medida">Unidade de medida</label>
+            <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top: 16px;">
+          <button id="lookup-barcode-button" class="secondary" type="button">Consultar codigo</button>
+          <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
+          <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
+        </div>
+
+        <label class="inline-choice" style="margin-top: 16px;">
+          <input id="manual-product-toggle" type="checkbox">
+          <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
+        </label>
+
+        <div id="barcode-status" class="status info" hidden></div>
+        <div id="barcode-reader" class="barcode-reader" hidden></div>
+      </div>
+
       <div class="field-group">
         <label for="novo_nome">Nome</label>
         <input id="novo_nome" placeholder="Blend bovino">
@@ -54,19 +135,98 @@
         <input id="novo_max" type="number" min="1" step="1" value="50">
       </div>
 
-      <div class="field-group">
-        <label for="novo_conv">Conversao de compra</label>
-        <input id="novo_conv" type="number" min="1" step="1" value="1">
-      </div>
+      <div class="supplier-section">
+        <div class="summary-line">
+          <span>Fornecedores do produto</span>
+          <strong>Adicione 1 ou mais opcoes e marque o principal.</strong>
+        </div>
 
-      <div class="field-group">
-        <label for="novo_custo">Custo unitario</label>
-        <input id="novo_custo" type="number" min="0" step="0.01" value="0">
-      </div>
+        <div class="form-grid" style="margin-top: 16px;">
+          <div class="field-group">
+            <label for="novo_fornecedor">Fornecedor</label>
+            <select id="novo_fornecedor"></select>
+          </div>
 
-      <div class="field-group">
-        <label for="novo_fornecedor">Fornecedor</label>
-        <select id="novo_fornecedor"></select>
+          <div class="field-group">
+            <label for="novo_conv">Quantidade por embalagem/compra</label>
+            <input id="novo_conv" type="number" min="1" step="1" value="1">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_custo">Custo da embalagem/compra</label>
+            <input id="novo_custo" type="number" min="0" step="0.01" value="0">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_custo_promocional">Custo promocional da embalagem</label>
+            <input id="novo_custo_promocional" type="number" min="0" step="0.01" value="">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_unidade">Unidade de medida do fornecedor</label>
+            <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_custo_unitario">Custo por unidade atual</label>
+            <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_fornecedor_principal">Fornecedor principal</label>
+            <select id="novo_fornecedor_principal">
+              <option value="sim">Sim, usar como custo padrao</option>
+              <option value="nao">Nao, deixar como alternativa</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_promocao_ativa">Promocao ativa</label>
+            <select id="novo_promocao_ativa">
+              <option value="nao">Nao</option>
+              <option value="sim">Sim</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_promocao_inicio">Inicio da promocao</label>
+            <input id="novo_promocao_inicio" type="date">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_promocao_fim">Fim da promocao</label>
+            <input id="novo_promocao_fim" type="date">
+          </div>
+
+          <div class="field-group">
+            <label for="novo_frequencia_ativa">Frequencia de pedido</label>
+            <select id="novo_frequencia_ativa">
+              <option value="nao">Nao</option>
+              <option value="sim">Sim</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
+            <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
+          </div>
+
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <span>Dias para pedir</span>
+            <div id="novo_dias_pedido" class="weekday-selector"></div>
+          </div>
+
+          <div class="field-group" style="grid-column: 1 / -1;">
+            <span>Dias de entrega</span>
+            <div id="novo_dias_entrega" class="weekday-selector"></div>
+          </div>
+        </div>
+
+        <div class="inline-actions" style="margin-top: 16px;">
+          <button id="add-supplier-button" class="secondary" type="button">Adicionar fornecedor ao produto</button>
+        </div>
+
+        <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
       </div>
 
       <button id="create-button" type="submit">Salvar produto</button>
@@ -89,31 +249,87 @@
 
 <script type="module">
 import { db } from "./firebase.js";
+import { getCachedBarcodeProduct, saveCachedBarcodeProduct } from "./barcode-cache.js";
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   serverTimestamp,
   updateDoc,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
+  ORDER_WEEKDAYS,
+  apiFetch,
+  calculateUnitCost,
   bindLogoutButton,
   describeProfile,
   escapeHtml,
+  formatWeekdayList,
+  formatCurrency,
+  formatDocumentNumber,
+  getCheapestProductSupplier,
+  getEffectiveSupplierPurchaseCost,
+  getEffectiveSupplierUnitCost,
+  getPackageQuantity,
+  getPurchaseCost,
+  getPrimaryProductSupplier,
   getUnitCost,
+  getUsageUnit,
+  isSupplierPromotionActive,
+  normalizeProductSuppliers,
+  normalizeWeekdayList,
+  normalizeDocumentNumber,
+  normalizePhone,
   normalizeText,
   requireAuth,
   setStatus,
-  toNumber
+  toNumber,
+  triggerReplenishmentEvaluation
 } from "./app.js";
+
+const DEFAULT_IMPORTED_PRODUCT = Object.freeze({
+  minimo: 2,
+  maximo: 50,
+  conversao: 1
+});
 
 const form = document.getElementById("product-form");
 const resetButton = document.getElementById("reset-button");
 const createButton = document.getElementById("create-button");
+const barcodeInput = document.getElementById("novo_codigo_barras");
+const nameInput = document.getElementById("novo_nome");
+const brandInput = document.getElementById("novo_marca");
+const categoryInput = document.getElementById("novo_categoria");
+const unitMeasureInput = document.getElementById("novo_unidade_medida");
+const packageQuantityInput = document.getElementById("novo_conv");
+const purchaseCostInput = document.getElementById("novo_custo");
+const promotionalCostInput = document.getElementById("novo_custo_promocional");
+const usageUnitInput = document.getElementById("novo_unidade");
+const unitCostPreviewInput = document.getElementById("novo_custo_unitario");
 const supplierSelect = document.getElementById("novo_fornecedor");
+const createPrimarySelect = document.getElementById("novo_fornecedor_principal");
+const createPromotionActiveSelect = document.getElementById("novo_promocao_ativa");
+const createPromotionStartInput = document.getElementById("novo_promocao_inicio");
+const createPromotionEndInput = document.getElementById("novo_promocao_fim");
+const createFrequencyActiveSelect = document.getElementById("novo_frequencia_ativa");
+const createOrderQuantityInput = document.getElementById("novo_qtd_pedido_padrao");
+const createOrderDaysContainer = document.getElementById("novo_dias_pedido");
+const createDeliveryDaysContainer = document.getElementById("novo_dias_entrega");
+const addSupplierButton = document.getElementById("add-supplier-button");
+const newSuppliersList = document.getElementById("new-suppliers-list");
+const xmlInput = document.getElementById("xml-files");
+const importXmlButton = document.getElementById("import-xml-button");
+const xmlPreview = document.getElementById("xml-preview");
+const lookupBarcodeButton = document.getElementById("lookup-barcode-button");
+const startScanButton = document.getElementById("start-scan-button");
+const stopScanButton = document.getElementById("stop-scan-button");
+const manualProductToggle = document.getElementById("manual-product-toggle");
+const barcodeStatus = document.getElementById("barcode-status");
+const barcodeReader = document.getElementById("barcode-reader");
 const list = document.getElementById("lista");
 const userInfo = document.getElementById("user-info");
 
@@ -123,13 +339,325 @@ const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
 
 let fornecedores = [];
+let produtos = [];
+let xmlImports = [];
+let barcodeScanner = null;
+let barcodeScannerLoaded = false;
 
-async function loadSuppliers() {
-  const snapshot = await getDocs(collection(db, "fornecedores"));
-  fornecedores = snapshot.docs
-    .map((document) => ({ id: document.id, ...document.data() }))
-    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+function normalizeBarcode(value) {
+  return String(value ?? "").replace(/\D/g, "").slice(0, 24);
+}
 
+function normalizeLookupField(value) {
+  return String(value ?? "").trim();
+}
+
+function syncUnitMeasureFields() {
+  const normalizedUnit = String(unitMeasureInput.value || "un").trim() || "un";
+  unitMeasureInput.value = normalizedUnit;
+  usageUnitInput.value = normalizedUnit;
+}
+
+function isManualProductModeEnabled() {
+  return Boolean(manualProductToggle.checked);
+}
+
+async function updateBarcodeModeState() {
+  const manualMode = isManualProductModeEnabled();
+
+  lookupBarcodeButton.disabled = manualMode;
+  startScanButton.disabled = manualMode;
+
+  if (manualMode) {
+    await stopBarcodeScanner();
+    setStatus(
+      "barcode-status",
+      "Cadastro manual ativo. O codigo de barras fica opcional para este item artesanal ou interno.",
+      "info"
+    );
+    return;
+  }
+
+  if (!barcodeStatus.textContent.trim() || barcodeStatus.textContent.includes("Cadastro manual ativo")) {
+    setStatus(
+      "barcode-status",
+      "Leia pela camera ou consulte o codigo para preencher nome, marca e categoria automaticamente.",
+      "info"
+    );
+  }
+}
+
+function formatProductBarcodeLabel(item) {
+  return item.codigoBarras
+    ? `Codigo ${item.codigoBarras}`
+    : "Sem codigo de barras (cadastro manual)";
+}
+
+function formatSupplierScheduleDescription(supplier) {
+  if (!supplier?.frequenciaAtiva) {
+    return "Sem frequencia programada.";
+  }
+
+  return [
+    `Pedir: ${formatWeekdayList(supplier.diasPedido, "long")}`,
+    `Entrega: ${formatWeekdayList(supplier.diasEntrega, "long")}`,
+    `Pedido padrao: ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)`
+  ].join(" | ");
+}
+
+function applyBarcodeLookupProduct(product, options = {}) {
+  const {
+    source = "manual",
+    preserveName = false
+  } = options;
+
+  barcodeInput.value = normalizeBarcode(product?.barcode);
+  brandInput.value = normalizeLookupField(product?.marca);
+  categoryInput.value = normalizeLookupField(product?.categoria);
+  unitMeasureInput.value = String(product?.unidadeMedida || unitMeasureInput.value || "un").trim() || "un";
+  syncUnitMeasureFields();
+
+  const nextName = normalizeLookupField(product?.nome);
+
+  if (nextName && (!preserveName || !nameInput.value.trim())) {
+    nameInput.value = nextName;
+  }
+
+  if (!nextName && !preserveName) {
+    nameInput.value = "";
+  }
+
+  setStatus(
+    "barcode-status",
+    nextName
+      ? `Produto localizado via ${source}. Revise os dados e salve quando estiver tudo certo.`
+      : "Produto nao encontrado nas bases automaticas. Continue com o cadastro manual.",
+    nextName ? "success" : "info"
+  );
+}
+
+function resetCreateProductForm() {
+  form.reset();
+  barcodeInput.value = "";
+  nameInput.value = "";
+  brandInput.value = "";
+  categoryInput.value = "";
+  unitMeasureInput.value = "un";
+  document.getElementById("novo_qtd").value = "0";
+  document.getElementById("novo_min").value = "2";
+  document.getElementById("novo_max").value = "50";
+  document.getElementById("novo_conv").value = "1";
+  document.getElementById("novo_custo").value = "0";
+  document.getElementById("novo_custo_promocional").value = "";
+  document.getElementById("novo_unidade").value = "un";
+  createPrimarySelect.value = "sim";
+  createPromotionActiveSelect.value = "nao";
+  createPromotionStartInput.value = "";
+  createPromotionEndInput.value = "";
+  createFrequencyActiveSelect.value = "nao";
+  createOrderQuantityInput.value = "1";
+  manualProductToggle.checked = false;
+  populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+  populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
+  syncUnitMeasureFields();
+  syncCreateFrequencyState();
+  newSuppliersList.innerHTML = "";
+  refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
+  updateCreateCostPreview();
+  setStatus("barcode-status", "", "info");
+}
+
+async function lookupBarcodeProduct(barcode) {
+  const normalizedBarcode = normalizeBarcode(barcode);
+
+  if (!normalizedBarcode) {
+    setStatus("barcode-status", "Informe ou leia um codigo de barras valido.", "error");
+    return null;
+  }
+
+  barcodeInput.value = normalizedBarcode;
+  setStatus("barcode-status", "Consultando codigo de barras...", "info");
+
+  const cachedProduct = await getCachedBarcodeProduct(normalizedBarcode).catch(() => null);
+
+  if (cachedProduct?.nome) {
+    applyBarcodeLookupProduct(cachedProduct, { source: "cache local" });
+    return cachedProduct;
+  }
+
+  try {
+    const response = await apiFetch(`/api/barcodes/${normalizedBarcode}`);
+    const product = {
+      barcode: normalizedBarcode,
+      nome: normalizeLookupField(response?.product?.nome),
+      marca: normalizeLookupField(response?.product?.marca),
+      categoria: normalizeLookupField(response?.product?.categoria),
+      fonte: response?.source || "manual"
+    };
+
+    applyBarcodeLookupProduct(product, { source: product.fonte });
+
+    if (product.nome) {
+      await saveCachedBarcodeProduct(product).catch(() => null);
+    }
+
+    return product;
+  } catch (error) {
+    console.error(error);
+    setStatus("barcode-status", error.message || "Nao foi possivel consultar o codigo de barras.", "error");
+    return null;
+  }
+}
+
+async function ensureBarcodeScannerLibrary() {
+  if (barcodeScannerLoaded && window.Html5Qrcode) {
+    return window.Html5Qrcode;
+  }
+
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-html5-qrcode="true"]');
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Nao foi possivel carregar a biblioteca do leitor.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+    script.async = true;
+    script.dataset.html5Qrcode = "true";
+    script.addEventListener("load", () => resolve(), { once: true });
+    script.addEventListener("error", () => reject(new Error("Nao foi possivel carregar a biblioteca do leitor.")), { once: true });
+    document.head.appendChild(script);
+  });
+
+  barcodeScannerLoaded = true;
+  return window.Html5Qrcode;
+}
+
+async function stopBarcodeScanner() {
+  if (!barcodeScanner) {
+    barcodeReader.hidden = true;
+    stopScanButton.disabled = true;
+    startScanButton.disabled = false;
+    return;
+  }
+
+  try {
+    await barcodeScanner.stop();
+  } catch (error) {
+    console.warn("Falha ao parar a camera.", error);
+  }
+
+  try {
+    await barcodeScanner.clear();
+  } catch (error) {
+    console.warn("Falha ao limpar o leitor.", error);
+  }
+
+  barcodeScanner = null;
+  barcodeReader.hidden = true;
+  stopScanButton.disabled = true;
+  startScanButton.disabled = false;
+}
+
+async function startBarcodeScanner() {
+  setStatus("barcode-status", "", "info");
+
+  try {
+    const Html5Qrcode = await ensureBarcodeScannerLibrary();
+    barcodeReader.hidden = false;
+    startScanButton.disabled = true;
+    stopScanButton.disabled = false;
+    barcodeScanner = new Html5Qrcode("barcode-reader");
+
+    await barcodeScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 280, height: 180 }
+      },
+      async (decodedText) => {
+        const normalizedBarcode = normalizeBarcode(decodedText);
+
+        if (!normalizedBarcode) {
+          return;
+        }
+
+        await stopBarcodeScanner();
+        await lookupBarcodeProduct(normalizedBarcode);
+      }
+    );
+
+    setStatus("barcode-status", "Camera ativa. Aponte para o codigo de barras.", "info");
+  } catch (error) {
+    console.error(error);
+    await stopBarcodeScanner();
+    setStatus("barcode-status", error.message || "Nao foi possivel iniciar a camera.", "error");
+  }
+}
+
+function updateCreateCostPreview() {
+  const packageQuantity = Math.max(1, toNumber(packageQuantityInput.value, 1));
+  const basePurchaseCost = Math.max(0, toNumber(purchaseCostInput.value, 0));
+  const promotionalPurchaseCost = promotionalCostInput.value === ""
+    ? null
+    : Math.max(0, toNumber(promotionalCostInput.value, 0));
+  const shouldUsePromotion = createPromotionActiveSelect.value === "sim" && promotionalPurchaseCost != null;
+  const purchaseCost = shouldUsePromotion ? promotionalPurchaseCost : basePurchaseCost;
+  unitCostPreviewInput.value = formatCurrency(calculateUnitCost(purchaseCost, packageQuantity));
+}
+
+function syncCreateFrequencyState() {
+  const enabled = createFrequencyActiveSelect.value === "sim";
+  createOrderQuantityInput.disabled = !enabled;
+  setWeekdaySelectorDisabled(createOrderDaysContainer, !enabled);
+  setWeekdaySelectorDisabled(createDeliveryDaysContainer, !enabled);
+}
+
+function sortByName(items) {
+  return [...items].sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+}
+
+function populateWeekdaySelector(container, selectedDays = [], inputName = `weekday_${Date.now()}`) {
+  container.innerHTML = "";
+  const normalizedDays = new Set(normalizeWeekdayList(selectedDays));
+
+  ORDER_WEEKDAYS.forEach((weekday) => {
+    const label = document.createElement("label");
+    label.className = "weekday-choice";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = inputName;
+    input.value = weekday.key;
+    input.checked = normalizedDays.has(weekday.key);
+
+    const text = document.createElement("span");
+    text.textContent = weekday.label;
+
+    label.appendChild(input);
+    label.appendChild(text);
+    container.appendChild(label);
+  });
+}
+
+function readWeekdaySelector(container) {
+  return normalizeWeekdayList(
+    Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value)
+  );
+}
+
+function setWeekdaySelectorDisabled(container, disabled) {
+  container.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.disabled = disabled;
+  });
+
+  container.classList.toggle("weekday-selector-disabled", disabled);
+}
+
+function renderSupplierOptions() {
   supplierSelect.innerHTML = "";
 
   if (!fornecedores.length) {
@@ -148,7 +676,146 @@ async function loadSuppliers() {
   });
 }
 
-function createField(id, label, value, type = "number", step = "1") {
+async function loadSuppliers() {
+  const snapshot = await getDocs(collection(db, "fornecedores"));
+  fornecedores = sortByName(snapshot.docs.map((document) => ({ id: document.id, ...document.data() })));
+  renderSupplierOptions();
+}
+
+function serializeProductSuppliers(productSuppliers) {
+  return productSuppliers.map((supplier) => ({
+    fornecedorId: supplier.fornecedorId,
+    nome: supplier.nome,
+    cnpj: supplier.cnpj,
+    telefone: supplier.telefone,
+    telefoneNormalizado: supplier.telefoneNormalizado,
+    conversao: supplier.conversao,
+    custoCompra: supplier.custoCompra,
+    custoUnitario: supplier.custoUnitario,
+    custoPromocionalCompra: supplier.custoPromocionalCompra ?? null,
+    custoPromocionalUnitario: supplier.custoPromocionalUnitario ?? null,
+    promocaoAtiva: Boolean(supplier.promocaoAtiva),
+    promocaoInicio: supplier.promocaoInicio || "",
+    promocaoFim: supplier.promocaoFim || "",
+    frequenciaAtiva: Boolean(supplier.frequenciaAtiva),
+    diasPedido: normalizeWeekdayList(supplier.diasPedido),
+    diasEntrega: normalizeWeekdayList(supplier.diasEntrega),
+    quantidadePedidoPadrao: Math.max(0, toNumber(supplier.quantidadePedidoPadrao, 0)),
+    unidadeUso: supplier.unidadeUso,
+    principal: supplier.principal
+  }));
+}
+
+function buildPrimarySupplierFields(productSuppliers, fallbackProduct = {}) {
+  const normalizedSuppliers = normalizeProductSuppliers({ fornecedores: productSuppliers }, fornecedores);
+  const primarySupplier = normalizedSuppliers.find((supplier) => supplier.principal) || normalizedSuppliers[0] || null;
+
+  if (!primarySupplier) {
+    const fallbackPackageQuantity = Math.max(1, toNumber(fallbackProduct.conversao, 1));
+    const fallbackPurchaseCost = Math.max(0, toNumber(
+      fallbackProduct.custoCompra ?? getPurchaseCost(fallbackProduct),
+      getPurchaseCost(fallbackProduct)
+    ));
+    const fallbackUnitCost = Math.max(0, toNumber(
+      fallbackProduct.custoUnitario ?? fallbackProduct.custo ?? getUnitCost(fallbackProduct),
+      getUnitCost(fallbackProduct)
+    ));
+    const fallbackUsageUnit = String(
+      fallbackProduct.unidadeUso ?? fallbackProduct.unidadeCompra ?? getUsageUnit(fallbackProduct) ?? "un"
+    ).trim() || "un";
+
+    return {
+      fornecedores: [],
+      unidadeMedida: fallbackUsageUnit,
+      conversao: fallbackPackageQuantity,
+      custoCompra: fallbackPurchaseCost,
+      custoUnitario: fallbackUnitCost,
+      custo: fallbackUnitCost,
+      custoPromocionalCompra: null,
+      custoPromocionalUnitario: null,
+      promocaoAtiva: false,
+      promocaoInicio: "",
+      promocaoFim: "",
+      frequenciaAtiva: false,
+      diasPedido: [],
+      diasEntrega: [],
+      quantidadePedidoPadrao: 0,
+      unidadeUso: fallbackUsageUnit,
+      fornecedorId: "",
+      fornecedorNome: "",
+      fornecedor: "",
+      cnpjFornecedor: ""
+    };
+  }
+
+  return {
+    fornecedores: serializeProductSuppliers(normalizedSuppliers),
+    unidadeMedida: primarySupplier.unidadeUso,
+    conversao: primarySupplier.conversao,
+    custoCompra: primarySupplier.custoCompra,
+    custoUnitario: primarySupplier.custoUnitario,
+    custo: primarySupplier.custoUnitario,
+    custoPromocionalCompra: primarySupplier.custoPromocionalCompra ?? null,
+    custoPromocionalUnitario: primarySupplier.custoPromocionalUnitario ?? null,
+    promocaoAtiva: Boolean(primarySupplier.promocaoAtiva),
+    promocaoInicio: primarySupplier.promocaoInicio || "",
+    promocaoFim: primarySupplier.promocaoFim || "",
+    frequenciaAtiva: Boolean(primarySupplier.frequenciaAtiva),
+    diasPedido: normalizeWeekdayList(primarySupplier.diasPedido),
+    diasEntrega: normalizeWeekdayList(primarySupplier.diasEntrega),
+    quantidadePedidoPadrao: Math.max(0, toNumber(primarySupplier.quantidadePedidoPadrao, 0)),
+    unidadeUso: primarySupplier.unidadeUso,
+    fornecedorId: primarySupplier.fornecedorId,
+    fornecedorNome: primarySupplier.nome,
+    fornecedor: primarySupplier.nome,
+    cnpjFornecedor: primarySupplier.cnpj || ""
+  };
+}
+
+function buildSupplierEntryFromCatalog(supplier, overrides = {}) {
+  const packageQuantity = Math.max(1, toNumber(overrides.conversao, 1));
+  const purchaseCost = Math.max(0, toNumber(overrides.custoCompra, 0));
+  const promotionalPurchaseCost = overrides.custoPromocionalCompra == null || overrides.custoPromocionalCompra === ""
+    ? null
+    : Math.max(0, toNumber(overrides.custoPromocionalCompra, 0));
+  const usageUnit = String(overrides.unidadeUso || "un").trim() || "un";
+  const frequencyEnabled = Boolean(overrides.frequenciaAtiva);
+  const orderDays = normalizeWeekdayList(overrides.diasPedido);
+  const deliveryDays = normalizeWeekdayList(overrides.diasEntrega);
+  const defaultOrderQuantity = Math.max(0, toNumber(overrides.quantidadePedidoPadrao, 0));
+
+  return {
+    fornecedorId: supplier?.id || "",
+    nome: supplier?.nome || "",
+    cnpj: supplier?.cnpj || "",
+    telefone: supplier?.telefone || "",
+    telefoneNormalizado: normalizePhone(supplier?.telefone || ""),
+    conversao: packageQuantity,
+    custoCompra: purchaseCost,
+    custoUnitario: calculateUnitCost(purchaseCost, packageQuantity),
+    custoPromocionalCompra: promotionalPurchaseCost,
+    custoPromocionalUnitario: promotionalPurchaseCost != null
+      ? calculateUnitCost(promotionalPurchaseCost, packageQuantity)
+      : null,
+    promocaoAtiva: Boolean(overrides.promocaoAtiva),
+    promocaoInicio: String(overrides.promocaoInicio || "").trim(),
+    promocaoFim: String(overrides.promocaoFim || "").trim(),
+    frequenciaAtiva: frequencyEnabled && orderDays.length > 0,
+    diasPedido: orderDays,
+    diasEntrega: deliveryDays,
+    quantidadePedidoPadrao: frequencyEnabled && orderDays.length > 0 ? Math.max(1, defaultOrderQuantity || 1) : 0,
+    unidadeUso: usageUnit,
+    principal: Boolean(overrides.principal)
+  };
+}
+
+function createField(id, label, value, options = {}) {
+  const {
+    type = "number",
+    step = "1",
+    min = "0",
+    readOnly = false
+  } = options;
   const wrapper = document.createElement("label");
   wrapper.className = "field-group";
   wrapper.htmlFor = id;
@@ -158,18 +825,527 @@ function createField(id, label, value, type = "number", step = "1") {
   input.id = id;
   input.type = type;
   input.value = value;
-  input.step = step;
-  input.min = "0";
+
+  if (type === "number") {
+    input.step = step;
+    input.min = min;
+  }
+
+  input.readOnly = readOnly;
   wrapper.appendChild(input);
   return wrapper;
 }
 
-function getSupplierOption(item) {
-  if (item.fornecedorId) {
-    return fornecedores.find((fornecedor) => fornecedor.id === item.fornecedorId);
+function createSupplierSelect(selectedId = "", allowEmpty = false) {
+  const select = document.createElement("select");
+  select.className = "supplier-select";
+
+  if (allowEmpty) {
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "Selecione um fornecedor";
+    emptyOption.selected = !selectedId;
+    select.appendChild(emptyOption);
   }
 
-  return fornecedores.find((fornecedor) => fornecedor.nome === item.fornecedorNome || fornecedor.nome === item.fornecedor);
+  if (!fornecedores.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Cadastre um fornecedor primeiro";
+    option.selected = true;
+    select.appendChild(option);
+    return select;
+  }
+
+  fornecedores.forEach((fornecedor) => {
+    const option = document.createElement("option");
+    option.value = fornecedor.id;
+    option.textContent = fornecedor.nome;
+    option.selected = fornecedor.id === selectedId;
+    select.appendChild(option);
+  });
+
+  return select;
+}
+
+function refreshSupplierListState(container, emptyMessage) {
+  const rows = container.querySelectorAll(".supplier-entry");
+  let placeholder = container.querySelector(".supplier-empty");
+
+  if (!rows.length) {
+    if (!placeholder) {
+      placeholder = document.createElement("div");
+      placeholder.className = "empty-state supplier-empty";
+      container.appendChild(placeholder);
+    }
+
+    placeholder.textContent = emptyMessage;
+    return;
+  }
+
+  if (placeholder) {
+    placeholder.remove();
+  }
+}
+
+function ensureSinglePrincipal(container) {
+  const radios = Array.from(container.querySelectorAll(".supplier-principal-radio"));
+
+  if (!radios.length) {
+    return;
+  }
+
+  if (!radios.some((radio) => radio.checked)) {
+    radios[0].checked = true;
+  }
+}
+
+function refreshSupplierEntryUnitCost(entryElement) {
+  const quantityInput = entryElement.querySelector(".supplier-package-quantity");
+  const costInput = entryElement.querySelector(".supplier-purchase-cost");
+  const promotionalCostInput = entryElement.querySelector(".supplier-promotional-cost");
+  const promotionActiveInput = entryElement.querySelector(".supplier-promotion-active");
+  const promotionStartInput = entryElement.querySelector(".supplier-promotion-start");
+  const promotionEndInput = entryElement.querySelector(".supplier-promotion-end");
+  const unitCostInput = entryElement.querySelector(".supplier-unit-cost");
+  const packageQuantity = Math.max(1, toNumber(quantityInput.value, 1));
+  const baseCost = Math.max(0, toNumber(costInput.value, 0));
+  const promotionalCost = promotionalCostInput?.value === ""
+    ? null
+    : Math.max(0, toNumber(promotionalCostInput?.value, 0));
+  const previewEntry = {
+    custoCompra: baseCost,
+    custoUnitario: calculateUnitCost(baseCost, packageQuantity),
+    custoPromocionalCompra: promotionalCost,
+    custoPromocionalUnitario: promotionalCost != null ? calculateUnitCost(promotionalCost, packageQuantity) : null,
+    promocaoAtiva: promotionActiveInput?.value === "sim",
+    promocaoInicio: promotionStartInput?.value || "",
+    promocaoFim: promotionEndInput?.value || ""
+  };
+  const effectiveUnitCost = isSupplierPromotionActive(previewEntry)
+    ? getEffectiveSupplierUnitCost(previewEntry)
+    : calculateUnitCost(baseCost, packageQuantity);
+  const helper = entryElement.querySelector(".supplier-cost-helper");
+
+  unitCostInput.value = formatCurrency(effectiveUnitCost);
+
+  if (helper) {
+    if (promotionalCost != null) {
+      helper.textContent = `${isSupplierPromotionActive(previewEntry) ? "Promocao aplicada" : "Promocao cadastrada"} | Normal ${formatCurrency(baseCost)} | Promo ${formatCurrency(promotionalCost)}`;
+    } else {
+      helper.textContent = `Preco normal ${formatCurrency(baseCost)}`;
+    }
+  }
+}
+
+function refreshSupplierEntryFrequencyState(entryElement) {
+  const frequencySelect = entryElement.querySelector(".supplier-frequency-active");
+  const orderQuantityInput = entryElement.querySelector(".supplier-order-quantity");
+  const orderDaysContainer = entryElement.querySelector(".supplier-order-days");
+  const deliveryDaysContainer = entryElement.querySelector(".supplier-delivery-days");
+  const helper = entryElement.querySelector(".supplier-frequency-helper");
+  const enabled = frequencySelect?.value === "sim";
+
+  if (orderQuantityInput) {
+    orderQuantityInput.disabled = !enabled;
+  }
+
+  if (orderDaysContainer) {
+    setWeekdaySelectorDisabled(orderDaysContainer, !enabled);
+  }
+
+  if (deliveryDaysContainer) {
+    setWeekdaySelectorDisabled(deliveryDaysContainer, !enabled);
+  }
+
+  if (!helper) {
+    return;
+  }
+
+  if (!enabled) {
+    helper.textContent = "Sem frequencia programada para este fornecedor.";
+    return;
+  }
+
+  const orderDays = formatWeekdayList(readWeekdaySelector(orderDaysContainer));
+  const deliveryDays = formatWeekdayList(readWeekdaySelector(deliveryDaysContainer));
+  const quantity = Math.max(1, toNumber(orderQuantityInput?.value, 1));
+  helper.textContent = `Pedido: ${orderDays} | Entrega: ${deliveryDays} | Qtd. padrao ${quantity} embalagem(ns)`;
+}
+
+function createSupplierEntryElement(entry = {}, options = {}) {
+  const {
+    radioName = `principal_${Date.now()}`,
+    emptyMessage = "Nenhum fornecedor vinculado."
+  } = options;
+  const wrapper = document.createElement("article");
+  wrapper.className = "card supplier-entry";
+
+  const header = document.createElement("div");
+  header.className = "summary-line";
+  header.innerHTML = `
+    <span>Fornecedor vinculado ao produto</span>
+    <strong>${entry.principal ? "Principal" : "Alternativo"}</strong>
+  `;
+
+  const fields = document.createElement("div");
+  fields.className = "form-grid";
+  fields.style.marginTop = "16px";
+
+  const supplierWrapper = document.createElement("label");
+  supplierWrapper.className = "field-group";
+  supplierWrapper.innerHTML = "<span>Fornecedor</span>";
+  const supplierField = createSupplierSelect(entry.fornecedorId || "", true);
+  supplierWrapper.appendChild(supplierField);
+  fields.appendChild(supplierWrapper);
+
+  const quantityField = createField(
+    `supplier_quantity_${Math.random().toString(36).slice(2)}`,
+    "Quantidade por embalagem",
+    Math.max(1, toNumber(entry.conversao, 1))
+  );
+  quantityField.querySelector("input").classList.add("supplier-package-quantity");
+  fields.appendChild(quantityField);
+
+  const purchaseCostField = createField(
+    `supplier_cost_${Math.random().toString(36).slice(2)}`,
+    "Custo normal da embalagem",
+    Math.max(0, toNumber(entry.custoCompra, 0)),
+    {
+      type: "number",
+      step: "0.01"
+    }
+  );
+  purchaseCostField.querySelector("input").classList.add("supplier-purchase-cost");
+  fields.appendChild(purchaseCostField);
+
+  const promotionalCostField = createField(
+    `supplier_promo_cost_${Math.random().toString(36).slice(2)}`,
+    "Custo promocional da embalagem",
+    entry.custoPromocionalCompra ?? "",
+    {
+      type: "number",
+      step: "0.01"
+    }
+  );
+  promotionalCostField.querySelector("input").classList.add("supplier-promotional-cost");
+  fields.appendChild(promotionalCostField);
+
+  const usageUnitField = createField(
+    `supplier_unit_${Math.random().toString(36).slice(2)}`,
+    "Unidade de uso",
+    entry.unidadeUso || "un",
+    {
+      type: "text"
+    }
+  );
+  usageUnitField.querySelector("input").classList.add("supplier-usage-unit");
+  fields.appendChild(usageUnitField);
+
+  const unitCostField = createField(
+    `supplier_unit_cost_${Math.random().toString(36).slice(2)}`,
+    "Custo por unidade atual",
+    formatCurrency(
+      isSupplierPromotionActive(entry)
+        ? getEffectiveSupplierUnitCost(entry)
+        : calculateUnitCost(entry.custoCompra, entry.conversao)
+    ),
+    {
+      type: "text",
+      readOnly: true
+    }
+  );
+  unitCostField.querySelector("input").classList.add("supplier-unit-cost");
+  fields.appendChild(unitCostField);
+
+  const promotionActiveWrapper = document.createElement("label");
+  promotionActiveWrapper.className = "field-group";
+  promotionActiveWrapper.innerHTML = "<span>Promocao ativa</span>";
+  const promotionActiveField = document.createElement("select");
+  promotionActiveField.className = "supplier-promotion-active";
+  promotionActiveField.innerHTML = `
+    <option value="nao">Nao</option>
+    <option value="sim">Sim</option>
+  `;
+  promotionActiveField.value = entry.promocaoAtiva ? "sim" : "nao";
+  promotionActiveWrapper.appendChild(promotionActiveField);
+  fields.appendChild(promotionActiveWrapper);
+
+  const promotionStartField = createField(
+    `supplier_promo_start_${Math.random().toString(36).slice(2)}`,
+    "Inicio da promocao",
+    entry.promocaoInicio || "",
+    { type: "date" }
+  );
+  promotionStartField.querySelector("input").classList.add("supplier-promotion-start");
+  fields.appendChild(promotionStartField);
+
+  const promotionEndField = createField(
+    `supplier_promo_end_${Math.random().toString(36).slice(2)}`,
+    "Fim da promocao",
+    entry.promocaoFim || "",
+    { type: "date" }
+  );
+  promotionEndField.querySelector("input").classList.add("supplier-promotion-end");
+  fields.appendChild(promotionEndField);
+
+  const frequencyActiveWrapper = document.createElement("label");
+  frequencyActiveWrapper.className = "field-group";
+  frequencyActiveWrapper.innerHTML = "<span>Tem frequencia de pedido?</span>";
+  const frequencyActiveField = document.createElement("select");
+  frequencyActiveField.className = "supplier-frequency-active";
+  frequencyActiveField.innerHTML = `
+    <option value="nao">Nao</option>
+    <option value="sim">Sim</option>
+  `;
+  frequencyActiveField.value = entry.frequenciaAtiva ? "sim" : "nao";
+  frequencyActiveWrapper.appendChild(frequencyActiveField);
+  fields.appendChild(frequencyActiveWrapper);
+
+  const orderQuantityField = createField(
+    `supplier_order_quantity_${Math.random().toString(36).slice(2)}`,
+    "Quantidade padrao por pedido",
+    Math.max(1, toNumber(entry.quantidadePedidoPadrao, 1))
+  );
+  orderQuantityField.querySelector("input").classList.add("supplier-order-quantity");
+  fields.appendChild(orderQuantityField);
+
+  const orderDaysWrapper = document.createElement("div");
+  orderDaysWrapper.className = "field-group";
+  orderDaysWrapper.style.gridColumn = "1 / -1";
+  orderDaysWrapper.innerHTML = "<span>Dias para pedir</span>";
+  const orderDaysField = document.createElement("div");
+  orderDaysField.className = "weekday-selector supplier-order-days";
+  populateWeekdaySelector(
+    orderDaysField,
+    entry.diasPedido || [],
+    `order_days_${Math.random().toString(36).slice(2)}`
+  );
+  orderDaysWrapper.appendChild(orderDaysField);
+  fields.appendChild(orderDaysWrapper);
+
+  const deliveryDaysWrapper = document.createElement("div");
+  deliveryDaysWrapper.className = "field-group";
+  deliveryDaysWrapper.style.gridColumn = "1 / -1";
+  deliveryDaysWrapper.innerHTML = "<span>Dias de entrega</span>";
+  const deliveryDaysField = document.createElement("div");
+  deliveryDaysField.className = "weekday-selector supplier-delivery-days";
+  populateWeekdaySelector(
+    deliveryDaysField,
+    entry.diasEntrega || [],
+    `delivery_days_${Math.random().toString(36).slice(2)}`
+  );
+  deliveryDaysWrapper.appendChild(deliveryDaysField);
+  fields.appendChild(deliveryDaysWrapper);
+
+  const principalWrapper = document.createElement("div");
+  principalWrapper.className = "field-group";
+  principalWrapper.innerHTML = "<span>Fornecedor principal</span>";
+
+  const principalChoice = document.createElement("label");
+  principalChoice.className = "inline-choice";
+  principalChoice.innerHTML = `
+    <input class="supplier-principal-radio" type="radio" name="${radioName}">
+    <span>Usar como custo padrao</span>
+  `;
+  const principalRadio = principalChoice.querySelector("input");
+  principalRadio.checked = Boolean(entry.principal);
+  principalWrapper.appendChild(principalChoice);
+  fields.appendChild(principalWrapper);
+
+  const actions = document.createElement("div");
+  actions.className = "inline-actions";
+  actions.style.marginTop = "16px";
+
+  const costHelper = document.createElement("p");
+  costHelper.className = "muted supplier-cost-helper";
+  costHelper.style.margin = "14px 0 0";
+
+  const frequencyHelper = document.createElement("p");
+  frequencyHelper.className = "muted supplier-frequency-helper";
+  frequencyHelper.style.margin = "10px 0 0";
+
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.className = "secondary";
+  removeButton.textContent = "Remover fornecedor";
+  removeButton.addEventListener("click", () => {
+    const container = wrapper.parentElement;
+    const wasPrincipal = principalRadio.checked;
+    wrapper.remove();
+
+    if (container) {
+      if (wasPrincipal) {
+        const fallbackRadio = container.querySelector(".supplier-principal-radio");
+
+        if (fallbackRadio) {
+          fallbackRadio.checked = true;
+        }
+      }
+
+      ensureSinglePrincipal(container);
+      refreshSupplierListState(container, emptyMessage);
+    }
+  });
+
+  actions.appendChild(removeButton);
+
+  const quantityInput = quantityField.querySelector("input");
+  const purchaseCostInput = purchaseCostField.querySelector("input");
+  const promotionalCostEntryInput = promotionalCostField.querySelector("input");
+  const orderQuantityInput = orderQuantityField.querySelector("input");
+  quantityInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  purchaseCostInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionalCostEntryInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionActiveField.addEventListener("change", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionStartField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  promotionEndField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
+  frequencyActiveField.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+  orderQuantityInput.addEventListener("input", () => refreshSupplierEntryFrequencyState(wrapper));
+  orderDaysField.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+  });
+  deliveryDaysField.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+  });
+  principalRadio.addEventListener("change", () => {
+    if (principalRadio.checked) {
+      header.querySelector("strong").textContent = "Principal";
+      const siblings = Array.from(wrapper.parentElement?.querySelectorAll(".supplier-entry") || []);
+
+      siblings.forEach((sibling) => {
+        if (sibling === wrapper) {
+          return;
+        }
+
+        sibling.querySelector(".summary-line strong").textContent = "Alternativo";
+      });
+    }
+  });
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(fields);
+  wrapper.appendChild(costHelper);
+  wrapper.appendChild(frequencyHelper);
+  wrapper.appendChild(actions);
+
+  supplierField.addEventListener("change", () => {
+    const selectedSupplier = fornecedores.find((fornecedor) => fornecedor.id === supplierField.value);
+    const supplierLabel = header.querySelector("span");
+    supplierLabel.textContent = selectedSupplier?.nome
+      ? `Fornecedor vinculado ao produto: ${selectedSupplier.nome}`
+      : "Fornecedor vinculado ao produto";
+  });
+
+  refreshSupplierEntryUnitCost(wrapper);
+  refreshSupplierEntryFrequencyState(wrapper);
+  return wrapper;
+}
+
+function appendSupplierEntry(container, entry = {}, options = {}) {
+  const row = createSupplierEntryElement(entry, options);
+  container.appendChild(row);
+  ensureSinglePrincipal(container);
+  refreshSupplierListState(container, options.emptyMessage || "Nenhum fornecedor vinculado.");
+  return row;
+}
+
+function collectSupplierEntries(container) {
+  const rows = Array.from(container.querySelectorAll(".supplier-entry"));
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const usedKeys = new Set();
+  const collected = rows.map((row) => {
+    const supplierId = row.querySelector(".supplier-select").value;
+    const selectedSupplier = fornecedores.find((fornecedor) => fornecedor.id === supplierId);
+
+    if (!selectedSupplier) {
+      throw new Error("Selecione um fornecedor valido em todas as linhas do produto.");
+    }
+
+    const duplicateKey = selectedSupplier.id
+      || normalizeDocumentNumber(selectedSupplier.cnpj)
+      || normalizeText(selectedSupplier.nome);
+
+    if (usedKeys.has(duplicateKey)) {
+      throw new Error(`O fornecedor ${selectedSupplier.nome} foi repetido no mesmo produto.`);
+    }
+
+    usedKeys.add(duplicateKey);
+
+    const conversao = Math.max(1, toNumber(
+      row.querySelector(".supplier-package-quantity").value,
+      1
+    ));
+    const custoCompra = Math.max(0, toNumber(
+      row.querySelector(".supplier-purchase-cost").value,
+      0
+    ));
+    const custoPromocionalCompra = row.querySelector(".supplier-promotional-cost").value === ""
+      ? null
+      : Math.max(0, toNumber(row.querySelector(".supplier-promotional-cost").value, 0));
+    const unidadeUso = String(
+      row.querySelector(".supplier-usage-unit").value || "un"
+    ).trim() || "un";
+    const frequenciaAtiva = row.querySelector(".supplier-frequency-active").value === "sim";
+    const diasPedido = readWeekdaySelector(row.querySelector(".supplier-order-days"));
+    const diasEntrega = readWeekdaySelector(row.querySelector(".supplier-delivery-days"));
+    const quantidadePedidoPadrao = Math.max(1, toNumber(
+      row.querySelector(".supplier-order-quantity").value,
+      1
+    ));
+
+    if (frequenciaAtiva && !diasPedido.length) {
+      throw new Error(`Defina pelo menos um dia de pedido para o fornecedor ${selectedSupplier.nome}.`);
+    }
+
+    if (frequenciaAtiva && !diasEntrega.length) {
+      throw new Error(`Defina pelo menos um dia de entrega para o fornecedor ${selectedSupplier.nome}.`);
+    }
+
+    return buildSupplierEntryFromCatalog(selectedSupplier, {
+      conversao,
+      custoCompra,
+      custoPromocionalCompra,
+      promocaoAtiva: row.querySelector(".supplier-promotion-active").value === "sim",
+      promocaoInicio: row.querySelector(".supplier-promotion-start").value || "",
+      promocaoFim: row.querySelector(".supplier-promotion-end").value || "",
+      frequenciaAtiva,
+      diasPedido,
+      diasEntrega,
+      quantidadePedidoPadrao,
+      unidadeUso,
+      principal: row.querySelector(".supplier-principal-radio").checked
+    });
+  });
+
+  if (collected.length && !collected.some((entry) => entry.principal)) {
+    collected[0].principal = true;
+  }
+
+  return normalizeProductSuppliers({ fornecedores: collected }, fornecedores);
+}
+
+function findSupplierMatch(candidate = {}) {
+  const cnpj = normalizeDocumentNumber(candidate.cnpj);
+  const name = normalizeText(candidate.nome);
+
+  if (cnpj) {
+    const matchByDocument = fornecedores.find((fornecedor) => normalizeDocumentNumber(fornecedor.cnpj) === cnpj);
+
+    if (matchByDocument) {
+      return matchByDocument;
+    }
+  }
+
+  if (!name) {
+    return null;
+  }
+
+  return fornecedores.find((fornecedor) => normalizeText(fornecedor.nome) === name) || null;
 }
 
 function renderProducts(items) {
@@ -183,44 +1359,170 @@ function renderProducts(items) {
   items.forEach((item) => {
     const article = document.createElement("article");
     article.className = item.quantidade <= item.minimo ? "card critical" : "card";
-
-    const supplier = getSupplierOption(item);
+    const productSuppliers = normalizeProductSuppliers(item, fornecedores);
+    const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
+    const cheapestSupplier = getCheapestProductSupplier(item, fornecedores);
+    const scheduledSuppliers = productSuppliers.filter((supplier) => supplier.frequenciaAtiva);
     const fields = document.createElement("div");
     fields.className = "form-grid";
     fields.style.marginTop = "16px";
 
+    fields.appendChild(createField(`barcode_${item.id}`, "Codigo de barras", item.codigoBarras || "", {
+      type: "text"
+    }));
+    fields.appendChild(createField(`brand_${item.id}`, "Marca", item.marca || "", {
+      type: "text"
+    }));
+    fields.appendChild(createField(`category_${item.id}`, "Categoria", item.categoria || "", {
+      type: "text"
+    }));
+    fields.appendChild(createField(`unit_${item.id}`, "Unidade de medida", item.unidadeMedida || getUsageUnit(item), {
+      type: "text"
+    }));
     fields.appendChild(createField(`qtd_${item.id}`, "Quantidade", item.quantidade));
     fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
     fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
-    fields.appendChild(createField(`conv_${item.id}`, "Conversao", item.conversao));
-    fields.appendChild(createField(`custo_${item.id}`, "Custo unitario", getUnitCost(item), "number", "0.01"));
-
-    const supplierWrapper = document.createElement("label");
-    supplierWrapper.className = "field-group";
-    supplierWrapper.htmlFor = `for_${item.id}`;
-    supplierWrapper.innerHTML = "<span>Fornecedor</span>";
-
-    const select = document.createElement("select");
-    select.id = `for_${item.id}`;
-
-    fornecedores.forEach((fornecedor) => {
-      const option = document.createElement("option");
-      option.value = fornecedor.id;
-      option.textContent = fornecedor.nome;
-      option.selected = fornecedor.id === supplier?.id;
-      select.appendChild(option);
-    });
-
-    supplierWrapper.appendChild(select);
-    fields.appendChild(supplierWrapper);
 
     const summary = document.createElement("div");
     summary.className = "summary-line";
     summary.style.marginTop = "10px";
     summary.innerHTML = `
-      <span>Estoque minimo</span>
+      <span>${primarySupplier
+        ? `${formatCurrency(getEffectiveSupplierPurchaseCost(primarySupplier))} por embalagem com ${primarySupplier.conversao} ${escapeHtml(primarySupplier.unidadeUso)} | ${formatCurrency(getEffectiveSupplierUnitCost(primarySupplier))} por ${escapeHtml(primarySupplier.unidadeUso)}${primarySupplier.promocaoAplicada ? " | promocao ativa" : ""}`
+        : "Nenhum fornecedor principal definido ainda"}</span>
       <strong>${item.quantidade <= item.minimo ? "Atencao: precisa repor" : "Operacao dentro do limite"}</strong>
     `;
+
+    const supplierSummary = document.createElement("p");
+    supplierSummary.className = "muted";
+
+    if (!productSuppliers.length) {
+      supplierSummary.textContent = "Este item ainda nao tem fornecedor vinculado. Adicione pelo menos um para aparecer corretamente em Compras.";
+    } else if (cheapestSupplier && primarySupplier && cheapestSupplier.fornecedorId !== primarySupplier.fornecedorId) {
+      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier.nome}. Melhor custo atual: ${cheapestSupplier.nome} (${formatCurrency(getEffectiveSupplierUnitCost(cheapestSupplier))} por ${cheapestSupplier.unidadeUso}).`;
+    } else {
+      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier?.nome || "Nao definido"} | ${productSuppliers.length} fornecedor(es) vinculado(s).`;
+    }
+
+    const frequencySummary = document.createElement("p");
+    frequencySummary.className = "muted";
+    frequencySummary.textContent = scheduledSuppliers.length
+      ? scheduledSuppliers
+        .map((supplier) => `${supplier.nome}: ${formatSupplierScheduleDescription(supplier)}`)
+        .join(" | ")
+      : "Nenhuma frequencia de pedido cadastrada para este item.";
+
+    const supplierOverviewSection = document.createElement("div");
+    supplierOverviewSection.className = "supplier-price-grid";
+    supplierOverviewSection.style.marginTop = "16px";
+
+    if (!productSuppliers.length) {
+      supplierOverviewSection.innerHTML = '<div class="empty-state">Nenhum fornecedor vinculado. Esse produto ainda nao vai aparecer bem sugerido na tela de compras.</div>';
+    } else {
+      const supplierCards = [...productSuppliers].sort((left, right) => {
+        if (left.fornecedorId === cheapestSupplier?.fornecedorId) {
+          return -1;
+        }
+
+        if (right.fornecedorId === cheapestSupplier?.fornecedorId) {
+          return 1;
+        }
+
+        return getEffectiveSupplierUnitCost(left) - getEffectiveSupplierUnitCost(right);
+      });
+
+      supplierCards.forEach((supplier) => {
+        const supplierCard = document.createElement("article");
+        supplierCard.className = "supplier-price-card product-supplier-card";
+
+        if (supplier.fornecedorId === cheapestSupplier?.fornecedorId) {
+          supplierCard.classList.add("best");
+        }
+
+        const badges = [
+          supplier.principal ? "Principal" : "",
+          supplier.fornecedorId === cheapestSupplier?.fornecedorId ? "Melhor custo" : "",
+          supplier.promocaoAplicada ? "Promocao ativa" : "",
+          supplier.frequenciaAtiva ? "Com frequencia" : ""
+        ].filter(Boolean);
+
+        supplierCard.innerHTML = `
+          <div class="summary-line">
+            <strong>${escapeHtml(supplier.nome || "Fornecedor sem nome")}</strong>
+            <span>${formatCurrency(getEffectiveSupplierUnitCost(supplier))} por ${escapeHtml(supplier.unidadeUso)}</span>
+          </div>
+          <span class="supplier-price">${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))}</span>
+          <p class="muted">Embalagem com ${supplier.conversao} ${escapeHtml(supplier.unidadeUso)} | CNPJ ${escapeHtml(formatDocumentNumber(supplier.cnpj) || "Nao informado")}</p>
+          <p class="muted">${escapeHtml(formatSupplierScheduleDescription(supplier))}</p>
+          <div class="product-tag-row">
+            ${badges.map((badge) => `<span class="product-tag">${escapeHtml(badge)}</span>`).join("")}
+          </div>
+        `;
+
+        supplierOverviewSection.appendChild(supplierCard);
+      });
+    }
+
+    const supplierSection = document.createElement("div");
+    supplierSection.className = "supplier-section";
+    supplierSection.style.marginTop = "16px";
+
+    const supplierSectionHeader = document.createElement("div");
+    supplierSectionHeader.className = "summary-line";
+    supplierSectionHeader.innerHTML = `
+      <span>Fornecedores do item</span>
+      <strong>${productSuppliers.length ? `${productSuppliers.length} opcao(oes)` : "Sem fornecedores"}</strong>
+    `;
+
+    const supplierList = document.createElement("div");
+    supplierList.className = "supplier-list";
+    supplierList.style.marginTop = "16px";
+    const supplierRadioName = `principal_${item.id}`;
+    const emptySupplierMessage = "Nenhum fornecedor vinculado. Adicione um fornecedor para usar esse item na tela de compras.";
+
+    productSuppliers.forEach((supplierEntry) => {
+      appendSupplierEntry(supplierList, supplierEntry, {
+        radioName: supplierRadioName,
+        emptyMessage: emptySupplierMessage
+      });
+    });
+
+    refreshSupplierListState(supplierList, emptySupplierMessage);
+
+    const addSupplierRowButton = document.createElement("button");
+    addSupplierRowButton.type = "button";
+    addSupplierRowButton.className = "secondary";
+    addSupplierRowButton.textContent = "Adicionar fornecedor";
+    addSupplierRowButton.addEventListener("click", () => {
+      if (!fornecedores.length) {
+        setStatus("status", "Cadastre um fornecedor antes de vincular novos custos ao item.", "error");
+        return;
+      }
+
+      const fallbackSupplier = fornecedores[0];
+      const fallbackQuantity = primarySupplier?.conversao || getPackageQuantity(item);
+      const fallbackCost = primarySupplier?.custoCompra ?? getPurchaseCost(item);
+      const fallbackUnit = item.unidadeMedida || primarySupplier?.unidadeUso || getUsageUnit(item);
+
+      appendSupplierEntry(supplierList, buildSupplierEntryFromCatalog(fallbackSupplier, {
+        conversao: fallbackQuantity,
+        custoCompra: fallbackCost,
+        unidadeUso: fallbackUnit,
+        principal: !supplierList.querySelector(".supplier-entry")
+      }), {
+        radioName: supplierRadioName,
+        emptyMessage: emptySupplierMessage
+      });
+    });
+
+    const supplierActions = document.createElement("div");
+    supplierActions.className = "inline-actions";
+    supplierActions.style.marginTop = "16px";
+    supplierActions.appendChild(addSupplierRowButton);
+
+    supplierSection.appendChild(supplierSectionHeader);
+    supplierSection.appendChild(supplierList);
+    supplierSection.appendChild(supplierActions);
 
     const actions = document.createElement("div");
     actions.className = "inline-actions";
@@ -230,34 +1532,55 @@ function renderProducts(items) {
     saveButton.type = "button";
     saveButton.textContent = "Salvar";
     saveButton.addEventListener("click", async () => {
-      const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
-      const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
-      const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
-      const conversao = Math.max(1, toNumber(document.getElementById(`conv_${item.id}`).value, 1));
-      const custoUnitario = Math.max(0, toNumber(document.getElementById(`custo_${item.id}`).value, 0));
-      const fornecedorId = document.getElementById(`for_${item.id}`).value;
-      const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+      try {
+        const codigoBarras = normalizeBarcode(document.getElementById(`barcode_${item.id}`).value);
+        const marca = document.getElementById(`brand_${item.id}`).value.trim();
+        const categoria = document.getElementById(`category_${item.id}`).value.trim();
+        const unidadeMedida = String(document.getElementById(`unit_${item.id}`).value || "un").trim() || "un";
+        const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
+        const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
+        const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
+        const duplicateBarcode = codigoBarras
+          ? produtos.some((candidate) => candidate.id !== item.id && normalizeBarcode(candidate.codigoBarras) === codigoBarras)
+          : false;
+        const nextSuppliers = collectSupplierEntries(supplierList).map((supplierEntry) => ({
+          ...supplierEntry,
+          unidadeUso: unidadeMedida
+        }));
 
-      if (maximo < minimo) {
-        setStatus("status", `O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`, "error");
-        return;
+        if (maximo < minimo) {
+          throw new Error(`O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`);
+        }
+
+        if (duplicateBarcode) {
+          throw new Error(`Ja existe outro produto cadastrado com o codigo de barras ${codigoBarras}.`);
+        }
+
+        if (!nextSuppliers.length) {
+          throw new Error(`Adicione pelo menos um fornecedor ao item ${item.nome}.`);
+        }
+
+        await updateDoc(doc(db, "estoque", item.id), {
+          codigoBarras,
+          codigoBarrasNormalizado: codigoBarras,
+          marca,
+          categoria,
+          unidadeMedida,
+          quantidade,
+          minimo,
+          maximo,
+          origemCadastro: codigoBarras ? "codigo_barras" : "manual",
+          ...buildPrimarySupplierFields(nextSuppliers, item),
+          atualizadoEm: serverTimestamp()
+        });
+
+        triggerReplenishmentEvaluation("estoque_atualizado").catch(() => null);
+        setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
+        await loadProducts();
+      } catch (error) {
+        console.error(error);
+        setStatus("status", error.message || `Nao foi possivel atualizar ${item.nome}.`, "error");
       }
-
-      await updateDoc(doc(db, "estoque", item.id), {
-        quantidade,
-        minimo,
-        maximo,
-        conversao,
-        custoUnitario,
-        custo: custoUnitario,
-        fornecedorId: fornecedorSelecionado?.id || "",
-        fornecedorNome: fornecedorSelecionado?.nome || "",
-        fornecedor: fornecedorSelecionado?.nome || "",
-        atualizadoEm: serverTimestamp()
-      });
-
-      setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
-      await loadProducts();
     });
 
     const deleteButton = document.createElement("button");
@@ -279,6 +1602,7 @@ function renderProducts(items) {
         data: serverTimestamp()
       });
 
+      triggerReplenishmentEvaluation("estoque_excluido").catch(() => null);
       setStatus("status", `Produto ${item.nome} removido.`, "success");
       await loadProducts();
     });
@@ -286,13 +1610,40 @@ function renderProducts(items) {
     actions.appendChild(saveButton);
     actions.appendChild(deleteButton);
 
+    const supplierDescription = primarySupplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido";
+    const cnpjDescription = primarySupplier?.cnpj || item.cnpjFornecedor
+      ? ` | CNPJ ${formatDocumentNumber(primarySupplier?.cnpj || item.cnpjFornecedor)}`
+      : "";
+    const collapsible = document.createElement("details");
+    collapsible.className = "product-card-details";
+    collapsible.open = item.quantidade <= item.minimo;
+    const detailsSummary = document.createElement("summary");
+    detailsSummary.className = "product-card-details-summary";
+    detailsSummary.innerHTML = `
+      <div>
+        <strong>${productSuppliers.length ? `${productSuppliers.length} fornecedor(es) para este produto` : "Organizar fornecedores e agenda deste produto"}</strong>
+        <p class="muted">${scheduledSuppliers.length ? `${scheduledSuppliers.length} fornecedor(es) com pedido programado.` : "Abra para ver dias de pedido, dias de entrega e custos por fornecedor."}</p>
+      </div>
+      <span class="product-card-details-cta">Ver e editar detalhes</span>
+    `;
+    const detailsBody = document.createElement("div");
+    detailsBody.className = "product-card-details-body";
+
     article.innerHTML = `
       <h3>${escapeHtml(item.nome)}</h3>
-      <p class="muted">Fornecedor atual: ${escapeHtml(supplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido")}</p>
+      <p class="muted">Fornecedor principal atual: ${escapeHtml(`${supplierDescription}${cnpjDescription}`)}</p>
+      <p class="muted">${escapeHtml(`${formatProductBarcodeLabel(item)} | Marca ${item.marca || "Nao informada"} | Categoria ${item.categoria || "Nao informada"} | Unidade ${item.unidadeMedida || getUsageUnit(item)}`)}</p>
     `;
-    article.appendChild(summary);
-    article.appendChild(fields);
-    article.appendChild(actions);
+    detailsBody.appendChild(summary);
+    detailsBody.appendChild(supplierSummary);
+    detailsBody.appendChild(frequencySummary);
+    detailsBody.appendChild(supplierOverviewSection);
+    detailsBody.appendChild(fields);
+    detailsBody.appendChild(supplierSection);
+    detailsBody.appendChild(actions);
+    collapsible.appendChild(detailsSummary);
+    collapsible.appendChild(detailsBody);
+    article.appendChild(collapsible);
     list.appendChild(article);
   });
 }
@@ -300,41 +1651,792 @@ function renderProducts(items) {
 async function loadProducts() {
   await loadSuppliers();
   const snapshot = await getDocs(collection(db, "estoque"));
-  const items = snapshot.docs
+  produtos = snapshot.docs
     .map((document) => ({
       id: document.id,
       ...document.data(),
+      codigoBarras: document.data().codigoBarras || document.data().codigoBarrasNormalizado || "",
+      marca: document.data().marca || "",
+      categoria: document.data().categoria || "",
       quantidade: toNumber(document.data().quantidade, 0),
       minimo: toNumber(document.data().minimo, 0),
       maximo: toNumber(document.data().maximo, 0),
-      conversao: Math.max(1, toNumber(document.data().conversao, 1))
+      conversao: Math.max(1, toNumber(document.data().conversao, 1)),
+      custoCompra: document.data().custoCompra,
+      unidadeMedida: document.data().unidadeMedida || document.data().unidadeUso || document.data().unidadeCompra || "un",
+      unidadeUso: document.data().unidadeUso || document.data().unidadeCompra || "un",
+      fornecedores: normalizeProductSuppliers(document.data(), fornecedores)
     }))
     .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
 
-  renderProducts(items);
-  return items;
+  renderProducts(produtos);
+  return produtos;
 }
+
+function getDescendantByLocalName(node, localName) {
+  return Array.from(node?.getElementsByTagName("*") || []).find((child) => child.localName === localName) || null;
+}
+
+function getDirectChildrenByLocalName(node, localName) {
+  return Array.from(node?.children || []).filter((child) => child.localName === localName);
+}
+
+function getDirectChildByLocalName(node, localName) {
+  return getDirectChildrenByLocalName(node, localName)[0] || null;
+}
+
+function readXmlText(node, localName) {
+  return getDescendantByLocalName(node, localName)?.textContent?.trim() || "";
+}
+
+function parseXmlNumber(value) {
+  return toNumber(String(value ?? "").trim().replace(/,/g, "."), 0);
+}
+
+function formatQuantity(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: 3
+  }).format(toNumber(value, 0));
+}
+
+function formatInvoiceDate(value) {
+  if (!value) {
+    return "Data nao informada";
+  }
+
+  const candidate = value.includes("T") ? value : `${value}T00:00:00`;
+  const parsedDate = new Date(candidate);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  const options = value.includes("T")
+    ? { dateStyle: "short", timeStyle: "short" }
+    : { dateStyle: "short" };
+
+  return new Intl.DateTimeFormat("pt-BR", options).format(parsedDate);
+}
+
+function buildImportId(note) {
+  if (note.chaveAcesso) {
+    return note.chaveAcesso;
+  }
+
+  const fallback = normalizeText([
+    note.fornecedor.nome,
+    note.numero,
+    note.serie,
+    note.fileName
+  ].filter(Boolean).join(" "))
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+
+  return fallback || `xml-${Date.now()}`;
+}
+
+function parseInvoiceXml(fileName, xmlContent) {
+  const xmlDocument = new DOMParser().parseFromString(xmlContent, "application/xml");
+  const parserError = xmlDocument.getElementsByTagName("parsererror")[0];
+
+  if (parserError) {
+    throw new Error("O arquivo nao parece ser um XML valido.");
+  }
+
+  const infNFe = Array.from(xmlDocument.getElementsByTagName("*")).find((node) => node.localName === "infNFe");
+
+  if (!infNFe) {
+    throw new Error("Nao encontrei a estrutura infNFe no XML.");
+  }
+
+  const ide = getDirectChildByLocalName(infNFe, "ide") || getDescendantByLocalName(infNFe, "ide");
+  const emit = getDirectChildByLocalName(infNFe, "emit") || getDescendantByLocalName(infNFe, "emit");
+  const total = getDirectChildByLocalName(infNFe, "total") || getDescendantByLocalName(infNFe, "total");
+  const totals = getDescendantByLocalName(total, "ICMSTot");
+  const emitterAddress = getDescendantByLocalName(emit, "enderEmit");
+  const detailNodes = getDirectChildrenByLocalName(infNFe, "det");
+
+  const itens = detailNodes
+    .map((detail) => {
+      const product = getDirectChildByLocalName(detail, "prod") || getDescendantByLocalName(detail, "prod");
+
+      if (!product) {
+        return null;
+      }
+
+      const nome = readXmlText(product, "xProd");
+      const quantidade = parseXmlNumber(readXmlText(product, "qCom") || readXmlText(product, "qTrib"));
+
+      if (!nome || quantidade <= 0) {
+        return null;
+      }
+
+      const custoUnitario = Math.max(0, parseXmlNumber(readXmlText(product, "vUnCom") || readXmlText(product, "vUnTrib")));
+      const totalItem = Math.max(0, parseXmlNumber(readXmlText(product, "vProd")) || (quantidade * custoUnitario));
+
+      return {
+        codigo: readXmlText(product, "cProd"),
+        barcode: normalizeBarcode(readXmlText(product, "cEAN") || readXmlText(product, "cEANTrib")),
+        nome,
+        quantidade,
+        unidade: readXmlText(product, "uCom") || readXmlText(product, "uTrib") || "un",
+        custoUnitario,
+        total: totalItem,
+        ncm: readXmlText(product, "NCM")
+      };
+    })
+    .filter(Boolean);
+
+  if (!itens.length) {
+    throw new Error("Nenhum item de produto foi encontrado no XML.");
+  }
+
+  const note = {
+    fileName,
+    chaveAcesso: String(infNFe.getAttribute("Id") || "").replace(/^NFe/i, "").trim(),
+    numero: readXmlText(ide, "nNF"),
+    serie: readXmlText(ide, "serie"),
+    emissaoOriginal: readXmlText(ide, "dhEmi") || readXmlText(ide, "dEmi"),
+    emissaoFormatada: formatInvoiceDate(readXmlText(ide, "dhEmi") || readXmlText(ide, "dEmi")),
+    totalNota: Math.max(0, parseXmlNumber(readXmlText(totals, "vNF"))),
+    fornecedor: {
+      nome: readXmlText(emit, "xFant") || readXmlText(emit, "xNome") || "Fornecedor nao identificado",
+      cnpj: normalizeDocumentNumber(readXmlText(emit, "CNPJ") || readXmlText(emit, "CPF")),
+      telefone: readXmlText(emitterAddress, "fone")
+    },
+    itens
+  };
+
+  note.importId = buildImportId(note);
+
+  return note;
+}
+
+function summarizeMessages(messages) {
+  if (!messages.length) {
+    return "";
+  }
+
+  const preview = messages.slice(0, 2).join(" | ");
+  return messages.length > 2 ? `${preview} | ...` : preview;
+}
+
+function renderXmlPreview(notes) {
+  xmlPreview.innerHTML = "";
+
+  if (!notes.length) {
+    xmlPreview.innerHTML = '<div class="empty-state">Selecione um ou mais XMLs para visualizar a nota antes de importar.</div>';
+    return;
+  }
+
+  notes.forEach((note) => {
+    const article = document.createElement("article");
+    article.className = "card";
+
+    const supplierMatch = findSupplierMatch(note.fornecedor);
+    const supplierStatus = supplierMatch
+      ? `Fornecedor encontrado: ${supplierMatch.nome}`
+      : "Fornecedor sera criado automaticamente ao importar";
+    const cnpjInfo = note.fornecedor.cnpj
+      ? `CNPJ ${formatDocumentNumber(note.fornecedor.cnpj)}`
+      : "CNPJ nao informado";
+    const itemLines = note.itens.map((item) => `
+      <li>
+        <div class="xml-item-main">
+          <strong>${escapeHtml(item.nome)}</strong>
+          <span>${escapeHtml(`${formatQuantity(item.quantidade)} ${item.unidade}`)}</span>
+        </div>
+        <span class="xml-item-meta">
+          ${escapeHtml(`Cod. interno ${item.codigo || "-"} | Barcode ${item.barcode || "-"} | Unit. ${formatCurrency(item.custoUnitario)} | Total ${formatCurrency(item.total)}`)}
+        </span>
+      </li>
+    `).join("");
+
+    article.innerHTML = `
+      <div class="summary-line">
+        <span>${escapeHtml(note.fileName)}</span>
+        <strong>${escapeHtml(note.chaveAcesso ? `Chave ${note.chaveAcesso}` : "XML pronto para importar")}</strong>
+      </div>
+      <h3 style="margin-top: 12px;">${escapeHtml(note.fornecedor.nome)}</h3>
+      <p class="muted">${escapeHtml(`NF ${note.numero || "-"} | Serie ${note.serie || "-"} | ${note.emissaoFormatada} | ${formatCurrency(note.totalNota)}`)}</p>
+      <p class="muted">${escapeHtml(`${cnpjInfo} | ${supplierStatus}`)}</p>
+      <ul class="xml-items">${itemLines}</ul>
+    `;
+
+    xmlPreview.appendChild(article);
+  });
+}
+
+function supplierEntryMatchesSupplier(entry, supplier) {
+  if (!entry || !supplier) {
+    return false;
+  }
+
+  if (entry.fornecedorId && supplier.id && entry.fornecedorId === supplier.id) {
+    return true;
+  }
+
+  const entryCnpj = normalizeDocumentNumber(entry.cnpj);
+  const supplierCnpj = normalizeDocumentNumber(supplier.cnpj);
+
+  if (entryCnpj && supplierCnpj && entryCnpj === supplierCnpj) {
+    return true;
+  }
+
+  return normalizeText(entry.nome) === normalizeText(supplier.nome);
+}
+
+function mergeSupplierIntoProduct(product, supplier, values = {}) {
+  const currentSuppliers = normalizeProductSuppliers(product, fornecedores);
+  const nextQuantity = Math.max(1, toNumber(values.conversao, 1));
+  const nextCost = Math.max(0, toNumber(values.custoCompra, 0));
+  const nextUnit = String(values.unidadeUso || getUsageUnit(product) || "un").trim() || "un";
+  let matched = false;
+
+  const updatedSuppliers = currentSuppliers.map((entry) => {
+    if (!supplierEntryMatchesSupplier(entry, supplier)) {
+      return entry;
+    }
+
+    matched = true;
+    return buildSupplierEntryFromCatalog(supplier, {
+      conversao: nextQuantity,
+      custoCompra: nextCost,
+      custoPromocionalCompra: entry.custoPromocionalCompra,
+      promocaoAtiva: entry.promocaoAtiva,
+      promocaoInicio: entry.promocaoInicio,
+      promocaoFim: entry.promocaoFim,
+      frequenciaAtiva: entry.frequenciaAtiva,
+      diasPedido: entry.diasPedido,
+      diasEntrega: entry.diasEntrega,
+      quantidadePedidoPadrao: entry.quantidadePedidoPadrao,
+      unidadeUso: nextUnit,
+      principal: entry.principal
+    });
+  });
+
+  if (!matched) {
+    updatedSuppliers.push(buildSupplierEntryFromCatalog(supplier, {
+      conversao: nextQuantity,
+      custoCompra: nextCost,
+      unidadeUso: nextUnit,
+      principal: !currentSuppliers.length
+    }));
+  }
+
+  return normalizeProductSuppliers({ fornecedores: updatedSuppliers }, fornecedores);
+}
+
+async function ensureSupplierForImport(supplierData) {
+  const existingSupplier = findSupplierMatch(supplierData);
+
+  if (!existingSupplier) {
+    const newSupplier = {
+      nome: supplierData.nome || "Fornecedor importado",
+      cnpj: normalizeDocumentNumber(supplierData.cnpj),
+      telefone: supplierData.telefone || "",
+      telefoneNormalizado: normalizePhone(supplierData.telefone || ""),
+      nomeNormalizado: normalizeText(supplierData.nome || "Fornecedor importado"),
+      criadoEm: serverTimestamp()
+    };
+
+    const supplierRef = await addDoc(collection(db, "fornecedores"), newSupplier);
+    const createdSupplier = { id: supplierRef.id, ...newSupplier };
+    fornecedores = sortByName([...fornecedores, createdSupplier]);
+    renderSupplierOptions();
+
+    return {
+      supplier: createdSupplier,
+      created: true
+    };
+  }
+
+  const updates = {};
+  const incomingCnpj = normalizeDocumentNumber(supplierData.cnpj);
+  const incomingPhone = supplierData.telefone || "";
+
+  if (incomingCnpj && !normalizeDocumentNumber(existingSupplier.cnpj)) {
+    updates.cnpj = incomingCnpj;
+  }
+
+  if (incomingPhone && !existingSupplier.telefone) {
+    updates.telefone = incomingPhone;
+    updates.telefoneNormalizado = normalizePhone(incomingPhone);
+  }
+
+  if (Object.keys(updates).length) {
+    updates.atualizadoEm = serverTimestamp();
+    await updateDoc(doc(db, "fornecedores", existingSupplier.id), updates);
+    Object.assign(existingSupplier, updates);
+  }
+
+  return {
+    supplier: existingSupplier,
+    created: false
+  };
+}
+
+function findMatchingProduct(importedItem, inventoryByName, inventoryByBarcode, inventoryByCode) {
+  if (importedItem.barcode && inventoryByBarcode.has(importedItem.barcode)) {
+    return inventoryByBarcode.get(importedItem.barcode);
+  }
+
+  if (importedItem.codigo && inventoryByCode.has(importedItem.codigo)) {
+    return inventoryByCode.get(importedItem.codigo);
+  }
+
+  return inventoryByName.get(normalizeText(importedItem.nome)) || null;
+}
+
+async function handleXmlSelection() {
+  setStatus("xml-status", "", "info");
+  xmlImports = [];
+  renderXmlPreview(xmlImports);
+  importXmlButton.disabled = true;
+
+  const files = Array.from(xmlInput.files || []);
+
+  if (!files.length) {
+    setStatus("xml-status", "Selecione pelo menos um XML para continuar.", "info");
+    return;
+  }
+
+  const imports = [];
+  const errors = [];
+  const seenImportIds = new Set();
+
+  for (const file of files) {
+    try {
+      const xmlContent = await file.text();
+      const parsedInvoice = parseInvoiceXml(file.name, xmlContent);
+
+      if (seenImportIds.has(parsedInvoice.importId)) {
+        errors.push(`${file.name}: esta nota ja foi adicionada na lista.`);
+        continue;
+      }
+
+      seenImportIds.add(parsedInvoice.importId);
+      imports.push(parsedInvoice);
+    } catch (error) {
+      console.error(error);
+      errors.push(`${file.name}: ${error.message || "Nao foi possivel ler o XML."}`);
+    }
+  }
+
+  xmlImports = imports;
+  renderXmlPreview(xmlImports);
+  importXmlButton.disabled = !xmlImports.length;
+
+  if (imports.length && !errors.length) {
+    setStatus("xml-status", `${imports.length} XML(s) lido(s) com sucesso. Revise a pre-visualizacao e clique em importar.`, "success");
+    return;
+  }
+
+  if (imports.length) {
+    setStatus("xml-status", `${imports.length} XML(s) pronto(s) para importar. Alguns arquivos foram ignorados: ${summarizeMessages(errors)}`, "info");
+    return;
+  }
+
+  setStatus("xml-status", summarizeMessages(errors) || "Nenhum XML valido foi encontrado.", "error");
+}
+
+async function importXmlInvoices() {
+  if (!xmlImports.length) {
+    setStatus("xml-status", "Selecione e leia um XML antes de importar.", "error");
+    return;
+  }
+
+  importXmlButton.disabled = true;
+  setStatus("xml-status", "Importando notas para o estoque...", "info");
+
+  try {
+    const currentItems = await loadProducts();
+    const inventoryByName = new Map(currentItems.map((item) => [normalizeText(item.nome), item]));
+    const inventoryByBarcode = new Map(
+      currentItems
+        .filter((item) => item.codigoBarras)
+        .map((item) => [normalizeBarcode(item.codigoBarras), item])
+    );
+    const inventoryByCode = new Map(
+      currentItems
+        .filter((item) => item.codigoProduto)
+        .map((item) => [String(item.codigoProduto).trim(), item])
+    );
+
+    let importedNotes = 0;
+    let ignoredNotes = 0;
+    let createdItems = 0;
+    let updatedItems = 0;
+    let createdSuppliers = 0;
+
+    for (const note of xmlImports) {
+      const importRef = doc(db, "importacoesXml", note.importId);
+      const importSnapshot = await getDoc(importRef);
+      const purchaseDate = String(note.emissaoOriginal || "").slice(0, 10)
+        || new Date().toISOString().slice(0, 10);
+      const purchaseMonth = purchaseDate.slice(0, 7);
+
+      if (importSnapshot.exists()) {
+        ignoredNotes += 1;
+        continue;
+      }
+
+      const supplierResult = await ensureSupplierForImport(note.fornecedor);
+      const supplier = supplierResult.supplier;
+
+      if (supplierResult.created) {
+        createdSuppliers += 1;
+      }
+
+      const batch = writeBatch(db);
+
+      note.itens.forEach((importedItem) => {
+        const matchedItem = findMatchingProduct(importedItem, inventoryByName, inventoryByBarcode, inventoryByCode);
+        const importedPurchaseCost = Math.max(
+          0,
+          toNumber(importedItem.total, 0) || (toNumber(importedItem.custoUnitario, 0) * Math.max(1, toNumber(importedItem.quantidade, 1)))
+        );
+        const importedPackageQuantity = Math.max(1, toNumber(importedItem.quantidade, 1));
+        const importedUsageUnit = importedItem.unidade || matchedItem?.unidadeUso || matchedItem?.unidadeCompra || "un";
+        const importedBarcode = normalizeBarcode(importedItem.barcode);
+
+        if (matchedItem) {
+          const nextQuantity = Math.max(0, toNumber(matchedItem.quantidade, 0) + importedItem.quantidade);
+          const nextSuppliers = mergeSupplierIntoProduct(matchedItem, supplier, {
+            conversao: importedPackageQuantity,
+            custoCompra: importedPurchaseCost,
+            unidadeUso: importedUsageUnit
+          });
+          const primarySupplierFields = buildPrimarySupplierFields(nextSuppliers, matchedItem);
+
+          batch.update(doc(db, "estoque", matchedItem.id), {
+            quantidade: nextQuantity,
+            ...primarySupplierFields,
+            codigoBarras: matchedItem.codigoBarras || importedBarcode || "",
+            codigoBarrasNormalizado: matchedItem.codigoBarras || importedBarcode || "",
+            unidadeCompra: importedUsageUnit || matchedItem.unidadeCompra || "",
+            codigoProduto: importedItem.codigo || matchedItem.codigoProduto || "",
+            ncm: importedItem.ncm || matchedItem.ncm || "",
+            atualizadoEm: serverTimestamp()
+          });
+
+          matchedItem.quantidade = nextQuantity;
+          matchedItem.fornecedores = nextSuppliers;
+          matchedItem.conversao = primarySupplierFields.conversao;
+          matchedItem.custoCompra = primarySupplierFields.custoCompra;
+          matchedItem.custoUnitario = primarySupplierFields.custoUnitario;
+          matchedItem.custo = primarySupplierFields.custo;
+          matchedItem.unidadeUso = primarySupplierFields.unidadeUso;
+          matchedItem.codigoBarras = matchedItem.codigoBarras || importedBarcode || "";
+          matchedItem.unidadeCompra = importedUsageUnit || matchedItem.unidadeCompra || "";
+          matchedItem.codigoProduto = importedItem.codigo || matchedItem.codigoProduto || "";
+          matchedItem.ncm = importedItem.ncm || matchedItem.ncm || "";
+          matchedItem.fornecedorId = primarySupplierFields.fornecedorId;
+          matchedItem.fornecedorNome = primarySupplierFields.fornecedorNome;
+          matchedItem.fornecedor = primarySupplierFields.fornecedor;
+          matchedItem.cnpjFornecedor = primarySupplierFields.cnpjFornecedor;
+
+          inventoryByName.set(normalizeText(matchedItem.nome), matchedItem);
+
+          if (matchedItem.codigoBarras) {
+            inventoryByBarcode.set(normalizeBarcode(matchedItem.codigoBarras), matchedItem);
+          }
+
+          if (matchedItem.codigoProduto) {
+            inventoryByCode.set(String(matchedItem.codigoProduto).trim(), matchedItem);
+          }
+
+          const purchaseRef = doc(collection(db, "comprasMensais"));
+          batch.set(purchaseRef, {
+            produtoId: matchedItem.id,
+            produtoNome: matchedItem.nome,
+            fornecedorId: supplier.id,
+            fornecedorNome: supplier.nome,
+            dataCompra: purchaseDate,
+            mesReferencia: purchaseMonth,
+            quantidadeEmbalagens: 1,
+            quantidadeUnidades: importedItem.quantidade,
+            conversao: importedPackageQuantity,
+            unidadeUso: importedUsageUnit,
+            valorEmbalagem: importedPurchaseCost,
+            valorUnitarioUso: importedItem.custoUnitario,
+            valorTotal: importedPurchaseCost,
+            valorReferenciaTotal: importedPurchaseCost,
+            descontoTotal: 0,
+            promocaoAplicada: false,
+            valorNormalEmbalagem: importedPurchaseCost,
+            valorPromocionalEmbalagem: null,
+            atualizouEstoque: true,
+            observacao: `Importacao XML NF ${note.numero || "-"}`,
+            origem: "xml",
+            responsavel: profile.email,
+            criadoEm: serverTimestamp()
+          });
+
+          updatedItems += 1;
+          return;
+        }
+
+        const newProductRef = doc(collection(db, "estoque"));
+        const nextSuppliers = normalizeProductSuppliers({
+          fornecedores: [
+            buildSupplierEntryFromCatalog(supplier, {
+              conversao: importedPackageQuantity,
+              custoCompra: importedPurchaseCost,
+              unidadeUso: importedUsageUnit,
+              principal: true
+            })
+          ]
+        }, fornecedores);
+        const primarySupplierFields = buildPrimarySupplierFields(nextSuppliers);
+        const newProduct = {
+          nome: importedItem.nome,
+          nomeNormalizado: normalizeText(importedItem.nome),
+          codigoBarras: importedBarcode || "",
+          codigoBarrasNormalizado: importedBarcode || "",
+          quantidade: importedItem.quantidade,
+          minimo: DEFAULT_IMPORTED_PRODUCT.minimo,
+          maximo: DEFAULT_IMPORTED_PRODUCT.maximo,
+          ...primarySupplierFields,
+          unidadeMedida: importedUsageUnit || "un",
+          unidadeCompra: importedUsageUnit || "",
+          codigoProduto: importedItem.codigo || "",
+          ncm: importedItem.ncm || "",
+          origemCadastro: importedBarcode ? "xml_barcode" : "xml_manual",
+          criadoEm: serverTimestamp(),
+          atualizadoEm: serverTimestamp()
+        };
+
+        batch.set(newProductRef, newProduct);
+
+        const cachedProduct = { id: newProductRef.id, ...newProduct };
+        inventoryByName.set(newProduct.nomeNormalizado, cachedProduct);
+
+        if (cachedProduct.codigoBarras) {
+          inventoryByBarcode.set(normalizeBarcode(cachedProduct.codigoBarras), cachedProduct);
+        }
+
+        if (cachedProduct.codigoProduto) {
+          inventoryByCode.set(String(cachedProduct.codigoProduto).trim(), cachedProduct);
+        }
+
+        const purchaseRef = doc(collection(db, "comprasMensais"));
+        batch.set(purchaseRef, {
+          produtoId: newProductRef.id,
+          produtoNome: importedItem.nome,
+          fornecedorId: supplier.id,
+          fornecedorNome: supplier.nome,
+          dataCompra: purchaseDate,
+          mesReferencia: purchaseMonth,
+          quantidadeEmbalagens: 1,
+          quantidadeUnidades: importedItem.quantidade,
+          conversao: importedPackageQuantity,
+          unidadeUso: importedUsageUnit,
+          valorEmbalagem: importedPurchaseCost,
+          valorUnitarioUso: importedItem.custoUnitario,
+          valorTotal: importedPurchaseCost,
+          valorReferenciaTotal: importedPurchaseCost,
+          descontoTotal: 0,
+          promocaoAplicada: false,
+          valorNormalEmbalagem: importedPurchaseCost,
+          valorPromocionalEmbalagem: null,
+          atualizouEstoque: true,
+          observacao: `Importacao XML NF ${note.numero || "-"}`,
+          origem: "xml",
+          responsavel: profile.email,
+          criadoEm: serverTimestamp()
+        });
+
+        createdItems += 1;
+      });
+
+      const historyRef = doc(collection(db, "historico"));
+
+      batch.set(historyRef, {
+        tipo: "importacao_xml",
+        importacaoId: note.importId,
+        chaveAcesso: note.chaveAcesso || note.importId,
+        numeroNota: note.numero || "",
+        serie: note.serie || "",
+        fornecedorId: supplier.id,
+        fornecedorNome: supplier.nome,
+        totalNota: note.totalNota,
+        totalItens: note.itens.length,
+        arquivo: note.fileName,
+        dataEmissao: note.emissaoOriginal || "",
+        responsavel: profile.email,
+        data: serverTimestamp()
+      });
+
+      batch.set(importRef, {
+        importacaoId: note.importId,
+        chaveAcesso: note.chaveAcesso || "",
+        numeroNota: note.numero || "",
+        serie: note.serie || "",
+        fornecedorId: supplier.id,
+        fornecedorNome: supplier.nome,
+        fornecedorCnpj: supplier.cnpj || "",
+        arquivo: note.fileName,
+        totalNota: note.totalNota,
+        totalItens: note.itens.length,
+        responsavel: profile.email,
+        criadoEm: serverTimestamp()
+      });
+
+      await batch.commit();
+      importedNotes += 1;
+    }
+
+    xmlImports = [];
+    xmlInput.value = "";
+    renderXmlPreview(xmlImports);
+    await loadProducts();
+
+    const summary = [
+      `${importedNotes} nota(s) importada(s)`,
+      `${createdItems} item(ns) criado(s)`,
+      `${updatedItems} item(ns) atualizado(s)`
+    ];
+
+    if (createdSuppliers) {
+      summary.push(`${createdSuppliers} fornecedor(es) criado(s)`);
+    }
+
+    if (ignoredNotes) {
+      summary.push(`${ignoredNotes} nota(s) ignorada(s) por ja terem sido importadas`);
+    }
+
+    const statusType = ignoredNotes ? "info" : "success";
+    triggerReplenishmentEvaluation("importacao_xml").catch(() => null);
+    setStatus("xml-status", `Importacao concluida: ${summary.join(", ")}.`, statusType);
+  } catch (error) {
+    console.error(error);
+    setStatus("xml-status", error.message || "Nao foi possivel importar os XMLs selecionados.", "error");
+    importXmlButton.disabled = false;
+    return;
+  }
+
+  importXmlButton.disabled = true;
+}
+
+xmlInput.addEventListener("change", handleXmlSelection);
+importXmlButton.addEventListener("click", importXmlInvoices);
+barcodeInput.addEventListener("input", () => {
+  barcodeInput.value = normalizeBarcode(barcodeInput.value);
+});
+manualProductToggle.addEventListener("change", async () => {
+  await updateBarcodeModeState();
+});
+lookupBarcodeButton.addEventListener("click", async () => {
+  await lookupBarcodeProduct(barcodeInput.value);
+});
+startScanButton.addEventListener("click", async () => {
+  await startBarcodeScanner();
+});
+stopScanButton.addEventListener("click", async () => {
+  await stopBarcodeScanner();
+  setStatus("barcode-status", "Leitura pela camera encerrada.", "info");
+});
+unitMeasureInput.addEventListener("input", syncUnitMeasureFields);
+usageUnitInput.addEventListener("input", () => {
+  unitMeasureInput.value = String(usageUnitInput.value || "un").trim() || "un";
+});
+packageQuantityInput.addEventListener("input", updateCreateCostPreview);
+purchaseCostInput.addEventListener("input", updateCreateCostPreview);
+promotionalCostInput.addEventListener("input", updateCreateCostPreview);
+createPromotionActiveSelect.addEventListener("change", updateCreateCostPreview);
+createPromotionStartInput.addEventListener("input", updateCreateCostPreview);
+createPromotionEndInput.addEventListener("input", updateCreateCostPreview);
+createFrequencyActiveSelect.addEventListener("change", syncCreateFrequencyState);
+addSupplierButton.addEventListener("click", () => {
+  setStatus("status", "", "info");
+
+  if (!fornecedores.length) {
+    setStatus("status", "Cadastre pelo menos um fornecedor antes de montar o produto.", "error");
+    return;
+  }
+
+  if (createFrequencyActiveSelect.value === "sim" && !readWeekdaySelector(createOrderDaysContainer).length) {
+    setStatus("status", "Selecione pelo menos um dia para pedir quando a frequencia estiver ativa.", "error");
+    return;
+  }
+
+  if (createFrequencyActiveSelect.value === "sim" && !readWeekdaySelector(createDeliveryDaysContainer).length) {
+    setStatus("status", "Selecione pelo menos um dia de entrega quando a frequencia estiver ativa.", "error");
+    return;
+  }
+
+  const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === supplierSelect.value) || fornecedores[0];
+  const principalSelecionado = createPrimarySelect.value !== "nao" || !newSuppliersList.querySelector(".supplier-entry");
+  syncUnitMeasureFields();
+
+  appendSupplierEntry(newSuppliersList, buildSupplierEntryFromCatalog(fornecedorSelecionado, {
+    conversao: Math.max(1, toNumber(packageQuantityInput.value, 1)),
+    custoCompra: Math.max(0, toNumber(purchaseCostInput.value, 0)),
+    custoPromocionalCompra: promotionalCostInput.value === ""
+      ? null
+      : Math.max(0, toNumber(promotionalCostInput.value, 0)),
+    promocaoAtiva: createPromotionActiveSelect.value === "sim",
+    promocaoInicio: createPromotionStartInput.value || "",
+    promocaoFim: createPromotionEndInput.value || "",
+    frequenciaAtiva: createFrequencyActiveSelect.value === "sim",
+    diasPedido: readWeekdaySelector(createOrderDaysContainer),
+    diasEntrega: readWeekdaySelector(createDeliveryDaysContainer),
+    quantidadePedidoPadrao: Math.max(1, toNumber(createOrderQuantityInput.value, 1)),
+    unidadeUso: String(unitMeasureInput.value || usageUnitInput.value || "un").trim() || "un",
+    principal: principalSelecionado
+  }), {
+    radioName: "principal_novo_produto",
+    emptyMessage: "Adicione ao menos um fornecedor para salvar o produto."
+  });
+
+  if (principalSelecionado) {
+    Array.from(newSuppliersList.querySelectorAll(".supplier-entry")).forEach((row) => {
+      if (row !== newSuppliersList.lastElementChild) {
+        row.querySelector(".summary-line strong").textContent = "Alternativo";
+      }
+    });
+  }
+
+  packageQuantityInput.value = "1";
+  purchaseCostInput.value = "0";
+  promotionalCostInput.value = "";
+  usageUnitInput.value = unitMeasureInput.value || "un";
+  createPrimarySelect.value = "nao";
+  createPromotionActiveSelect.value = "nao";
+  createPromotionStartInput.value = "";
+  createPromotionEndInput.value = "";
+  createFrequencyActiveSelect.value = "nao";
+  createOrderQuantityInput.value = "1";
+  populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+  populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
+  syncCreateFrequencyState();
+  updateCreateCostPreview();
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("status", "", "info");
 
-  const nome = document.getElementById("novo_nome").value.trim();
+  const codigoBarras = normalizeBarcode(barcodeInput.value);
+  const nome = nameInput.value.trim();
+  const marca = brandInput.value.trim();
+  const categoria = categoryInput.value.trim();
+  const unidadeMedida = String(unitMeasureInput.value || "un").trim() || "un";
   const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
   const minimo = Math.max(0, toNumber(document.getElementById("novo_min").value, 0));
   const maximo = Math.max(1, toNumber(document.getElementById("novo_max").value, 1));
-  const conversao = Math.max(1, toNumber(document.getElementById("novo_conv").value, 1));
-  const custoUnitario = Math.max(0, toNumber(document.getElementById("novo_custo").value, 0));
-  const fornecedorId = supplierSelect.value;
-  const fornecedorSelecionado = fornecedores.find((fornecedor) => fornecedor.id === fornecedorId);
+  const cadastroManual = isManualProductModeEnabled();
 
-  if (!nome) {
-    setStatus("status", "Informe o nome do produto.", "error");
+  if (!codigoBarras && !cadastroManual) {
+    setStatus("status", "Leia ou informe um codigo de barras. Se o item for artesanal ou interno, ative o cadastro manual.", "error");
     return;
   }
 
-  if (!fornecedorSelecionado) {
-    setStatus("status", "Cadastre e selecione um fornecedor antes de salvar o produto.", "error");
+  if (!nome) {
+    setStatus("status", "Informe o nome do produto.", "error");
     return;
   }
 
@@ -348,34 +2450,58 @@ form.addEventListener("submit", async (event) => {
   try {
     const existingItems = await loadProducts();
     const duplicated = existingItems.some((item) => normalizeText(item.nome) === normalizeText(nome));
+    const duplicatedBarcode = codigoBarras
+      ? existingItems.some((item) => normalizeBarcode(item.codigoBarras) === codigoBarras)
+      : false;
 
     if (duplicated) {
       throw new Error("Ja existe um produto com esse nome.");
     }
 
+    if (duplicatedBarcode) {
+      throw new Error(`Ja existe um produto cadastrado com o codigo de barras ${codigoBarras}.`);
+    }
+
+    const productSuppliers = collectSupplierEntries(newSuppliersList).map((supplierEntry) => ({
+      ...supplierEntry,
+      unidadeUso: unidadeMedida
+    }));
+
+    if (!productSuppliers.length) {
+      throw new Error("Adicione pelo menos um fornecedor ao produto antes de salvar.");
+    }
+
     await addDoc(collection(db, "estoque"), {
+      codigoBarras,
+      codigoBarrasNormalizado: codigoBarras,
       nome,
       nomeNormalizado: normalizeText(nome),
+      marca,
+      categoria,
+      unidadeMedida,
       quantidade,
       minimo,
       maximo,
-      conversao,
-      custoUnitario,
-      custo: custoUnitario,
-      fornecedorId: fornecedorSelecionado.id,
-      fornecedorNome: fornecedorSelecionado.nome,
-      fornecedor: fornecedorSelecionado.nome,
+      origemCadastro: codigoBarras ? "codigo_barras" : "manual",
+      ...buildPrimarySupplierFields(productSuppliers),
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp()
     });
 
-    form.reset();
-    document.getElementById("novo_qtd").value = "0";
-    document.getElementById("novo_min").value = "2";
-    document.getElementById("novo_max").value = "50";
-    document.getElementById("novo_conv").value = "1";
-    document.getElementById("novo_custo").value = "0";
+    if (codigoBarras) {
+      await saveCachedBarcodeProduct({
+        barcode: codigoBarras,
+        nome,
+        marca,
+        categoria,
+        fonte: cadastroManual ? "cadastro-manual" : "codigo-barras"
+      }).catch(() => null);
+    }
 
+    resetCreateProductForm();
+    await updateBarcodeModeState();
+
+    triggerReplenishmentEvaluation("produto_criado").catch(() => null);
     setStatus("status", "Produto criado com sucesso.", "success");
     await loadProducts();
   } catch (error) {
@@ -412,6 +2538,7 @@ resetButton.addEventListener("click", async () => {
       data: serverTimestamp()
     });
 
+    triggerReplenishmentEvaluation("estoque_zerado").catch(() => null);
     setStatus("status", "Todas as quantidades foram zeradas.", "success");
     await loadProducts();
   } catch (error) {
@@ -420,7 +2547,20 @@ resetButton.addEventListener("click", async () => {
   }
 });
 
+window.addEventListener("beforeunload", () => {
+  stopBarcodeScanner().catch(() => null);
+});
+
+renderXmlPreview(xmlImports);
+populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
+syncUnitMeasureFields();
+updateCreateCostPreview();
+syncCreateFrequencyState();
+refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
+await updateBarcodeModeState();
 await loadProducts();
 </script>
 </body>
 </html>
+
