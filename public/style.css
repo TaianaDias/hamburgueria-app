@@ -398,6 +398,24 @@ pre {
   margin-top: 10px;
 }
 
+.barcode-reader {
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.9);
+  min-height: 260px;
+}
+
+.barcode-reader video {
+  width: 100%;
+  display: block;
+}
+
+.barcode-reader__hint {
+  margin-top: 12px;
+}
+
 .weekday-selector {
   display: flex;
   flex-wrap: wrap;

@@ -423,6 +423,7 @@ function normalizeProductSupplierEntry(entry = {}, product = {}, supplierCatalog
     unidadeUso: String(
       entry?.unidadeUso ??
       entry?.unidadeCompra ??
+      product?.unidadeMedida ??
       product?.unidadeUso ??
       product?.unidadeCompra ??
       "un"
@@ -449,7 +450,7 @@ export function normalizeProductSuppliers(product = {}, supplierCatalog = []) {
         conversao: product.conversao,
         custoCompra: product.custoCompra,
         custoUnitario: product.custoUnitario ?? product.custo,
-        unidadeUso: product.unidadeUso ?? product.unidadeCompra ?? "un",
+        unidadeUso: product.unidadeMedida ?? product.unidadeUso ?? product.unidadeCompra ?? "un",
         principal: true
       }]
       : [];
@@ -572,7 +573,7 @@ export function getUsageUnit(item) {
     return String(primarySupplier.unidadeUso || "un").trim() || "un";
   }
 
-  return String(item?.unidadeUso ?? item?.unidadeCompra ?? "un").trim() || "un";
+  return String(item?.unidadeMedida ?? item?.unidadeUso ?? item?.unidadeCompra ?? "un").trim() || "un";
 }
 
 export function formatCurrency(value) {

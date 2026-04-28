@@ -170,6 +170,155 @@ function normalizeName(value) {
   return String(value ?? "").trim().slice(0, 80);
 }
 
+function normalizeBarcode(value) {
+  return String(value ?? "").replace(/\D/g, "").slice(0, 24);
+}
+
+function normalizeLookupText(value) {
+  return String(value ?? "").trim();
+}
+
+function inferCategoryFromText(value) {
+  const normalized = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  const rules = [
+    { keywords: ["molho", "ketchup", "maionese", "mostarda"], category: "molho" },
+    { keywords: ["embal", "pote", "copo", "sacola", "guardanapo", "papel"], category: "embalagem" },
+    { keywords: ["bebida", "refrigerante", "suco", "agua", "cerveja"], category: "bebida" },
+    { keywords: ["carne", "blend", "hamburguer"], category: "proteina" },
+    { keywords: ["queijo", "mussarela", "cheddar"], category: "laticinio" },
+    { keywords: ["pao", "bun"], category: "panificacao" },
+    { keywords: ["tempero", "insumo", "ingrediente"], category: "insumo" }
+  ];
+
+  for (const rule of rules) {
+    if (rule.keywords.some((keyword) => normalized.includes(keyword))) {
+      return rule.category;
+    }
+  }
+
+  return "";
+}
+
+async function lookupOpenFoodFactsProduct(barcode) {
+  const response = await fetch(
+    `https://world.openfoodfacts.net/api/v2/product/${barcode}?fields=code,product_name,brands,categories,categories_tags`,
+    {
+      headers: {
+        "User-Agent": "BurgerOps/1.0 (barcode lookup)"
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Open Food Facts respondeu com status ${response.status}.`);
+  }
+
+  const payload = await response.json();
+
+  if (payload?.status !== 1 || !payload?.product) {
+    return null;
+  }
+
+  const product = payload.product;
+  const categoryText = normalizeLookupText(product.categories);
+  const inferredCategory = inferCategoryFromText(categoryText);
+
+  return {
+    barcode,
+    nome: normalizeLookupText(product.product_name),
+    marca: normalizeLookupText(product.brands),
+    categoria: inferredCategory || categoryText || "insumo",
+    fonte: "open-food-facts"
+  };
+}
+
+async function lookupCosmosProduct(barcode) {
+  const cosmosToken = String(process.env.COSMOS_API_TOKEN ?? "").trim();
+  const cosmosUserAgent = String(process.env.COSMOS_USER_AGENT ?? "").trim();
+
+  if (!cosmosToken || !cosmosUserAgent) {
+    return null;
+  }
+
+  const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${barcode}.json`, {
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": cosmosUserAgent,
+      "X-Cosmos-Token": cosmosToken
+    }
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Cosmos respondeu com status ${response.status}.`);
+  }
+
+  const payload = await response.json();
+  const gpcCategory = normalizeLookupText(payload?.gpc?.description);
+  const inferredCategory = inferCategoryFromText(gpcCategory);
+
+  return {
+    barcode,
+    nome: normalizeLookupText(payload?.description),
+    marca: normalizeLookupText(payload?.brand?.name),
+    categoria: inferredCategory || gpcCategory || "insumo",
+    fonte: "cosmos"
+  };
+}
+
+async function barcodeLookup(req, res) {
+  const barcode = normalizeBarcode(req.params?.barcode);
+
+  if (!barcode) {
+    return res.status(400).json({ erro: "Informe um codigo de barras valido." });
+  }
+
+  try {
+    const openFoodFactsProduct = await lookupOpenFoodFactsProduct(barcode);
+
+    if (openFoodFactsProduct?.nome) {
+      return res.json({
+        ok: true,
+        found: true,
+        source: openFoodFactsProduct.fonte,
+        product: openFoodFactsProduct
+      });
+    }
+
+    const cosmosProduct = await lookupCosmosProduct(barcode);
+
+    if (cosmosProduct?.nome) {
+      return res.json({
+        ok: true,
+        found: true,
+        source: cosmosProduct.fonte,
+        product: cosmosProduct
+      });
+    }
+
+    return res.json({
+      ok: true,
+      found: false,
+      source: null,
+      product: {
+        barcode,
+        nome: "",
+        marca: "",
+        categoria: ""
+      }
+    });
+  } catch (error) {
+    return res.status(502).json({ erro: error.message || "Nao foi possivel consultar o codigo de barras." });
+  }
+}
+
 async function hasRegisteredUsers() {
   const snapshot = await admin.firestore().collection("usuarios").limit(1).get();
   return !snapshot.empty;
@@ -356,6 +505,7 @@ app.get("/api/bootstrap/status", getBootstrapStatus);
 app.post("/api/bootstrap/register", bootstrapRegister);
 app.get("/api/usuarios", requireAdmin, listUsers);
 app.post("/api/usuarios", requireAdmin, createUser);
+app.get("/api/barcodes/:barcode", requireAuthenticated, barcodeLookup);
 app.post("/criar-usuario", requireAdmin, createUser);
 
 app.get("/", (req, res) => {
