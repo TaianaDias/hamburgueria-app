@@ -464,6 +464,55 @@ function buildOperationalMetric(label, value, details = "") {
   `;
 }
 
+function buildDetailAccordionSummaryChips(entries = []) {
+  return entries
+    .filter((entry) => entry && String(entry.value ?? "").trim())
+    .map((entry) => `
+      <span class="detail-subaccordion-chip">
+        <strong>${escapeHtml(entry.label)}:</strong>
+        <span>${escapeHtml(String(entry.value))}</span>
+      </span>
+    `)
+    .join("");
+}
+
+function createDetailAccordion({
+  title,
+  helperText = "",
+  summaryEntries = [],
+  contentNode,
+  open = false,
+  ctaLabel = "Abrir detalhes"
+}) {
+  const accordion = document.createElement("details");
+  accordion.className = "advanced-config-section detail-subaccordion";
+  accordion.open = open;
+
+  const summary = document.createElement("summary");
+  summary.className = "detail-subaccordion-summary";
+  summary.innerHTML = `
+    <div>
+      <strong>${escapeHtml(title)}</strong>
+      ${helperText ? `<p class="muted">${escapeHtml(helperText)}</p>` : ""}
+      ${summaryEntries.length ? `<div class="detail-subaccordion-meta">${buildDetailAccordionSummaryChips(summaryEntries)}</div>` : ""}
+    </div>
+    <span class="detail-subaccordion-cta">${escapeHtml(ctaLabel)}</span>
+  `;
+
+  const body = document.createElement("div");
+  body.className = "detail-subaccordion-body";
+
+  if (typeof contentNode === "string") {
+    body.innerHTML = contentNode;
+  } else if (contentNode) {
+    body.appendChild(contentNode);
+  }
+
+  accordion.appendChild(summary);
+  accordion.appendChild(body);
+  return accordion;
+}
+
 function applyBarcodeLookupProduct(product, options = {}) {
   const {
     source = "manual",
@@ -1813,41 +1862,40 @@ function renderProducts(items) {
       </div>
     `;
 
-    const advancedOverview = document.createElement("section");
-    advancedOverview.className = "advanced-config-section";
-    advancedOverview.innerHTML = `
-      <div class="section-heading">
-        <div>
-          <h4>Resumo operacional detalhado</h4>
-          <p class="muted">Consulta rapida do custo atual, agenda e fornecedores disponiveis para este item.</p>
-        </div>
-      </div>
-    `;
-    advancedOverview.appendChild(supplierOverviewSection);
+    const advancedOverview = createDetailAccordion({
+      title: "Custos e alternativas",
+      helperText: "Veja rapidamente o melhor custo e os fornecedores disponiveis para este item.",
+      summaryEntries: [
+        { label: "Melhor custo", value: currentCostLabel },
+        { label: "Fornecedores", value: String(productSuppliers.length || 0) }
+      ],
+      contentNode: supplierOverviewSection,
+      open: item.quantidade <= item.minimo,
+      ctaLabel: "Ver custos"
+    });
 
-    const productConfigSection = document.createElement("section");
-    productConfigSection.className = "advanced-config-section";
-    productConfigSection.innerHTML = `
-      <div class="section-heading">
-        <div>
-          <h4>Configuracao do produto</h4>
-          <p class="muted">${escapeHtml(`${formatProductBarcodeLabel(item)} | Marca ${item.marca || "Nao informada"} | Categoria ${item.categoria || "Nao informada"} | Unidade ${item.unidadeMedida || getUsageUnit(item)}`)}</p>
-        </div>
-      </div>
-    `;
-    productConfigSection.appendChild(fields);
+    const productConfigSection = createDetailAccordion({
+      title: "Descricao",
+      summaryEntries: [
+        { label: "Qtd. maxima", value: String(toNumber(item.maximo, 0)) },
+        { label: "Estoque minimo", value: String(toNumber(item.minimo, 0)) },
+        { label: "Dia de pedido", value: orderDaysSummary },
+        { label: "Dia de entrega", value: deliveryDaysSummary }
+      ],
+      contentNode: fields,
+      ctaLabel: "Editar descricao"
+    });
 
-    const supplierConfigSection = document.createElement("section");
-    supplierConfigSection.className = "advanced-config-section";
-    supplierConfigSection.innerHTML = `
-      <div class="section-heading">
-        <div>
-          <h4>Fornecedores e configuracao avancada</h4>
-          <p class="muted">Cada fornecedor abre em card proprio com custo, promocao, prioridade e dias de operacao.</p>
-        </div>
-      </div>
-    `;
-    supplierConfigSection.appendChild(supplierSection);
+    const supplierConfigSection = createDetailAccordion({
+      title: "Fornecedores e configuracao avancada",
+      helperText: "Cada fornecedor abre em card proprio com custo, promocao, prioridade e dias de operacao.",
+      summaryEntries: [
+        { label: "Fornecedores", value: String(productSuppliers.length || 0) },
+        { label: "Principal", value: primarySupplier?.nome || "Nao definido" }
+      ],
+      contentNode: supplierSection,
+      ctaLabel: "Ver fornecedores"
+    });
 
     detailsBody.appendChild(advancedOverview);
     detailsBody.appendChild(productConfigSection);

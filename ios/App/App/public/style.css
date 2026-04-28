@@ -472,6 +472,72 @@ pre {
   background: rgba(15, 23, 42, 0.22);
 }
 
+.detail-subaccordion {
+  padding: 0;
+  overflow: hidden;
+}
+
+.detail-subaccordion-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.detail-subaccordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-subaccordion-summary > div {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-subaccordion-summary > div > strong {
+  color: var(--text);
+}
+
+.detail-subaccordion-summary .muted {
+  margin: 0;
+}
+
+.detail-subaccordion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-subaccordion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.detail-subaccordion-chip strong {
+  display: inline;
+  color: var(--brand-soft);
+}
+
+.detail-subaccordion-cta {
+  color: var(--brand-soft);
+  font-weight: 700;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.detail-subaccordion-body {
+  padding: 0 18px 18px;
+}
+
 .section-heading {
   display: flex;
   justify-content: space-between;
@@ -897,6 +963,7 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .detail-subaccordion-summary,
   .product-card-details-summary {
     display: grid;
   }
