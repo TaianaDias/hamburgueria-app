@@ -272,6 +272,9 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.5);
+  position: sticky;
+  top: 10px;
+  z-index: 2;
 }
 
 .inventory-toolbar .field-group {
@@ -428,6 +431,10 @@ pre {
   background: rgba(15, 23, 42, 0.34);
 }
 
+.product-card-details[open] .product-card-details-summary {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
 .product-card-details-summary::-webkit-details-marker {
   display: none;
 }
@@ -449,6 +456,17 @@ pre {
 
 .product-card-details-body {
   padding: 0 18px 18px;
+}
+
+.product-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.product-card-actions button {
+  width: 100%;
+  min-height: 44px;
 }
 
 .product-operational-header h3 {
@@ -1030,6 +1048,44 @@ pre {
   .detail-subaccordion-summary,
   .product-card-details-summary {
     display: grid;
+  }
+
+  .section-accordion-summary {
+    align-items: flex-start;
+  }
+
+  .section-accordion-cta,
+  .product-card-details-cta,
+  .detail-subaccordion-cta {
+    font-size: 0.82rem;
+  }
+
+  .product-card-details-body,
+  .detail-subaccordion-body,
+  .supplier-entry-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .product-card-actions {
+    grid-template-columns: 1fr;
+    position: sticky;
+    bottom: 8px;
+    z-index: 1;
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+  }
+
+  .supplier-entry-summary {
+    display: grid;
+    gap: 10px;
+  }
+
+  .supplier-entry-summary-side {
+    justify-items: start;
+    text-align: left;
   }
 
   button,
