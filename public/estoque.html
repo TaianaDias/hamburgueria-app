@@ -60,197 +60,211 @@
     </details>
   </section>
 
-  <section class="panel">
+  <section class="panel product-create-panel">
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Novo produto</h3>
-        <p class="muted">Cadastre quantidade por embalagem e custo da compra para o sistema calcular automaticamente o custo por unidade de uso.</p>
+        <p class="muted">Preencha o basico para cadastro rapido e abra as opcoes quando precisar.</p>
       </div>
 
       <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
     </div>
 
-    <form id="product-form" class="form-grid">
-      <details class="supplier-section section-accordion">
+    <form id="product-form" class="product-create-shell">
+      <div class="form-grid product-basic-grid">
+        <div class="field-group">
+          <label for="novo_nome">Nome</label>
+          <input id="novo_nome" placeholder="Blend bovino">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_unidade_medida">Unidade de medida</label>
+          <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_qtd">Quantidade atual</label>
+          <input id="novo_qtd" type="number" min="0" step="1" value="0">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_min">Minimo</label>
+          <input id="novo_min" type="number" min="0" step="1" value="2">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_max">Maximo</label>
+          <input id="novo_max" type="number" min="1" step="1" value="50">
+        </div>
+      </div>
+
+      <details class="section-accordion compact-config-accordion">
         <summary class="section-accordion-summary">
           <div>
-            <span>Cadastro por codigo de barras</span>
-            <strong id="barcode-accordion-summary">Leia pela camera ou digite manualmente.</strong>
+            <span>Configuracoes opcionais</span>
+            <strong>Codigo de barras, fornecedores e frequencia de compra</strong>
           </div>
-          <span class="section-accordion-cta">Abrir leitura</span>
+          <span class="section-accordion-cta">Abrir opcoes</span>
         </summary>
 
-        <div class="section-accordion-body">
-          <div class="form-grid">
-            <div class="field-group">
-              <label for="novo_codigo_barras">Codigo de barras</label>
-              <input id="novo_codigo_barras" inputmode="numeric" placeholder="789..." autocomplete="off">
+        <div class="section-accordion-body compact-config-body">
+          <details class="supplier-section section-accordion compact-inner-accordion">
+            <summary class="section-accordion-summary">
+              <div>
+                <span>Cadastro por codigo de barras</span>
+                <strong id="barcode-accordion-summary">Leia pela camera ou digite manualmente.</strong>
+              </div>
+              <span class="section-accordion-cta">Abrir leitura</span>
+            </summary>
+
+            <div class="section-accordion-body">
+              <div class="form-grid">
+                <div class="field-group">
+                  <label for="novo_codigo_barras">Codigo de barras</label>
+                  <input id="novo_codigo_barras" inputmode="numeric" placeholder="789..." autocomplete="off">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_marca">Marca</label>
+                  <input id="novo_marca" placeholder="Ex.: Heinz, Coca-Cola, Bimbo">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_categoria">Categoria</label>
+                  <input id="novo_categoria" list="product-categories" placeholder="Ex.: molho, embalagem, bebida, insumo">
+                  <datalist id="product-categories">
+                    <option value="molho"></option>
+                    <option value="embalagem"></option>
+                    <option value="bebida"></option>
+                    <option value="insumo"></option>
+                    <option value="proteina"></option>
+                    <option value="laticinio"></option>
+                    <option value="panificacao"></option>
+                    <option value="hortifruti"></option>
+                    <option value="limpeza"></option>
+                    <option value="descartavel"></option>
+                  </datalist>
+                </div>
+              </div>
+
+              <div class="actions" style="margin-top: 16px;">
+                <button id="lookup-barcode-button" class="secondary" type="button">Consultar codigo</button>
+                <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
+                <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
+              </div>
+
+              <label class="inline-choice" style="margin-top: 16px;">
+                <input id="manual-product-toggle" type="checkbox">
+                <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
+              </label>
+
+              <div id="barcode-status" class="status info" hidden></div>
+              <div id="barcode-reader" class="barcode-reader" hidden></div>
             </div>
+          </details>
 
-            <div class="field-group">
-              <label for="novo_marca">Marca</label>
-              <input id="novo_marca" placeholder="Ex.: Heinz, Coca-Cola, Bimbo">
+          <details class="supplier-section section-accordion compact-inner-accordion">
+            <summary class="section-accordion-summary">
+              <div>
+                <span>Fornecedores do produto</span>
+                <strong id="suppliers-accordion-summary">Adicione 1 ou mais opcoes e marque o principal.</strong>
+              </div>
+              <span class="section-accordion-cta">Abrir fornecedores</span>
+            </summary>
+
+            <div class="section-accordion-body">
+              <div class="form-grid">
+                <div class="field-group">
+                  <label for="novo_fornecedor">Fornecedor</label>
+                  <select id="novo_fornecedor"></select>
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_conv">Quantidade por embalagem/compra</label>
+                  <input id="novo_conv" type="number" min="1" step="1" value="1">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_custo">Custo da embalagem/compra</label>
+                  <input id="novo_custo" type="number" min="0" step="0.01" value="0">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_custo_promocional">Custo promocional da embalagem</label>
+                  <input id="novo_custo_promocional" type="number" min="0" step="0.01" value="">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_unidade">Unidade de medida do fornecedor</label>
+                  <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_custo_unitario">Custo por unidade atual</label>
+                  <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_fornecedor_principal">Fornecedor principal</label>
+                  <select id="novo_fornecedor_principal">
+                    <option value="sim">Sim, usar como custo padrao</option>
+                    <option value="nao">Nao, deixar como alternativa</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_promocao_ativa">Promocao ativa</label>
+                  <select id="novo_promocao_ativa">
+                    <option value="nao">Nao</option>
+                    <option value="sim">Sim</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_promocao_inicio">Inicio da promocao</label>
+                  <input id="novo_promocao_inicio" type="date">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_promocao_fim">Fim da promocao</label>
+                  <input id="novo_promocao_fim" type="date">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_frequencia_ativa">Frequencia de pedido</label>
+                  <select id="novo_frequencia_ativa">
+                    <option value="nao">Nao</option>
+                    <option value="sim">Sim</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
+                  <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
+                </div>
+
+                <div class="field-group" style="grid-column: 1 / -1;">
+                  <span>Dias para pedir</span>
+                  <div id="novo_dias_pedido" class="weekday-selector"></div>
+                </div>
+
+                <div class="field-group" style="grid-column: 1 / -1;">
+                  <span>Dias de entrega</span>
+                  <div id="novo_dias_entrega" class="weekday-selector"></div>
+                </div>
+              </div>
+
+              <div class="inline-actions" style="margin-top: 16px;">
+                <button id="add-supplier-button" class="secondary" type="button">Adicionar fornecedor ao produto</button>
+              </div>
+
+              <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
             </div>
-
-            <div class="field-group">
-              <label for="novo_categoria">Categoria</label>
-              <input id="novo_categoria" list="product-categories" placeholder="Ex.: molho, embalagem, bebida, insumo">
-              <datalist id="product-categories">
-                <option value="molho"></option>
-                <option value="embalagem"></option>
-                <option value="bebida"></option>
-                <option value="insumo"></option>
-                <option value="proteina"></option>
-                <option value="laticinio"></option>
-                <option value="panificacao"></option>
-                <option value="hortifruti"></option>
-                <option value="limpeza"></option>
-                <option value="descartavel"></option>
-              </datalist>
-            </div>
-
-            <div class="field-group">
-              <label for="novo_unidade_medida">Unidade de medida</label>
-              <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
-            </div>
-          </div>
-
-          <div class="actions" style="margin-top: 16px;">
-            <button id="lookup-barcode-button" class="secondary" type="button">Consultar codigo</button>
-            <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
-            <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
-          </div>
-
-          <label class="inline-choice" style="margin-top: 16px;">
-            <input id="manual-product-toggle" type="checkbox">
-            <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
-          </label>
-
-          <div id="barcode-status" class="status info" hidden></div>
-          <div id="barcode-reader" class="barcode-reader" hidden></div>
+          </details>
         </div>
       </details>
 
-      <div class="field-group">
-        <label for="novo_nome">Nome</label>
-        <input id="novo_nome" placeholder="Blend bovino">
-      </div>
-
-      <div class="field-group">
-        <label for="novo_qtd">Quantidade atual</label>
-        <input id="novo_qtd" type="number" min="0" step="1" value="0">
-      </div>
-
-      <div class="field-group">
-        <label for="novo_min">Minimo</label>
-        <input id="novo_min" type="number" min="0" step="1" value="2">
-      </div>
-
-      <div class="field-group">
-        <label for="novo_max">Maximo</label>
-        <input id="novo_max" type="number" min="1" step="1" value="50">
-      </div>
-
-      <details class="supplier-section section-accordion">
-        <summary class="section-accordion-summary">
-          <div>
-            <span>Fornecedores do produto</span>
-            <strong id="suppliers-accordion-summary">Adicione 1 ou mais opcoes e marque o principal.</strong>
-          </div>
-          <span class="section-accordion-cta">Abrir fornecedores</span>
-        </summary>
-
-        <div class="section-accordion-body">
-          <div class="form-grid">
-            <div class="field-group">
-              <label for="novo_fornecedor">Fornecedor</label>
-              <select id="novo_fornecedor"></select>
-            </div>
-
-            <div class="field-group">
-              <label for="novo_conv">Quantidade por embalagem/compra</label>
-              <input id="novo_conv" type="number" min="1" step="1" value="1">
-            </div>
-
-            <div class="field-group">
-              <label for="novo_custo">Custo da embalagem/compra</label>
-              <input id="novo_custo" type="number" min="0" step="0.01" value="0">
-            </div>
-
-            <div class="field-group">
-              <label for="novo_custo_promocional">Custo promocional da embalagem</label>
-              <input id="novo_custo_promocional" type="number" min="0" step="0.01" value="">
-            </div>
-
-            <div class="field-group">
-              <label for="novo_unidade">Unidade de medida do fornecedor</label>
-              <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
-            </div>
-
-            <div class="field-group">
-              <label for="novo_custo_unitario">Custo por unidade atual</label>
-              <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
-            </div>
-
-            <div class="field-group">
-              <label for="novo_fornecedor_principal">Fornecedor principal</label>
-              <select id="novo_fornecedor_principal">
-                <option value="sim">Sim, usar como custo padrao</option>
-                <option value="nao">Nao, deixar como alternativa</option>
-              </select>
-            </div>
-
-            <div class="field-group">
-              <label for="novo_promocao_ativa">Promocao ativa</label>
-              <select id="novo_promocao_ativa">
-                <option value="nao">Nao</option>
-                <option value="sim">Sim</option>
-              </select>
-            </div>
-
-            <div class="field-group">
-              <label for="novo_promocao_inicio">Inicio da promocao</label>
-              <input id="novo_promocao_inicio" type="date">
-            </div>
-
-            <div class="field-group">
-              <label for="novo_promocao_fim">Fim da promocao</label>
-              <input id="novo_promocao_fim" type="date">
-            </div>
-
-            <div class="field-group">
-              <label for="novo_frequencia_ativa">Frequencia de pedido</label>
-              <select id="novo_frequencia_ativa">
-                <option value="nao">Nao</option>
-                <option value="sim">Sim</option>
-              </select>
-            </div>
-
-            <div class="field-group">
-              <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
-              <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
-            </div>
-
-            <div class="field-group" style="grid-column: 1 / -1;">
-              <span>Dias para pedir</span>
-              <div id="novo_dias_pedido" class="weekday-selector"></div>
-            </div>
-
-            <div class="field-group" style="grid-column: 1 / -1;">
-              <span>Dias de entrega</span>
-              <div id="novo_dias_entrega" class="weekday-selector"></div>
-            </div>
-          </div>
-
-          <div class="inline-actions" style="margin-top: 16px;">
-            <button id="add-supplier-button" class="secondary" type="button">Adicionar fornecedor ao produto</button>
-          </div>
-
-          <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
-        </div>
-      </details>
-
-      <button id="create-button" type="submit">Salvar produto</button>
+      <button id="create-button" type="submit" class="create-product-button">Salvar produto</button>
     </form>
 
     <div id="status" class="status info" hidden></div>
@@ -1904,10 +1918,10 @@ function renderProducts(items) {
     detailsSummary.className = "product-card-details-summary";
     detailsSummary.innerHTML = `
       <div>
-        <strong>Ver detalhes e editar configuracoes avancadas</strong>
-        <p class="muted">Abra para ajustar logistica, promocao, prioridade e todos os fornecedores deste item.</p>
+        <strong>Detalhes do item</strong>
+        <p class="muted">Abra para editar descricao e fornecedores.</p>
       </div>
-      <span class="product-card-details-cta">Ver e editar detalhes</span>
+      <span class="product-card-details-cta">Abrir detalhes</span>
     `;
     const detailsBody = document.createElement("div");
     detailsBody.className = "product-card-details-body";
@@ -1934,13 +1948,13 @@ function renderProducts(items) {
 
     const advancedOverview = createDetailAccordion({
       title: "Custos e alternativas",
-      helperText: "Veja rapidamente o melhor custo e os fornecedores disponiveis para este item.",
+      helperText: "Compare custo entre fornecedores.",
       summaryEntries: [
         { label: "Melhor custo", value: currentCostLabel },
         { label: "Fornecedores", value: String(productSuppliers.length || 0) }
       ],
       contentNode: supplierOverviewSection,
-      open: item.quantidade <= item.minimo,
+      open: false,
       ctaLabel: "Ver custos"
     });
 
@@ -1953,18 +1967,18 @@ function renderProducts(items) {
         { label: "Dia de entrega", value: deliveryDaysSummary }
       ],
       contentNode: fields,
-      ctaLabel: "Editar descricao"
+      ctaLabel: "Editar"
     });
 
     const supplierConfigSection = createDetailAccordion({
-      title: "Fornecedores e configuracao avancada",
-      helperText: "Cada fornecedor abre em card proprio com custo, promocao, prioridade e dias de operacao.",
+      title: "Fornecedores",
+      helperText: "Defina custo, prioridade e frequencia.",
       summaryEntries: [
         { label: "Fornecedores", value: String(productSuppliers.length || 0) },
         { label: "Principal", value: primarySupplier?.nome || "Nao definido" }
       ],
       contentNode: supplierSection,
-      ctaLabel: "Ver fornecedores"
+      ctaLabel: "Editar"
     });
 
     detailsBody.appendChild(advancedOverview);
