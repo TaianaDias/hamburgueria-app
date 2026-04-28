@@ -405,6 +405,34 @@ function formatSupplierScheduleDescription(supplier) {
   ].join(" | ");
 }
 
+function getOperationalWeekdaySummary(productSuppliers, fieldName) {
+  const selectedDays = new Set();
+
+  productSuppliers.forEach((supplier) => {
+    normalizeWeekdayList(supplier?.[fieldName]).forEach((day) => selectedDays.add(day));
+  });
+
+  return selectedDays.size ? formatWeekdayList([...selectedDays]) : "Nao definido";
+}
+
+function getSupplierNamesSummary(productSuppliers) {
+  const names = productSuppliers
+    .map((supplier) => String(supplier?.nome || "").trim())
+    .filter(Boolean);
+
+  return names.length ? names.join(" | ") : "Sem fornecedores";
+}
+
+function buildOperationalMetric(label, value, details = "") {
+  return `
+    <article class="operational-metric-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      ${details ? `<p class="muted">${escapeHtml(details)}</p>` : ""}
+    </article>
+  `;
+}
+
 function applyBarcodeLookupProduct(product, options = {}) {
   const {
     source = "manual",
@@ -976,21 +1004,29 @@ function refreshSupplierEntryFrequencyState(entryElement) {
 function createSupplierEntryElement(entry = {}, options = {}) {
   const {
     radioName = `principal_${Date.now()}`,
-    emptyMessage = "Nenhum fornecedor vinculado."
+    emptyMessage = "Nenhum fornecedor vinculado.",
+    expanded = true
   } = options;
-  const wrapper = document.createElement("article");
+  const wrapper = document.createElement("details");
   wrapper.className = "card supplier-entry";
+  wrapper.open = expanded;
 
-  const header = document.createElement("div");
-  header.className = "summary-line";
+  const header = document.createElement("summary");
+  header.className = "supplier-entry-summary summary-line";
   header.innerHTML = `
-    <span>Fornecedor vinculado ao produto</span>
-    <strong>${entry.principal ? "Principal" : "Alternativo"}</strong>
+    <div class="supplier-entry-summary-main">
+      <span class="supplier-entry-name">Fornecedor vinculado ao produto</span>
+      <p class="muted supplier-entry-meta">Abra para editar custo, promocao, dias e prioridade.</p>
+    </div>
+    <div class="supplier-entry-summary-side">
+      <strong>${entry.principal ? "Principal" : "Alternativo"}</strong>
+      <span class="product-card-details-cta">Ver detalhes</span>
+    </div>
   `;
 
   const fields = document.createElement("div");
   fields.className = "form-grid";
-  fields.style.marginTop = "16px";
+  fields.style.marginTop = "4px";
 
   const supplierWrapper = document.createElement("label");
   supplierWrapper.className = "field-group";
@@ -1194,6 +1230,26 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   const purchaseCostInput = purchaseCostField.querySelector("input");
   const promotionalCostEntryInput = promotionalCostField.querySelector("input");
   const orderQuantityInput = orderQuantityField.querySelector("input");
+
+  function updateSupplierEntrySummary() {
+    const selectedSupplier = fornecedores.find((fornecedor) => fornecedor.id === supplierField.value);
+    const supplierName = selectedSupplier?.nome || entry?.nome || "Fornecedor vinculado ao produto";
+    const packageQuantity = Math.max(1, toNumber(quantityInput.value, 1));
+    const effectivePurchaseCost = promotionalCostEntryInput.value !== "" && promotionActiveField.value === "sim"
+      ? Math.max(0, toNumber(promotionalCostEntryInput.value, 0))
+      : Math.max(0, toNumber(purchaseCostInput.value, 0));
+    const compactOrderDays = formatWeekdayList(readWeekdaySelector(orderDaysField));
+    const compactDeliveryDays = formatWeekdayList(readWeekdaySelector(deliveryDaysField));
+    header.querySelector(".supplier-entry-name").textContent = supplierName;
+    header.querySelector(".supplier-entry-meta").textContent = [
+      `${formatCurrency(effectivePurchaseCost)} por embalagem`,
+      `${packageQuantity} ${String(usageUnitField.querySelector("input").value || "un").trim() || "un"}`,
+      `Pedido ${compactOrderDays}`,
+      `Entrega ${compactDeliveryDays}`
+    ].join(" | ");
+    header.querySelector("strong").textContent = principalRadio.checked ? "Principal" : "Alternativo";
+  }
+
   quantityInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   purchaseCostInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   promotionalCostEntryInput.addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
@@ -1202,11 +1258,18 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   promotionEndField.querySelector("input").addEventListener("input", () => refreshSupplierEntryUnitCost(wrapper));
   frequencyActiveField.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
   orderQuantityInput.addEventListener("input", () => refreshSupplierEntryFrequencyState(wrapper));
+  usageUnitField.querySelector("input").addEventListener("input", updateSupplierEntrySummary);
   orderDaysField.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-    input.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+    input.addEventListener("change", () => {
+      refreshSupplierEntryFrequencyState(wrapper);
+      updateSupplierEntrySummary();
+    });
   });
   deliveryDaysField.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-    input.addEventListener("change", () => refreshSupplierEntryFrequencyState(wrapper));
+    input.addEventListener("change", () => {
+      refreshSupplierEntryFrequencyState(wrapper);
+      updateSupplierEntrySummary();
+    });
   });
   principalRadio.addEventListener("change", () => {
     if (principalRadio.checked) {
@@ -1223,22 +1286,23 @@ function createSupplierEntryElement(entry = {}, options = {}) {
     }
   });
 
+  const body = document.createElement("div");
+  body.className = "supplier-entry-body";
+  body.appendChild(fields);
+  body.appendChild(costHelper);
+  body.appendChild(frequencyHelper);
+  body.appendChild(actions);
+
   wrapper.appendChild(header);
-  wrapper.appendChild(fields);
-  wrapper.appendChild(costHelper);
-  wrapper.appendChild(frequencyHelper);
-  wrapper.appendChild(actions);
+  wrapper.appendChild(body);
 
   supplierField.addEventListener("change", () => {
-    const selectedSupplier = fornecedores.find((fornecedor) => fornecedor.id === supplierField.value);
-    const supplierLabel = header.querySelector("span");
-    supplierLabel.textContent = selectedSupplier?.nome
-      ? `Fornecedor vinculado ao produto: ${selectedSupplier.nome}`
-      : "Fornecedor vinculado ao produto";
+    updateSupplierEntrySummary();
   });
 
   refreshSupplierEntryUnitCost(wrapper);
   refreshSupplierEntryFrequencyState(wrapper);
+  updateSupplierEntrySummary();
   return wrapper;
 }
 
@@ -1383,34 +1447,18 @@ function renderProducts(items) {
     fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
     fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
 
-    const summary = document.createElement("div");
-    summary.className = "summary-line";
-    summary.style.marginTop = "10px";
-    summary.innerHTML = `
-      <span>${primarySupplier
-        ? `${formatCurrency(getEffectiveSupplierPurchaseCost(primarySupplier))} por embalagem com ${primarySupplier.conversao} ${escapeHtml(primarySupplier.unidadeUso)} | ${formatCurrency(getEffectiveSupplierUnitCost(primarySupplier))} por ${escapeHtml(primarySupplier.unidadeUso)}${primarySupplier.promocaoAplicada ? " | promocao ativa" : ""}`
-        : "Nenhum fornecedor principal definido ainda"}</span>
-      <strong>${item.quantidade <= item.minimo ? "Atencao: precisa repor" : "Operacao dentro do limite"}</strong>
-    `;
-
-    const supplierSummary = document.createElement("p");
-    supplierSummary.className = "muted";
-
-    if (!productSuppliers.length) {
-      supplierSummary.textContent = "Este item ainda nao tem fornecedor vinculado. Adicione pelo menos um para aparecer corretamente em Compras.";
-    } else if (cheapestSupplier && primarySupplier && cheapestSupplier.fornecedorId !== primarySupplier.fornecedorId) {
-      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier.nome}. Melhor custo atual: ${cheapestSupplier.nome} (${formatCurrency(getEffectiveSupplierUnitCost(cheapestSupplier))} por ${cheapestSupplier.unidadeUso}).`;
-    } else {
-      supplierSummary.textContent = `Fornecedor principal: ${primarySupplier?.nome || "Nao definido"} | ${productSuppliers.length} fornecedor(es) vinculado(s).`;
-    }
-
-    const frequencySummary = document.createElement("p");
-    frequencySummary.className = "muted";
-    frequencySummary.textContent = scheduledSuppliers.length
-      ? scheduledSuppliers
-        .map((supplier) => `${supplier.nome}: ${formatSupplierScheduleDescription(supplier)}`)
-        .join(" | ")
-      : "Nenhuma frequencia de pedido cadastrada para este item.";
+    const orderDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasPedido");
+    const deliveryDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasEntrega");
+    const suppliersSummary = getSupplierNamesSummary(productSuppliers);
+    const currentCostLabel = cheapestSupplier
+      ? formatCurrency(getEffectiveSupplierPurchaseCost(cheapestSupplier))
+      : "Nao definido";
+    const currentCostDetails = cheapestSupplier
+      ? `${cheapestSupplier.nome}${cheapestSupplier.promocaoAplicada ? " | promocao ativa" : ""}`
+      : "Cadastre um fornecedor para calcular custo";
+    const stockStatusLabel = item.quantidade <= item.minimo
+      ? "Atencao para reposicao"
+      : "Operacao dentro do limite";
 
     const supplierOverviewSection = document.createElement("div");
     supplierOverviewSection.className = "supplier-price-grid";
@@ -1483,7 +1531,8 @@ function renderProducts(items) {
     productSuppliers.forEach((supplierEntry) => {
       appendSupplierEntry(supplierList, supplierEntry, {
         radioName: supplierRadioName,
-        emptyMessage: emptySupplierMessage
+        emptyMessage: emptySupplierMessage,
+        expanded: false
       });
     });
 
@@ -1511,7 +1560,8 @@ function renderProducts(items) {
         principal: !supplierList.querySelector(".supplier-entry")
       }), {
         radioName: supplierRadioName,
-        emptyMessage: emptySupplierMessage
+        emptyMessage: emptySupplierMessage,
+        expanded: true
       });
     });
 
@@ -1610,10 +1660,6 @@ function renderProducts(items) {
     actions.appendChild(saveButton);
     actions.appendChild(deleteButton);
 
-    const supplierDescription = primarySupplier?.nome || item.fornecedorNome || item.fornecedor || "Nao definido";
-    const cnpjDescription = primarySupplier?.cnpj || item.cnpjFornecedor
-      ? ` | CNPJ ${formatDocumentNumber(primarySupplier?.cnpj || item.cnpjFornecedor)}`
-      : "";
     const collapsible = document.createElement("details");
     collapsible.className = "product-card-details";
     collapsible.open = item.quantidade <= item.minimo;
@@ -1621,8 +1667,8 @@ function renderProducts(items) {
     detailsSummary.className = "product-card-details-summary";
     detailsSummary.innerHTML = `
       <div>
-        <strong>${productSuppliers.length ? `${productSuppliers.length} fornecedor(es) para este produto` : "Organizar fornecedores e agenda deste produto"}</strong>
-        <p class="muted">${scheduledSuppliers.length ? `${scheduledSuppliers.length} fornecedor(es) com pedido programado.` : "Abra para ver dias de pedido, dias de entrega e custos por fornecedor."}</p>
+        <strong>Ver detalhes e editar configuracoes avancadas</strong>
+        <p class="muted">Abra para ajustar logistica, promocao, prioridade e todos os fornecedores deste item.</p>
       </div>
       <span class="product-card-details-cta">Ver e editar detalhes</span>
     `;
@@ -1630,16 +1676,64 @@ function renderProducts(items) {
     detailsBody.className = "product-card-details-body";
 
     article.innerHTML = `
-      <h3>${escapeHtml(item.nome)}</h3>
-      <p class="muted">Fornecedor principal atual: ${escapeHtml(`${supplierDescription}${cnpjDescription}`)}</p>
-      <p class="muted">${escapeHtml(`${formatProductBarcodeLabel(item)} | Marca ${item.marca || "Nao informada"} | Categoria ${item.categoria || "Nao informada"} | Unidade ${item.unidadeMedida || getUsageUnit(item)}`)}</p>
+      <div class="product-operational-header">
+        <div>
+          <div class="summary-line">
+            <h3>${escapeHtml(item.nome)}</h3>
+            <strong>${escapeHtml(stockStatusLabel)}</strong>
+          </div>
+          <p class="muted">${escapeHtml(`Fornecedores: ${suppliersSummary}`)}</p>
+        </div>
+      </div>
+
+      <div class="product-operational-grid">
+        ${buildOperationalMetric("Estoque atual", `${toNumber(item.quantidade, 0)} ${item.unidadeMedida || getUsageUnit(item)}`)}
+        ${buildOperationalMetric("Compra", orderDaysSummary, scheduledSuppliers.length ? `${scheduledSuppliers.length} fornecedor(es) com agenda` : "Sem frequencia configurada")}
+        ${buildOperationalMetric("Entrega", deliveryDaysSummary, primarySupplier ? primarySupplier.nome : "Sem fornecedor principal")}
+        ${buildOperationalMetric("Custo atual", currentCostLabel, currentCostDetails)}
+        ${buildOperationalMetric("Fornecedores", `${productSuppliers.length}`, suppliersSummary)}
+      </div>
     `;
-    detailsBody.appendChild(summary);
-    detailsBody.appendChild(supplierSummary);
-    detailsBody.appendChild(frequencySummary);
-    detailsBody.appendChild(supplierOverviewSection);
-    detailsBody.appendChild(fields);
-    detailsBody.appendChild(supplierSection);
+
+    const advancedOverview = document.createElement("section");
+    advancedOverview.className = "advanced-config-section";
+    advancedOverview.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h4>Resumo operacional detalhado</h4>
+          <p class="muted">Consulta rapida do custo atual, agenda e fornecedores disponiveis para este item.</p>
+        </div>
+      </div>
+    `;
+    advancedOverview.appendChild(supplierOverviewSection);
+
+    const productConfigSection = document.createElement("section");
+    productConfigSection.className = "advanced-config-section";
+    productConfigSection.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h4>Configuracao do produto</h4>
+          <p class="muted">${escapeHtml(`${formatProductBarcodeLabel(item)} | Marca ${item.marca || "Nao informada"} | Categoria ${item.categoria || "Nao informada"} | Unidade ${item.unidadeMedida || getUsageUnit(item)}`)}</p>
+        </div>
+      </div>
+    `;
+    productConfigSection.appendChild(fields);
+
+    const supplierConfigSection = document.createElement("section");
+    supplierConfigSection.className = "advanced-config-section";
+    supplierConfigSection.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h4>Fornecedores e configuracao avancada</h4>
+          <p class="muted">Cada fornecedor abre em card proprio com custo, promocao, prioridade e dias de operacao.</p>
+        </div>
+      </div>
+    `;
+    supplierConfigSection.appendChild(supplierSection);
+
+    detailsBody.appendChild(advancedOverview);
+    detailsBody.appendChild(productConfigSection);
+    detailsBody.appendChild(supplierConfigSection);
     detailsBody.appendChild(actions);
     collapsible.appendChild(detailsSummary);
     collapsible.appendChild(detailsBody);
@@ -2389,7 +2483,8 @@ addSupplierButton.addEventListener("click", () => {
     principal: principalSelecionado
   }), {
     radioName: "principal_novo_produto",
-    emptyMessage: "Adicione ao menos um fornecedor para salvar o produto."
+    emptyMessage: "Adicione ao menos um fornecedor para salvar o produto.",
+    expanded: true
   });
 
   if (principalSelecionado) {
