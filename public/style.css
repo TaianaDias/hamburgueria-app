@@ -434,49 +434,61 @@ pre {
 
 .product-operational-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px 14px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
+  align-items: start;
 }
 
 .operational-metric-card {
   display: grid;
-  gap: 4px;
+  justify-items: center;
+  text-align: center;
+  gap: 5px;
   min-width: 0;
-  padding: 1px 0 1px 10px;
-  border-left: 2px solid rgba(148, 163, 184, 0.18);
+  padding: 2px 12px;
+  position: relative;
+}
+
+.operational-metric-card:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 0;
+  width: 1px;
+  height: calc(100% - 8px);
+  background: rgba(148, 163, 184, 0.12);
 }
 
 .operational-metric-main {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
 }
 
 .operational-metric-card span {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .operational-metric-card strong {
-  display: inline;
-  font-size: 0.92rem;
-  line-height: 1.2;
+  display: block;
+  font-size: 0.94rem;
+  line-height: 1.15;
   color: var(--text);
-  white-space: nowrap;
 }
 
 .operational-metric-card .muted {
   margin: 0;
-  font-size: 0.84rem;
+  max-width: 18ch;
+  font-size: 0.8rem;
   line-height: 1.2;
 }
 
@@ -979,6 +991,19 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .product-operational-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 8px;
+  }
+
+  .operational-metric-card {
+    padding: 2px 4px;
+  }
+
+  .operational-metric-card::after {
+    display: none;
+  }
+
   .detail-subaccordion-summary,
   .product-card-details-summary {
     display: grid;
@@ -990,4 +1015,15 @@ pre {
     justify-content: center;
   }
 
+}
+
+@media (max-width: 1080px) and (min-width: 761px) {
+  .product-operational-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 10px;
+  }
+
+  .operational-metric-card::after {
+    display: none;
+  }
 }
