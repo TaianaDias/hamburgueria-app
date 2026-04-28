@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -61,21 +61,27 @@
   </section>
 
   <section class="panel product-create-panel">
-    <div class="page-header" style="margin-bottom: 16px;">
-      <div>
-        <h3>Novo produto</h3>
-        <p class="muted">Preencha o basico para cadastro rapido e abra as opcoes quando precisar.</p>
-      </div>
-
-      <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
-    </div>
-
-    <form id="product-form" class="product-create-shell">
-      <div class="form-grid product-basic-grid">
-        <div class="field-group">
-          <label for="novo_nome">Nome</label>
-          <input id="novo_nome" placeholder="Blend bovino">
+    <details class="section-accordion">
+      <summary class="section-accordion-summary">
+        <div>
+          <h3>Novo produto</h3>
+          <p class="muted">Abra apenas quando for cadastrar um item novo no estoque.</p>
         </div>
+        <span class="section-accordion-cta">Abrir cadastro</span>
+      </summary>
+
+      <div class="section-accordion-body">
+        <div class="page-header" style="margin-bottom: 16px;">
+          <p class="muted">Preencha o basico para cadastro rapido e abra as opcoes quando precisar.</p>
+          <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
+        </div>
+
+        <form id="product-form" class="product-create-shell">
+          <div class="form-grid product-basic-grid">
+            <div class="field-group">
+              <label for="novo_nome">Nome</label>
+              <input id="novo_nome" placeholder="Blend bovino">
+            </div>
 
         <div class="field-group">
           <label for="novo_unidade_medida">Unidade de medida</label>
@@ -264,10 +270,12 @@
         </div>
       </details>
 
-      <button id="create-button" type="submit" class="create-product-button">Salvar produto</button>
-    </form>
+          <button id="create-button" type="submit" class="create-product-button">Salvar produto</button>
+        </form>
 
-    <div id="status" class="status info" hidden></div>
+        <div id="status" class="status info" hidden></div>
+      </div>
+    </details>
   </section>
 
   <section class="panel">
@@ -3003,4 +3011,3 @@ await loadProducts();
 </script>
 </body>
 </html>
-
