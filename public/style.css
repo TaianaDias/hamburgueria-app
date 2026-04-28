@@ -399,6 +399,13 @@ h3 {
   font-weight: 700;
 }
 
+.waste-conversion-preview {
+  margin: -4px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
 .waste-reason-grid {
   display: flex;
   flex-wrap: wrap;

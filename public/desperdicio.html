@@ -76,6 +76,7 @@
         <input id="waste-quantity" type="number" min="1" step="1" value="1" inputmode="numeric">
         <button id="waste-plus" class="secondary" type="button">+</button>
       </div>
+      <p id="waste-conversion-preview" class="muted waste-conversion-preview">Informe quantas unidades foram desperdicadas.</p>
 
       <div class="waste-reason-grid" role="group" aria-label="Motivo do desperdicio">
         <button class="secondary waste-reason active" type="button" data-reason="Sobra final">Sobra final</button>
@@ -142,6 +143,7 @@ const formCard = document.getElementById("waste-form-card");
 const selectedName = document.getElementById("waste-selected-name");
 const selectedMeta = document.getElementById("waste-selected-meta");
 const quantityInput = document.getElementById("waste-quantity");
+const conversionPreview = document.getElementById("waste-conversion-preview");
 const minusButton = document.getElementById("waste-minus");
 const plusButton = document.getElementById("waste-plus");
 const noteInput = document.getElementById("waste-note");
@@ -210,6 +212,36 @@ function getUnitCost(product) {
   return Math.max(0, toNumber(product?.unit_cost ?? product?.custoUnitario ?? product?.custo, 0));
 }
 
+function formatDecimal(value, maximumFractionDigits = 3) {
+  return toNumber(value, 0).toLocaleString("pt-BR", {
+    maximumFractionDigits
+  });
+}
+
+function getWasteConversion(product = selectedProduct, quantityValue = quantityInput.value) {
+  const quantityUnits = Math.max(1, Math.floor(toNumber(quantityValue, 1)));
+  const unitsPerBox = getUnitsPerBox(product);
+  const equivalentBoxes = quantityUnits / unitsPerBox;
+  const estimatedCost = quantityUnits * getUnitCost(product);
+
+  return {
+    quantityUnits,
+    unitsPerBox,
+    equivalentBoxes,
+    estimatedCost
+  };
+}
+
+function updateWasteConversionPreview() {
+  if (!selectedProduct) {
+    conversionPreview.textContent = "Selecione um produto para registrar o desperdicio em unidades.";
+    return;
+  }
+
+  const conversion = getWasteConversion();
+  conversionPreview.textContent = `${conversion.quantityUnits} unidade(s) desperdicada(s) | Custo estimado ${formatCurrency(conversion.estimatedCost)}`;
+}
+
 function renderProducts() {
   const term = normalizeText(searchInput.value);
   const filteredProducts = products
@@ -256,11 +288,12 @@ function renderSelectedProduct() {
   }
 
   selectedName.textContent = selectedProduct.nome || "Produto";
-  selectedMeta.textContent = `${getProductStockLabel(selectedProduct)} | ${getUnitsPerBox(selectedProduct)} un/caixa`;
+  selectedMeta.textContent = `${getProductStockLabel(selectedProduct)} | registrar por unidade`;
   selectedSummary.textContent = selectedProduct.nome || "Produto selecionado";
   quantityInput.value = "1";
   noteInput.value = "";
   formCard.hidden = false;
+  updateWasteConversionPreview();
 }
 
 function renderWasteHistory() {
@@ -288,7 +321,7 @@ function renderWasteHistory() {
     article.innerHTML = `
       <div class="summary-line">
         <span>${escapeHtml(event.productName || "Produto")}</span>
-        <strong>${toNumber(event.quantity, 0)} ${escapeHtml(event.unitLabel || "un")}</strong>
+        <strong>${toNumber(event.quantityUnits ?? event.quantity, 0)} un</strong>
       </div>
       <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | ${escapeHtml(event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
       ${event.note ? `<p class="muted compact-meta">${escapeHtml(event.note)}</p>` : ""}
@@ -329,6 +362,7 @@ function selectProduct(productId) {
 
 function setQuantity(nextValue) {
   quantityInput.value = String(Math.max(1, Math.floor(toNumber(nextValue, 1))));
+  updateWasteConversionPreview();
 }
 
 async function saveWaste() {
@@ -338,8 +372,8 @@ async function saveWaste() {
   }
 
   const quantity = Math.max(1, Math.floor(toNumber(quantityInput.value, 1)));
+  const conversion = getWasteConversion(selectedProduct, quantity);
   const unitCost = getUnitCost(selectedProduct);
-  const unitsPerBox = getUnitsPerBox(selectedProduct);
   const unitLabel = selectedProduct.unidadeUso || "un";
   const payload = {
     productId: selectedProduct.id,
@@ -348,13 +382,15 @@ async function saveWaste() {
     brand: selectedProduct.marca || selectedProduct.brand || "",
     category: selectedProduct.categoria || selectedProduct.category || "",
     quantity,
+    quantityUnits: conversion.quantityUnits,
     unitLabel,
+    operationUnit: "unidade",
     reason: selectedReason,
     note: noteInput.value.trim(),
-    unitsPerBox,
-    equivalentBoxes: quantity / unitsPerBox,
+    unitsPerBox: conversion.unitsPerBox,
+    equivalentBoxes: conversion.equivalentBoxes,
     unitCost,
-    estimatedCost: quantity * unitCost,
+    estimatedCost: conversion.estimatedCost,
     responsible: profile.email,
     responsibleRole: profile.tipo,
     dateKey: formatDateKey(),
