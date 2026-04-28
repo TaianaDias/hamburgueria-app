@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Desperdicio | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Controle operacional</p>
+      <h1>Desperdicio</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <a id="stock-link" class="button secondary" href="estoque.html" hidden>Estoque</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="stats-grid waste-stats">
+    <article class="card">
+      <span class="muted">Lancamentos hoje</span>
+      <strong id="metric-waste-count" class="metric-value">0</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Unidades descartadas</span>
+      <strong id="metric-waste-units" class="metric-value">0</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Custo estimado</span>
+      <strong id="metric-waste-cost" class="metric-value">R$ 0,00</strong>
+    </article>
+  </section>
+
+  <section class="panel waste-entry-panel">
+    <div class="page-header compact-header">
+      <div>
+        <h3>Registrar descarte</h3>
+        <p class="muted">Toque no item, informe a quantidade e salve. Rapido para usar no fechamento.</p>
+      </div>
+    </div>
+
+    <div class="inventory-toolbar waste-toolbar">
+      <div class="field-group">
+        <label for="waste-search">Buscar produto</label>
+        <input id="waste-search" type="search" placeholder="Digite nome, marca ou codigo de barras">
+      </div>
+      <span id="waste-selected-summary" class="inventory-filter-meta muted">Nenhum item selecionado</span>
+    </div>
+
+    <div id="waste-product-list" class="waste-product-list"></div>
+
+    <div id="waste-form-card" class="waste-form-card" hidden>
+      <div class="summary-line">
+        <span id="waste-selected-name">Produto</span>
+        <strong id="waste-selected-meta">0 em estoque</strong>
+      </div>
+
+      <div class="waste-quantity-row">
+        <button id="waste-minus" class="secondary" type="button">-</button>
+        <input id="waste-quantity" type="number" min="1" step="1" value="1" inputmode="numeric">
+        <button id="waste-plus" class="secondary" type="button">+</button>
+      </div>
+
+      <div class="waste-reason-grid" role="group" aria-label="Motivo do desperdicio">
+        <button class="secondary waste-reason active" type="button" data-reason="Sobra final">Sobra final</button>
+        <button class="secondary waste-reason" type="button" data-reason="Vencido">Vencido</button>
+        <button class="secondary waste-reason" type="button" data-reason="Erro de preparo">Erro preparo</button>
+        <button class="secondary waste-reason" type="button" data-reason="Caiu no chao">Caiu</button>
+        <button class="secondary waste-reason" type="button" data-reason="Outro">Outro</button>
+      </div>
+
+      <div class="field-group">
+        <label for="waste-note">Observacao rapida</label>
+        <input id="waste-note" placeholder="Opcional">
+      </div>
+
+      <button id="save-waste-button" type="button">Registrar desperdicio</button>
+    </div>
+
+    <div id="waste-status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header compact-header">
+      <div>
+        <h3>Hoje</h3>
+        <p class="muted">Ultimos descartes registrados pela equipe.</p>
+      </div>
+    </div>
+    <div id="waste-history-list" class="list"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
+</footer>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  increment,
+  serverTimestamp,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatCurrency,
+  normalizeText,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+const userInfo = document.getElementById("user-info");
+const stockLink = document.getElementById("stock-link");
+const searchInput = document.getElementById("waste-search");
+const productList = document.getElementById("waste-product-list");
+const selectedSummary = document.getElementById("waste-selected-summary");
+const formCard = document.getElementById("waste-form-card");
+const selectedName = document.getElementById("waste-selected-name");
+const selectedMeta = document.getElementById("waste-selected-meta");
+const quantityInput = document.getElementById("waste-quantity");
+const minusButton = document.getElementById("waste-minus");
+const plusButton = document.getElementById("waste-plus");
+const noteInput = document.getElementById("waste-note");
+const saveButton = document.getElementById("save-waste-button");
+const historyList = document.getElementById("waste-history-list");
+const metricWasteCount = document.getElementById("metric-waste-count");
+const metricWasteUnits = document.getElementById("metric-waste-units");
+const metricWasteCost = document.getElementById("metric-waste-cost");
+
+bindLogoutButton();
+
+const { profile } = await requireAuth();
+
+if (!["admin", "estoque"].includes(profile?.tipo)) {
+  window.location.href = "index.html";
+  throw new Error("Acesso restrito.");
+}
+
+userInfo.textContent = describeProfile(profile);
+stockLink.hidden = profile.tipo !== "admin";
+
+let products = [];
+let wasteEvents = [];
+let selectedProduct = null;
+let selectedReason = "Sobra final";
+
+function normalizeBarcode(value) {
+  return String(value ?? "").replace(/\D/g, "").slice(0, 24);
+}
+
+function formatDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateTime(value) {
+  const parsed = value?.toDate instanceof Function
+    ? value.toDate()
+    : new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(parsed);
+}
+
+function getProductStockLabel(product) {
+  if (product?.purchase_unit === "caixa" || product?.stock_boxes != null) {
+    return `${toNumber(product.stock_boxes ?? product.quantidade, 0)} caixa(s)`;
+  }
+
+  return `${toNumber(product?.quantidade, 0)} ${product?.unidadeMedida || product?.unidadeUso || "un"}`;
+}
+
+function getUnitsPerBox(product) {
+  return Math.max(1, toNumber(product?.units_per_box ?? product?.conversao, 1));
+}
+
+function getUnitCost(product) {
+  return Math.max(0, toNumber(product?.unit_cost ?? product?.custoUnitario ?? product?.custo, 0));
+}
+
+function renderProducts() {
+  const term = normalizeText(searchInput.value);
+  const filteredProducts = products
+    .filter((product) => {
+      if (!term) {
+        return true;
+      }
+
+      return normalizeText([
+        product.nome,
+        product.marca,
+        product.categoria,
+        product.codigoBarras,
+        product.barcode
+      ].join(" ")).includes(term);
+    })
+    .slice(0, 24);
+
+  productList.innerHTML = "";
+
+  if (!filteredProducts.length) {
+    productList.innerHTML = '<div class="empty-state">Nenhum produto encontrado.</div>';
+    return;
+  }
+
+  filteredProducts.forEach((product) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `waste-product-button${selectedProduct?.id === product.id ? " active" : ""}`;
+    button.dataset.productId = product.id;
+    button.innerHTML = `
+      <strong>${escapeHtml(product.nome || "Produto")}</strong>
+      <span>${escapeHtml(product.marca || product.categoria || "Sem detalhe")} | ${escapeHtml(getProductStockLabel(product))}</span>
+    `;
+    productList.appendChild(button);
+  });
+}
+
+function renderSelectedProduct() {
+  if (!selectedProduct) {
+    formCard.hidden = true;
+    selectedSummary.textContent = "Nenhum item selecionado";
+    return;
+  }
+
+  selectedName.textContent = selectedProduct.nome || "Produto";
+  selectedMeta.textContent = `${getProductStockLabel(selectedProduct)} | ${getUnitsPerBox(selectedProduct)} un/caixa`;
+  selectedSummary.textContent = selectedProduct.nome || "Produto selecionado";
+  quantityInput.value = "1";
+  noteInput.value = "";
+  formCard.hidden = false;
+}
+
+function renderWasteHistory() {
+  const todayKey = formatDateKey();
+  const todayEvents = wasteEvents
+    .filter((event) => event.dateKey === todayKey)
+    .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
+  const totalUnits = todayEvents.reduce((sum, event) => sum + toNumber(event.quantity, 0), 0);
+  const totalCost = todayEvents.reduce((sum, event) => sum + toNumber(event.estimatedCost, 0), 0);
+
+  metricWasteCount.textContent = String(todayEvents.length);
+  metricWasteUnits.textContent = totalUnits.toLocaleString("pt-BR");
+  metricWasteCost.textContent = formatCurrency(totalCost);
+
+  historyList.innerHTML = "";
+
+  if (!todayEvents.length) {
+    historyList.innerHTML = '<div class="empty-state">Nenhum desperdicio registrado hoje.</div>';
+    return;
+  }
+
+  todayEvents.slice(0, 20).forEach((event) => {
+    const article = document.createElement("article");
+    article.className = "card waste-history-card";
+    article.innerHTML = `
+      <div class="summary-line">
+        <span>${escapeHtml(event.productName || "Produto")}</span>
+        <strong>${toNumber(event.quantity, 0)} ${escapeHtml(event.unitLabel || "un")}</strong>
+      </div>
+      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | ${escapeHtml(event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
+      ${event.note ? `<p class="muted compact-meta">${escapeHtml(event.note)}</p>` : ""}
+    `;
+    historyList.appendChild(article);
+  });
+}
+
+async function loadData() {
+  const [productsSnapshot, wasteSnapshot] = await Promise.all([
+    getDocs(collection(db, "estoque")),
+    getDocs(collection(db, "desperdicios"))
+  ]);
+
+  products = productsSnapshot.docs
+    .map((document) => ({
+      id: document.id,
+      ...document.data(),
+      codigoBarras: document.data().codigoBarras || document.data().codigoBarrasNormalizado || document.data().barcode || "",
+      nome: document.data().nome || document.data().name || "Produto"
+    }))
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+  wasteEvents = wasteSnapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data()
+  }));
+
+  renderProducts();
+  renderWasteHistory();
+}
+
+function selectProduct(productId) {
+  selectedProduct = products.find((product) => product.id === productId) || null;
+  renderProducts();
+  renderSelectedProduct();
+}
+
+function setQuantity(nextValue) {
+  quantityInput.value = String(Math.max(1, Math.floor(toNumber(nextValue, 1))));
+}
+
+async function saveWaste() {
+  if (!selectedProduct) {
+    setStatus("waste-status", "Selecione um produto primeiro.", "error");
+    return;
+  }
+
+  const quantity = Math.max(1, Math.floor(toNumber(quantityInput.value, 1)));
+  const unitCost = getUnitCost(selectedProduct);
+  const unitsPerBox = getUnitsPerBox(selectedProduct);
+  const unitLabel = selectedProduct.unidadeUso || "un";
+  const payload = {
+    productId: selectedProduct.id,
+    productName: selectedProduct.nome || "Produto",
+    barcode: normalizeBarcode(selectedProduct.codigoBarras || selectedProduct.barcode),
+    brand: selectedProduct.marca || selectedProduct.brand || "",
+    category: selectedProduct.categoria || selectedProduct.category || "",
+    quantity,
+    unitLabel,
+    reason: selectedReason,
+    note: noteInput.value.trim(),
+    unitsPerBox,
+    equivalentBoxes: quantity / unitsPerBox,
+    unitCost,
+    estimatedCost: quantity * unitCost,
+    responsible: profile.email,
+    responsibleRole: profile.tipo,
+    dateKey: formatDateKey(),
+    createdAt: serverTimestamp()
+  };
+
+  saveButton.disabled = true;
+
+  try {
+    await addDoc(collection(db, "desperdicios"), payload);
+    await updateDoc(doc(db, "estoque", selectedProduct.id), {
+      desperdicioTotalUnidades: increment(quantity),
+      desperdicioTotalCusto: increment(payload.estimatedCost),
+      ultimoDesperdicioEm: serverTimestamp()
+    }).catch((error) => {
+      console.warn("Desperdicio registrado, mas o agregado do produto nao foi atualizado.", error);
+    });
+
+    setStatus("waste-status", "Desperdicio registrado.", "success");
+    await loadData();
+    selectProduct(selectedProduct.id);
+  } catch (error) {
+    console.error(error);
+    setStatus("waste-status", error.message || "Nao foi possivel registrar o desperdicio.", "error");
+  } finally {
+    saveButton.disabled = false;
+  }
+}
+
+searchInput.addEventListener("input", renderProducts);
+productList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-product-id]");
+
+  if (button) {
+    selectProduct(button.dataset.productId);
+  }
+});
+minusButton.addEventListener("click", () => setQuantity(toNumber(quantityInput.value, 1) - 1));
+plusButton.addEventListener("click", () => setQuantity(toNumber(quantityInput.value, 1) + 1));
+quantityInput.addEventListener("input", () => setQuantity(quantityInput.value));
+document.querySelectorAll(".waste-reason").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedReason = button.dataset.reason || "Outro";
+    document.querySelectorAll(".waste-reason").forEach((candidate) => {
+      candidate.classList.toggle("active", candidate === button);
+    });
+  });
+});
+saveButton.addEventListener("click", saveWaste);
+
+await loadData();
+</script>
+</body>
+</html>

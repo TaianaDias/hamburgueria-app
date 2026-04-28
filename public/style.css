@@ -14,6 +14,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -332,6 +336,82 @@ h3 {
 
 .quick-cost-preview {
   margin: 0;
+}
+
+.waste-entry-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.waste-stats .metric-value {
+  font-size: 1.6rem;
+}
+
+.waste-toolbar {
+  position: static;
+  margin-bottom: 0;
+}
+
+.waste-product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.waste-product-button {
+  display: grid;
+  gap: 6px;
+  min-height: 72px;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.waste-product-button.active {
+  border-color: rgba(34, 197, 94, 0.52);
+  background: rgba(22, 101, 52, 0.3);
+}
+
+.waste-product-button span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.waste-form-card {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.waste-quantity-row {
+  display: grid;
+  grid-template-columns: 52px minmax(120px, 1fr) 52px;
+  gap: 10px;
+}
+
+.waste-quantity-row input {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.waste-reason-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.waste-reason.active {
+  border-color: rgba(34, 197, 94, 0.52);
+  background: rgba(22, 101, 52, 0.34);
+}
+
+.waste-history-card {
+  padding: 14px;
 }
 
 .product-create-panel {

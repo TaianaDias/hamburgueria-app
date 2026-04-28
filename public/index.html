@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -38,6 +38,11 @@
     <a id="menu-reposicao" class="card" href="reposicao-producao.html" hidden>
       <h3>Reposicao para producao</h3>
       <p class="muted">Separe insumos do estoque central para a producao do dia com baixa automatica.</p>
+    </a>
+
+    <a id="menu-desperdicio" class="card" href="desperdicio.html" hidden>
+      <h3>Desperdicio</h3>
+      <p class="muted">Registre descartes rapidamente por item e acompanhe o custo perdido no dia.</p>
     </a>
 
     <a id="menu-compras" class="card" href="compras.html" hidden>
@@ -90,6 +95,7 @@ async function init() {
   const alertsLink = document.getElementById("alerts-link");
   const menuEstoque = document.getElementById("menu-estoque");
   const menuReposicao = document.getElementById("menu-reposicao");
+  const menuDesperdicio = document.getElementById("menu-desperdicio");
   const menuCompras = document.getElementById("menu-compras");
   const menuDashboardCompras = document.getElementById("menu-dashboard-compras");
   const menuFornecedores = document.getElementById("menu-fornecedores");
@@ -104,6 +110,7 @@ async function init() {
   if (profile.tipo === "admin") {
     menuEstoque.hidden = false;
     menuReposicao.hidden = false;
+    menuDesperdicio.hidden = false;
     menuCompras.hidden = false;
     menuDashboardCompras.hidden = false;
     menuFornecedores.hidden = false;
@@ -115,6 +122,7 @@ async function init() {
 
   if (profile.tipo === "estoque") {
     menuReposicao.hidden = false;
+    menuDesperdicio.hidden = false;
     menuCompras.hidden = false;
   }
 }
@@ -125,4 +133,3 @@ init().catch((error) => {
 </script>
 </body>
 </html>
-
