@@ -31,22 +31,33 @@
   </header>
 
   <section class="panel">
-    <div class="page-header" style="margin-bottom: 16px;">
-      <div>
-        <h3>Importar nota fiscal XML</h3>
-        <p class="muted">Selecione XMLs de NF-e para dar entrada no estoque com base nos itens da nota.</p>
-      </div>
+    <details class="section-accordion">
+      <summary class="section-accordion-summary">
+        <div>
+          <h3>Importar nota fiscal XML</h3>
+          <p class="muted">Abra quando precisar dar entrada via nota fiscal.</p>
+        </div>
+        <span class="section-accordion-cta">Abrir importacao</span>
+      </summary>
 
-      <div class="actions">
-        <label for="xml-files" class="button secondary">Selecionar XMLs</label>
-        <input id="xml-files" class="file-input" type="file" accept=".xml,text/xml,application/xml" multiple>
-        <button id="import-xml-button" class="secondary" type="button" disabled>Importar para estoque</button>
-      </div>
-    </div>
+      <div class="section-accordion-body">
+        <div class="page-header" style="margin-bottom: 16px;">
+          <div>
+            <p class="muted">Selecione XMLs de NF-e para dar entrada no estoque com base nos itens da nota.</p>
+          </div>
 
-    <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao automatica do custo por unidade.</p>
-    <div id="xml-status" class="status info" hidden></div>
-    <div id="xml-preview" class="list" style="margin-top: 16px;"></div>
+          <div class="actions">
+            <label for="xml-files" class="button secondary">Selecionar XMLs</label>
+            <input id="xml-files" class="file-input" type="file" accept=".xml,text/xml,application/xml" multiple>
+            <button id="import-xml-button" class="secondary" type="button" disabled>Importar para estoque</button>
+          </div>
+        </div>
+
+        <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao automatica do custo por unidade.</p>
+        <div id="xml-status" class="status info" hidden></div>
+        <div id="xml-preview" class="list" style="margin-top: 16px;"></div>
+      </div>
+    </details>
   </section>
 
   <section class="panel">
@@ -60,60 +71,65 @@
     </div>
 
     <form id="product-form" class="form-grid">
-      <div class="supplier-section">
-        <div class="summary-line">
-          <span>Cadastro por codigo de barras</span>
-          <strong>Leia pela camera ou digite manualmente.</strong>
+      <details class="supplier-section section-accordion">
+        <summary class="section-accordion-summary">
+          <div>
+            <span>Cadastro por codigo de barras</span>
+            <strong id="barcode-accordion-summary">Leia pela camera ou digite manualmente.</strong>
+          </div>
+          <span class="section-accordion-cta">Abrir leitura</span>
+        </summary>
+
+        <div class="section-accordion-body">
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="novo_codigo_barras">Codigo de barras</label>
+              <input id="novo_codigo_barras" inputmode="numeric" placeholder="789..." autocomplete="off">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_marca">Marca</label>
+              <input id="novo_marca" placeholder="Ex.: Heinz, Coca-Cola, Bimbo">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_categoria">Categoria</label>
+              <input id="novo_categoria" list="product-categories" placeholder="Ex.: molho, embalagem, bebida, insumo">
+              <datalist id="product-categories">
+                <option value="molho"></option>
+                <option value="embalagem"></option>
+                <option value="bebida"></option>
+                <option value="insumo"></option>
+                <option value="proteina"></option>
+                <option value="laticinio"></option>
+                <option value="panificacao"></option>
+                <option value="hortifruti"></option>
+                <option value="limpeza"></option>
+                <option value="descartavel"></option>
+              </datalist>
+            </div>
+
+            <div class="field-group">
+              <label for="novo_unidade_medida">Unidade de medida</label>
+              <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top: 16px;">
+            <button id="lookup-barcode-button" class="secondary" type="button">Consultar codigo</button>
+            <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
+            <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
+          </div>
+
+          <label class="inline-choice" style="margin-top: 16px;">
+            <input id="manual-product-toggle" type="checkbox">
+            <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
+          </label>
+
+          <div id="barcode-status" class="status info" hidden></div>
+          <div id="barcode-reader" class="barcode-reader" hidden></div>
         </div>
-
-        <div class="form-grid" style="margin-top: 16px;">
-          <div class="field-group">
-            <label for="novo_codigo_barras">Codigo de barras</label>
-            <input id="novo_codigo_barras" inputmode="numeric" placeholder="789..." autocomplete="off">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_marca">Marca</label>
-            <input id="novo_marca" placeholder="Ex.: Heinz, Coca-Cola, Bimbo">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_categoria">Categoria</label>
-            <input id="novo_categoria" list="product-categories" placeholder="Ex.: molho, embalagem, bebida, insumo">
-            <datalist id="product-categories">
-              <option value="molho"></option>
-              <option value="embalagem"></option>
-              <option value="bebida"></option>
-              <option value="insumo"></option>
-              <option value="proteina"></option>
-              <option value="laticinio"></option>
-              <option value="panificacao"></option>
-              <option value="hortifruti"></option>
-              <option value="limpeza"></option>
-              <option value="descartavel"></option>
-            </datalist>
-          </div>
-
-          <div class="field-group">
-            <label for="novo_unidade_medida">Unidade de medida</label>
-            <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
-          </div>
-        </div>
-
-        <div class="actions" style="margin-top: 16px;">
-          <button id="lookup-barcode-button" class="secondary" type="button">Consultar codigo</button>
-          <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
-          <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
-        </div>
-
-        <label class="inline-choice" style="margin-top: 16px;">
-          <input id="manual-product-toggle" type="checkbox">
-          <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
-        </label>
-
-        <div id="barcode-status" class="status info" hidden></div>
-        <div id="barcode-reader" class="barcode-reader" hidden></div>
-      </div>
+      </details>
 
       <div class="field-group">
         <label for="novo_nome">Nome</label>
@@ -135,99 +151,104 @@
         <input id="novo_max" type="number" min="1" step="1" value="50">
       </div>
 
-      <div class="supplier-section">
-        <div class="summary-line">
-          <span>Fornecedores do produto</span>
-          <strong>Adicione 1 ou mais opcoes e marque o principal.</strong>
+      <details class="supplier-section section-accordion">
+        <summary class="section-accordion-summary">
+          <div>
+            <span>Fornecedores do produto</span>
+            <strong id="suppliers-accordion-summary">Adicione 1 ou mais opcoes e marque o principal.</strong>
+          </div>
+          <span class="section-accordion-cta">Abrir fornecedores</span>
+        </summary>
+
+        <div class="section-accordion-body">
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="novo_fornecedor">Fornecedor</label>
+              <select id="novo_fornecedor"></select>
+            </div>
+
+            <div class="field-group">
+              <label for="novo_conv">Quantidade por embalagem/compra</label>
+              <input id="novo_conv" type="number" min="1" step="1" value="1">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_custo">Custo da embalagem/compra</label>
+              <input id="novo_custo" type="number" min="0" step="0.01" value="0">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_custo_promocional">Custo promocional da embalagem</label>
+              <input id="novo_custo_promocional" type="number" min="0" step="0.01" value="">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_unidade">Unidade de medida do fornecedor</label>
+              <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_custo_unitario">Custo por unidade atual</label>
+              <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
+            </div>
+
+            <div class="field-group">
+              <label for="novo_fornecedor_principal">Fornecedor principal</label>
+              <select id="novo_fornecedor_principal">
+                <option value="sim">Sim, usar como custo padrao</option>
+                <option value="nao">Nao, deixar como alternativa</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="novo_promocao_ativa">Promocao ativa</label>
+              <select id="novo_promocao_ativa">
+                <option value="nao">Nao</option>
+                <option value="sim">Sim</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="novo_promocao_inicio">Inicio da promocao</label>
+              <input id="novo_promocao_inicio" type="date">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_promocao_fim">Fim da promocao</label>
+              <input id="novo_promocao_fim" type="date">
+            </div>
+
+            <div class="field-group">
+              <label for="novo_frequencia_ativa">Frequencia de pedido</label>
+              <select id="novo_frequencia_ativa">
+                <option value="nao">Nao</option>
+                <option value="sim">Sim</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
+              <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
+            </div>
+
+            <div class="field-group" style="grid-column: 1 / -1;">
+              <span>Dias para pedir</span>
+              <div id="novo_dias_pedido" class="weekday-selector"></div>
+            </div>
+
+            <div class="field-group" style="grid-column: 1 / -1;">
+              <span>Dias de entrega</span>
+              <div id="novo_dias_entrega" class="weekday-selector"></div>
+            </div>
+          </div>
+
+          <div class="inline-actions" style="margin-top: 16px;">
+            <button id="add-supplier-button" class="secondary" type="button">Adicionar fornecedor ao produto</button>
+          </div>
+
+          <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
         </div>
-
-        <div class="form-grid" style="margin-top: 16px;">
-          <div class="field-group">
-            <label for="novo_fornecedor">Fornecedor</label>
-            <select id="novo_fornecedor"></select>
-          </div>
-
-          <div class="field-group">
-            <label for="novo_conv">Quantidade por embalagem/compra</label>
-            <input id="novo_conv" type="number" min="1" step="1" value="1">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_custo">Custo da embalagem/compra</label>
-            <input id="novo_custo" type="number" min="0" step="0.01" value="0">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_custo_promocional">Custo promocional da embalagem</label>
-            <input id="novo_custo_promocional" type="number" min="0" step="0.01" value="">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_unidade">Unidade de medida do fornecedor</label>
-            <input id="novo_unidade" placeholder="fatia, un, g, ml" value="un">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_custo_unitario">Custo por unidade atual</label>
-            <input id="novo_custo_unitario" type="text" value="R$ 0,00" readonly>
-          </div>
-
-          <div class="field-group">
-            <label for="novo_fornecedor_principal">Fornecedor principal</label>
-            <select id="novo_fornecedor_principal">
-              <option value="sim">Sim, usar como custo padrao</option>
-              <option value="nao">Nao, deixar como alternativa</option>
-            </select>
-          </div>
-
-          <div class="field-group">
-            <label for="novo_promocao_ativa">Promocao ativa</label>
-            <select id="novo_promocao_ativa">
-              <option value="nao">Nao</option>
-              <option value="sim">Sim</option>
-            </select>
-          </div>
-
-          <div class="field-group">
-            <label for="novo_promocao_inicio">Inicio da promocao</label>
-            <input id="novo_promocao_inicio" type="date">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_promocao_fim">Fim da promocao</label>
-            <input id="novo_promocao_fim" type="date">
-          </div>
-
-          <div class="field-group">
-            <label for="novo_frequencia_ativa">Frequencia de pedido</label>
-            <select id="novo_frequencia_ativa">
-              <option value="nao">Nao</option>
-              <option value="sim">Sim</option>
-            </select>
-          </div>
-
-          <div class="field-group">
-            <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
-            <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
-          </div>
-
-          <div class="field-group" style="grid-column: 1 / -1;">
-            <span>Dias para pedir</span>
-            <div id="novo_dias_pedido" class="weekday-selector"></div>
-          </div>
-
-          <div class="field-group" style="grid-column: 1 / -1;">
-            <span>Dias de entrega</span>
-            <div id="novo_dias_entrega" class="weekday-selector"></div>
-          </div>
-        </div>
-
-        <div class="inline-actions" style="margin-top: 16px;">
-          <button id="add-supplier-button" class="secondary" type="button">Adicionar fornecedor ao produto</button>
-        </div>
-
-        <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
-      </div>
+      </details>
 
       <button id="create-button" type="submit">Salvar produto</button>
     </form>
@@ -319,6 +340,8 @@ const createFrequencyActiveSelect = document.getElementById("novo_frequencia_ati
 const createOrderQuantityInput = document.getElementById("novo_qtd_pedido_padrao");
 const createOrderDaysContainer = document.getElementById("novo_dias_pedido");
 const createDeliveryDaysContainer = document.getElementById("novo_dias_entrega");
+const barcodeAccordionSummary = document.getElementById("barcode-accordion-summary");
+const suppliersAccordionSummary = document.getElementById("suppliers-accordion-summary");
 const addSupplierButton = document.getElementById("add-supplier-button");
 const newSuppliersList = document.getElementById("new-suppliers-list");
 const xmlInput = document.getElementById("xml-files");
@@ -385,6 +408,8 @@ async function updateBarcodeModeState() {
       "info"
     );
   }
+
+  updateBarcodeAccordionSummary();
 }
 
 function formatProductBarcodeLabel(item) {
@@ -462,6 +487,7 @@ function applyBarcodeLookupProduct(product, options = {}) {
       : "Produto nao encontrado nas bases automaticas. Continue com o cadastro manual.",
     nextName ? "success" : "info"
   );
+  updateBarcodeAccordionSummary();
 }
 
 function resetCreateProductForm() {
@@ -493,6 +519,8 @@ function resetCreateProductForm() {
   refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
   updateCreateCostPreview();
   setStatus("barcode-status", "", "info");
+  updateBarcodeAccordionSummary();
+  updateSuppliersAccordionSummary();
 }
 
 async function lookupBarcodeProduct(barcode) {
@@ -635,6 +663,64 @@ function updateCreateCostPreview() {
   const shouldUsePromotion = createPromotionActiveSelect.value === "sim" && promotionalPurchaseCost != null;
   const purchaseCost = shouldUsePromotion ? promotionalPurchaseCost : basePurchaseCost;
   unitCostPreviewInput.value = formatCurrency(calculateUnitCost(purchaseCost, packageQuantity));
+}
+
+function updateBarcodeAccordionSummary() {
+  if (!barcodeAccordionSummary) {
+    return;
+  }
+
+  const barcode = normalizeBarcode(barcodeInput.value);
+  const manualMode = isManualProductModeEnabled();
+  const name = nameInput.value.trim();
+  const brand = brandInput.value.trim();
+  const category = categoryInput.value.trim();
+
+  if (manualMode && !barcode) {
+    barcodeAccordionSummary.textContent = "Cadastro manual ativo para item artesanal ou interno.";
+    return;
+  }
+
+  if (!barcode) {
+    barcodeAccordionSummary.textContent = "Leia pela camera ou digite manualmente.";
+    return;
+  }
+
+  const parts = [barcode];
+
+  if (name) {
+    parts.push(name);
+  }
+
+  if (brand) {
+    parts.push(brand);
+  }
+
+  if (category) {
+    parts.push(category);
+  }
+
+  barcodeAccordionSummary.textContent = parts.join(" | ");
+}
+
+function updateSuppliersAccordionSummary() {
+  if (!suppliersAccordionSummary) {
+    return;
+  }
+
+  const supplierCards = Array.from(newSuppliersList.querySelectorAll(".supplier-entry"));
+
+  if (!supplierCards.length) {
+    suppliersAccordionSummary.textContent = "Adicione 1 ou mais opcoes e marque o principal.";
+    return;
+  }
+
+  const supplierNames = supplierCards
+    .map((entry) => entry.querySelector(".supplier-entry-name")?.textContent?.trim() || "")
+    .filter(Boolean);
+  const summaryNames = supplierNames.slice(0, 3).join(" | ");
+  const suffix = supplierNames.length > 3 ? " | ..." : "";
+  suppliersAccordionSummary.textContent = `${supplierCards.length} fornecedor(es): ${summaryNames}${suffix}`;
 }
 
 function syncCreateFrequencyState() {
@@ -908,11 +994,20 @@ function refreshSupplierListState(container, emptyMessage) {
     }
 
     placeholder.textContent = emptyMessage;
+
+    if (container === newSuppliersList) {
+      updateSuppliersAccordionSummary();
+    }
+
     return;
   }
 
   if (placeholder) {
     placeholder.remove();
+  }
+
+  if (container === newSuppliersList) {
+    updateSuppliersAccordionSummary();
   }
 }
 
@@ -2419,7 +2514,11 @@ xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
 barcodeInput.addEventListener("input", () => {
   barcodeInput.value = normalizeBarcode(barcodeInput.value);
+  updateBarcodeAccordionSummary();
 });
+nameInput.addEventListener("input", updateBarcodeAccordionSummary);
+brandInput.addEventListener("input", updateBarcodeAccordionSummary);
+categoryInput.addEventListener("input", updateBarcodeAccordionSummary);
 manualProductToggle.addEventListener("change", async () => {
   await updateBarcodeModeState();
 });
@@ -2444,6 +2543,7 @@ createPromotionActiveSelect.addEventListener("change", updateCreateCostPreview);
 createPromotionStartInput.addEventListener("input", updateCreateCostPreview);
 createPromotionEndInput.addEventListener("input", updateCreateCostPreview);
 createFrequencyActiveSelect.addEventListener("change", syncCreateFrequencyState);
+newSuppliersList.addEventListener("change", updateSuppliersAccordionSummary);
 addSupplierButton.addEventListener("click", () => {
   setStatus("status", "", "info");
 

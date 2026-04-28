@@ -354,6 +354,38 @@ pre {
   background: rgba(15, 23, 42, 0.24);
 }
 
+.section-accordion {
+  overflow: hidden;
+}
+
+.section-accordion-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.section-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-accordion-summary h3,
+.section-accordion-summary strong {
+  margin: 0;
+}
+
+.section-accordion-cta {
+  color: var(--brand-soft);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.section-accordion-body {
+  margin-top: 16px;
+}
+
 .product-card-details {
   margin-top: 16px;
   border-radius: 18px;
