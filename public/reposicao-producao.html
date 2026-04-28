@@ -90,28 +90,24 @@
 </main>
 
 <script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  serverTimestamp,
+  updateDoc,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
   describeProfile,
-  formatCurrency,
   normalizeText,
   requireAuth,
   setStatus,
   toNumber
 } from "./app.js";
-
-const ESTOQUE_KEY = "reposicao-producao-estoque-v1";
-const HISTORICO_KEY = "reposicao-producao-historico-v1";
-
-const defaultInsumos = [
-  { id: "paes", nome: "Paes", unidade: "grades", estoque: 7 },
-  { id: "carne", nome: "Hamburguer (patties)", unidade: "kg", estoque: 15 },
-  { id: "queijo", nome: "Queijo fatiado", unidade: "pacotes", estoque: 12 },
-  { id: "alface", nome: "Alface", unidade: "macos", estoque: 8 },
-  { id: "tomate", nome: "Tomate", unidade: "kg", estoque: 6 },
-  { id: "molho", nome: "Molho especial", unidade: "potes", estoque: 10 },
-  { id: "bacon", nome: "Bacon", unidade: "pacotes", estoque: 5 }
-];
 
 const insumosLista = document.getElementById("insumos-lista");
 const resumoLista = document.getElementById("resumo-lista");
@@ -127,21 +123,7 @@ const headerMeta = document.getElementById("header-meta");
 let insumos = [];
 let selecionados = {};
 let historico = [];
-
-function readJsonStorage(key, fallbackValue) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallbackValue;
-  } catch (error) {
-    console.warn("Falha ao ler localStorage.", key, error);
-    return fallbackValue;
-  }
-}
-
-function saveState() {
-  localStorage.setItem(ESTOQUE_KEY, JSON.stringify(insumos));
-  localStorage.setItem(HISTORICO_KEY, JSON.stringify(historico));
-}
+let profileContext = null;
 
 function getTurnoAtual() {
   const hour = new Date().getHours();
@@ -342,7 +324,36 @@ function renderAll() {
   renderHistorico();
 }
 
-confirmButton.addEventListener("click", () => {
+async function loadInsumosFromFirestore() {
+  const snapshot = await getDocs(collection(db, "estoque"));
+  insumos = snapshot.docs
+    .map((document) => {
+      const data = document.data();
+      return {
+        id: document.id,
+        nome: data.nome || "Insumo sem nome",
+        unidade: data.unidadeMedida || data.unidadeUso || data.unidadeCompra || "un",
+        estoque: Math.max(0, toNumber(data.quantidade, 0))
+      };
+    })
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+}
+
+async function loadHistoricoFromFirestore() {
+  const snapshot = await getDocs(collection(db, "historico"));
+  historico = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .filter((entry) => entry.tipo === "reposicao_producao")
+    .map((entry) => ({
+      id: entry.id,
+      timestamp: entry.timestampIso || "",
+      turno: entry.turno || "-",
+      itens: Array.isArray(entry.itens) ? entry.itens : []
+    }))
+    .sort((left, right) => String(right.timestamp).localeCompare(String(left.timestamp)));
+}
+
+confirmButton.addEventListener("click", async () => {
   const resumo = getResumoSelecionados();
   if (!resumo.length) {
     return;
@@ -354,39 +365,65 @@ confirmButton.addEventListener("click", () => {
     return;
   }
 
-  const itensHistorico = [];
+  try {
+    const batch = writeBatch(db);
+    const itensHistorico = [];
 
-  insumos = insumos.map((item) => {
-    const selected = selecionados[item.id];
-    if (!selected) return item;
-    const retirar = Math.max(0, toNumber(selected.retirar, 0));
-    const estoqueDepois = item.estoque - retirar;
-    itensHistorico.push({
-      id: item.id,
-      nome: item.nome,
-      unidade: item.unidade,
-      retirado: retirar,
-      minimoDia: Math.max(0, toNumber(selected.minimoDia, 0)),
-      estoqueAntes: item.estoque,
-      estoqueDepois
+    insumos = insumos.map((item) => {
+      const selected = selecionados[item.id];
+      if (!selected) return item;
+      const retirar = Math.max(0, toNumber(selected.retirar, 0));
+      const estoqueDepois = item.estoque - retirar;
+      const minimoDia = Math.max(0, toNumber(selected.minimoDia, 0));
+
+      batch.update(doc(db, "estoque", item.id), {
+        quantidade: estoqueDepois,
+        atualizadoEm: serverTimestamp()
+      });
+
+      itensHistorico.push({
+        id: item.id,
+        nome: item.nome,
+        unidade: item.unidade,
+        retirado: retirar,
+        minimoDia,
+        estoqueAntes: item.estoque,
+        estoqueDepois
+      });
+
+      return { ...item, estoque: estoqueDepois };
     });
-    return { ...item, estoque: estoqueDepois };
-  });
 
-  historico.unshift({
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    timestamp: new Date().toISOString(),
-    turno: getTurnoAtual(),
-    itens: itensHistorico
-  });
+    const nowIso = new Date().toISOString();
+    const historyRef = doc(collection(db, "historico"));
+    batch.set(historyRef, {
+      tipo: "reposicao_producao",
+      turno: getTurnoAtual(),
+      itens: itensHistorico,
+      responsavel: profileContext?.profile?.email || "",
+      timestampIso: nowIso,
+      data: serverTimestamp()
+    });
 
-  selecionados = {};
-  saveState();
-  setStatus("status-reposicao", "Reposicao confirmada com sucesso. Estoque atualizado.", "success");
-  renderAll();
+    await batch.commit();
+
+    historico.unshift({
+      id: historyRef.id,
+      timestamp: nowIso,
+      turno: getTurnoAtual(),
+      itens: itensHistorico
+    });
+
+    selecionados = {};
+    setStatus("status-reposicao", "Reposicao confirmada com sucesso. Estoque atualizado no Firestore.", "success");
+    renderAll();
+  } catch (error) {
+    console.error(error);
+    setStatus("status-reposicao", "Nao foi possivel confirmar a reposicao no Firestore.", "error");
+  }
 });
 
-novoInsumoForm.addEventListener("submit", (event) => {
+novoInsumoForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("status-reposicao", "", "info");
 
@@ -405,29 +442,48 @@ novoInsumoForm.addEventListener("submit", (event) => {
     return;
   }
 
-  insumos.push({
-    id: `${normalizeText(nome).replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
-    nome,
-    unidade,
-    estoque
-  });
+  try {
+    const newDoc = await addDoc(collection(db, "estoque"), {
+      nome,
+      nomeNormalizado: normalizeText(nome),
+      quantidade: estoque,
+      minimo: 2,
+      maximo: 50,
+      unidadeMedida: unidade,
+      unidadeUso: unidade,
+      unidadeCompra: unidade,
+      origemCadastro: "reposicao_producao",
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    });
 
-  novoInsumoForm.reset();
-  novoUnidadeInput.value = "un";
-  novoEstoqueInput.value = "0";
-  saveState();
-  setStatus("status-reposicao", `Insumo ${nome} adicionado com sucesso.`, "success");
-  renderAll();
+    insumos.push({
+      id: newDoc.id,
+      nome,
+      unidade,
+      estoque
+    });
+    insumos.sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+
+    novoInsumoForm.reset();
+    novoUnidadeInput.value = "un";
+    novoEstoqueInput.value = "0";
+    setStatus("status-reposicao", `Insumo ${nome} adicionado com sucesso ao Firestore.`, "success");
+    renderAll();
+  } catch (error) {
+    console.error(error);
+    setStatus("status-reposicao", "Nao foi possivel adicionar o insumo no Firestore.", "error");
+  }
 });
 
 async function init() {
   bindLogoutButton();
-  const { profile } = await requireAuth();
-  document.getElementById("user-info").textContent = describeProfile(profile);
+  profileContext = await requireAuth();
+  document.getElementById("user-info").textContent = describeProfile(profileContext.profile);
   headerMeta.textContent = `${getHeaderDateLabel()} | Turno atual: ${getTurnoAtual()}`;
 
-  insumos = readJsonStorage(ESTOQUE_KEY, defaultInsumos);
-  historico = readJsonStorage(HISTORICO_KEY, []);
+  await loadInsumosFromFirestore();
+  await loadHistoricoFromFirestore();
   renderAll();
 }
 
