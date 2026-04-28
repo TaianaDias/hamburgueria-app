@@ -503,6 +503,12 @@ async function init() {
   bindLogoutButton();
   const authContext = await requireAuth();
   profile = authContext.profile;
+
+  if (profile.tipo === "estoque") {
+    window.location.href = "index.html";
+    throw new Error("Acesso restrito.");
+  }
+
   userInfo.textContent = describeProfile(profile);
   resetForm();
   await loadSuppliers();

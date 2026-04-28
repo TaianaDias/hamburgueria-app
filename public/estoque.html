@@ -394,6 +394,11 @@ const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
 const isAdmin = profile?.tipo === "admin";
 
+if (profile?.tipo === "estoque") {
+  window.location.href = "index.html";
+  throw new Error("Acesso restrito.");
+}
+
 if (!isAdmin) {
   resetButton.hidden = true;
 }

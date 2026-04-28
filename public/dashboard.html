@@ -90,6 +90,11 @@ const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = describeProfile(profile);
 document.getElementById("alerts-link").hidden = profile.tipo !== "admin";
 
+if (profile.tipo === "estoque") {
+  window.location.href = "index.html";
+  throw new Error("Acesso restrito.");
+}
+
 const [stockSnapshot, recipeSnapshot, supplierSnapshot, historySnapshot] = await Promise.all([
   getDocs(collection(db, "estoque")),
   getDocs(collection(db, "receitas")),

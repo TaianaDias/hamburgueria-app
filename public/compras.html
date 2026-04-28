@@ -26,13 +26,13 @@
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
       <a id="alerts-link" class="button secondary" href="alertas-reposicao.html" hidden>Alertas</a>
-      <a class="button secondary" href="dashboard-compras.html">Dashboard</a>
+      <a id="dashboard-link" class="button secondary" href="dashboard-compras.html">Dashboard</a>
       <button id="send-button" type="button">Enviar pedidos</button>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
-  <section class="panel">
+  <section id="purchase-register-section" class="panel">
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Registro mensal de compras</h3>
@@ -177,12 +177,20 @@ const adminReminderPreviewInput = document.getElementById("admin-reminder-previe
 const sendAdminReminderButton = document.getElementById("send-admin-reminder");
 const adminReminderStatus = document.getElementById("admin-reminder-status");
 const alertsLink = document.getElementById("alerts-link");
+const purchaseRegisterSection = document.getElementById("purchase-register-section");
+const dashboardLink = document.getElementById("dashboard-link");
 
 bindLogoutButton();
 
 const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
 alertsLink.hidden = profile.tipo !== "admin";
+
+if (profile.tipo === "estoque") {
+  purchaseRegisterSection.hidden = true;
+  dashboardLink.hidden = true;
+  alertsLink.hidden = true;
+}
 
 let pedidos = [];
 let sugestoes = [];

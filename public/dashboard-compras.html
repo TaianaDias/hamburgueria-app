@@ -127,6 +127,11 @@ bindLogoutButton();
 const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = describeProfile(profile);
 
+if (profile.tipo === "estoque") {
+  window.location.href = "index.html";
+  throw new Error("Acesso restrito.");
+}
+
 function formatShortMonth(monthKey) {
   const parsed = getMonthDate(monthKey);
 
