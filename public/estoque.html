@@ -257,14 +257,19 @@
   </section>
 
   <section class="panel">
-    <div class="page-header" style="margin-bottom: 16px;">
-      <div>
-        <h3>Itens cadastrados</h3>
-        <p class="muted">Edite os valores diretamente e salve cada card quando terminar.</p>
-      </div>
-    </div>
+    <details class="section-accordion">
+      <summary class="section-accordion-summary">
+        <div>
+          <h3>Itens cadastrados</h3>
+          <p class="muted">Abra a lista quando quiser revisar ou editar os produtos.</p>
+        </div>
+        <span id="registered-items-summary" class="section-accordion-cta">Carregando itens...</span>
+      </summary>
 
-    <div id="lista" class="list"></div>
+      <div class="section-accordion-body">
+        <div id="lista" class="list"></div>
+      </div>
+    </details>
   </section>
 </main>
 
@@ -342,6 +347,7 @@ const createOrderDaysContainer = document.getElementById("novo_dias_pedido");
 const createDeliveryDaysContainer = document.getElementById("novo_dias_entrega");
 const barcodeAccordionSummary = document.getElementById("barcode-accordion-summary");
 const suppliersAccordionSummary = document.getElementById("suppliers-accordion-summary");
+const registeredItemsSummary = document.getElementById("registered-items-summary");
 const addSupplierButton = document.getElementById("add-supplier-button");
 const newSuppliersList = document.getElementById("new-suppliers-list");
 const xmlInput = document.getElementById("xml-files");
@@ -721,6 +727,22 @@ function updateSuppliersAccordionSummary() {
   const summaryNames = supplierNames.slice(0, 3).join(" | ");
   const suffix = supplierNames.length > 3 ? " | ..." : "";
   suppliersAccordionSummary.textContent = `${supplierCards.length} fornecedor(es): ${summaryNames}${suffix}`;
+}
+
+function updateRegisteredItemsSummary(items = []) {
+  if (!registeredItemsSummary) {
+    return;
+  }
+
+  if (!items.length) {
+    registeredItemsSummary.textContent = "Nenhum item cadastrado";
+    return;
+  }
+
+  const lowStockItems = items.filter((item) => toNumber(item.quantidade, 0) <= toNumber(item.minimo, 0)).length;
+  registeredItemsSummary.textContent = lowStockItems
+    ? `${items.length} item(ns) | ${lowStockItems} em atencao`
+    : `${items.length} item(ns) cadastrados`;
 }
 
 function syncCreateFrequencyState() {
@@ -1509,6 +1531,7 @@ function findSupplierMatch(candidate = {}) {
 
 function renderProducts(items) {
   list.innerHTML = "";
+  updateRegisteredItemsSummary(items);
 
   if (!items.length) {
     list.innerHTML = '<div class="empty-state">Nenhum produto cadastrado ainda.</div>';
