@@ -244,6 +244,10 @@ function sanitizeAlertConfigPayload(body = {}) {
     nextConfig.autoEvaluation = parseBooleanValue(body.autoEvaluation, true);
   }
 
+  if ("dailyAdminAlertEnabled" in body) {
+    nextConfig.dailyAdminAlertEnabled = parseBooleanValue(body.dailyAdminAlertEnabled, true);
+  }
+
   if ("evaluationIntervalMinutes" in body) {
     nextConfig.evaluationIntervalMinutes = clampNumber(body.evaluationIntervalMinutes, 60, 15, 1440);
   }

@@ -25,6 +25,7 @@ const ORDER_WEEKDAYS = Object.freeze([
 const DEFAULT_ALERT_CONFIG = Object.freeze({
   enabled: true,
   autoEvaluation: true,
+  dailyAdminAlertEnabled: true,
   evaluationIntervalMinutes: 60,
   scheduledHour: 8,
   notificationCooldownHours: 12,
@@ -901,6 +902,14 @@ export function createStockAlertService(options = {}) {
     const lastTriggeredAt = parseDateValue(existingAlert.lastTriggeredAt);
 
     if (!lastTriggeredAt) {
+      return true;
+    }
+
+    if (
+      config.dailyAdminAlertEnabled
+      && getDateOnlyKey(lastTriggeredAt) !== getDateOnlyKey(referenceDate)
+      && referenceDate.getHours() >= toNumber(config.scheduledHour, 8)
+    ) {
       return true;
     }
 

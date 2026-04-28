@@ -94,7 +94,7 @@
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Lembrete do admin</h3>
-        <p class="muted">Configure o WhatsApp do admin e gere um resumo com os itens acionados por estoque minimo ou por dia programado de pedido.</p>
+        <p id="admin-reminder-description" class="muted">Configure o WhatsApp do admin e gere um resumo com os itens acionados por estoque minimo ou por dia programado de pedido.</p>
       </div>
     </div>
 
@@ -179,6 +179,7 @@ const adminReminderStatus = document.getElementById("admin-reminder-status");
 const alertsLink = document.getElementById("alerts-link");
 const purchaseRegisterSection = document.getElementById("purchase-register-section");
 const dashboardLink = document.getElementById("dashboard-link");
+const adminReminderDescription = document.getElementById("admin-reminder-description");
 
 bindLogoutButton();
 
@@ -190,6 +191,8 @@ if (profile.tipo === "estoque") {
   purchaseRegisterSection.hidden = true;
   dashboardLink.hidden = true;
   alertsLink.hidden = true;
+  adminReminderDescription.textContent = "Use esta area para sugerir compra ao admin antes do estoque chegar no minimo ou quando houver necessidade antecipada.";
+  sendAdminReminderButton.textContent = "Sugerir compra ao admin";
 }
 
 let pedidos = [];

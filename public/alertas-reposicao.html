@@ -37,7 +37,7 @@
       <div>
         <p class="eyebrow" style="color: rgba(255, 255, 255, 0.78);">Painel admin</p>
         <h2>Prevencao de ruptura e decisao de compra</h2>
-        <p class="muted" style="color: rgba(226, 232, 240, 0.88); margin-top: 10px;">O sistema consolida itens em atencao, compara fornecedores, estima cobertura e prepara a mensagem de WhatsApp para o admin.</p>
+        <p class="muted" style="color: rgba(226, 232, 240, 0.88); margin-top: 10px;">Ficam aqui apenas os alertas realmente acionaveis: item no minimo, item critico e lembrete diario ao admin.</p>
       </div>
 
       <div class="purchase-dashboard-badges">
@@ -60,11 +60,6 @@
     </article>
 
     <article class="card">
-      <span class="muted">Economia potencial</span>
-      <strong id="metric-savings" class="metric-value">R$ 0,00</strong>
-    </article>
-
-    <article class="card">
       <span class="muted">Alerta mais recente</span>
       <strong id="metric-notification" class="metric-value">-</strong>
       <p id="metric-notification-meta" class="muted" style="margin-top: 8px;">Nenhum disparo ainda.</p>
@@ -76,7 +71,7 @@
       <div class="page-header" style="margin-bottom: 16px;">
         <div>
           <h3>Configuracao automatica</h3>
-          <p class="muted">Ajuste janela de avaliacao, cooldown do WhatsApp e relatorio semanal.</p>
+          <p class="muted">Defina apenas o essencial para o disparo diario ao admin.</p>
         </div>
       </div>
 
@@ -90,10 +85,18 @@
         </div>
 
         <div class="field-group">
-          <span>Reavaliacao automatica</span>
+          <span>Avaliacao automatica</span>
           <label class="inline-choice">
             <input id="config-auto-evaluation" type="checkbox">
             <span>Rodar sem intervencao manual</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <span>Disparo diario ao admin</span>
+          <label class="inline-choice">
+            <input id="config-daily-enabled" type="checkbox">
+            <span>Reenviar alerta diariamente enquanto houver item em risco</span>
           </label>
         </div>
 
@@ -103,64 +106,13 @@
         </div>
 
         <div class="field-group">
-          <label for="config-provider">Provedor WhatsApp</label>
-          <select id="config-provider"></select>
-        </div>
-
-        <div class="field-group">
-          <label for="config-interval">Intervalo de avaliacao (min)</label>
-          <input id="config-interval" type="number" min="15" step="15" value="60">
-        </div>
-
-        <div class="field-group">
           <label for="config-hour">Horario base da rodada diaria</label>
           <input id="config-hour" type="number" min="0" max="23" step="1" value="8">
         </div>
 
         <div class="field-group">
           <label for="config-cooldown">Cooldown do alerta (h)</label>
-          <input id="config-cooldown" type="number" min="1" max="168" step="1" value="12">
-        </div>
-
-        <div class="field-group">
-          <label for="config-target-days">Cobertura alvo (dias)</label>
-          <input id="config-target-days" type="number" min="1" max="60" step="1" value="7">
-        </div>
-
-        <div class="field-group">
-          <label for="config-critical-percent">Faixa critica do minimo (%)</label>
-          <input id="config-critical-percent" type="number" min="10" max="100" step="5" value="50">
-        </div>
-
-        <div class="field-group">
-          <label for="config-ideal-multiplier">Multiplicador do estoque ideal</label>
-          <input id="config-ideal-multiplier" type="number" min="1" max="10" step="0.5" value="2">
-        </div>
-
-        <div class="field-group">
-          <span>Relatorio semanal</span>
-          <label class="inline-choice">
-            <input id="config-weekly-enabled" type="checkbox">
-            <span>Enviar consolidado de reposicao</span>
-          </label>
-        </div>
-
-        <div class="field-group">
-          <label for="config-weekly-weekday">Dia do relatorio</label>
-          <select id="config-weekly-weekday">
-            <option value="seg">Segunda</option>
-            <option value="ter">Terca</option>
-            <option value="qua">Quarta</option>
-            <option value="qui">Quinta</option>
-            <option value="sex">Sexta</option>
-            <option value="sab">Sabado</option>
-            <option value="dom">Domingo</option>
-          </select>
-        </div>
-
-        <div class="field-group">
-          <label for="config-weekly-hour">Horario do relatorio</label>
-          <input id="config-weekly-hour" type="number" min="0" max="23" step="1" value="9">
+          <input id="config-cooldown" type="number" min="1" max="168" step="1" value="24">
         </div>
 
         <button id="save-config-button" type="submit">Salvar configuracao</button>
@@ -172,13 +124,18 @@
     <article class="panel">
       <div class="page-header" style="margin-bottom: 16px;">
         <div>
-          <h3>Ultimo disparo e relatorio</h3>
-          <p class="muted">Acompanhe o consolidado enviado ao admin e o resumo semanal de reposicao.</p>
+          <h3>Ultimo disparo</h3>
+          <p class="muted">Acompanhe a mensagem mais recente enviada ao admin.</p>
         </div>
       </div>
 
       <div id="notification-card" class="card"></div>
-      <div id="weekly-report-card" class="card" style="margin-top: 16px;"></div>
+      <div class="card" style="margin-top: 16px;">
+        <h3>Sugestao antecipada da equipe</h3>
+        <p class="muted" style="margin-top: 12px;">
+          Quando o responsavel pelo estoque enxergar necessidade de compra antes do minimo, ele pode usar a aba Compras para abrir o lembrete ao admin com os pedidos sugeridos.
+        </p>
+      </div>
     </article>
   </section>
 
@@ -231,8 +188,6 @@ const saveConfigButton = document.getElementById("save-config-button");
 const alertsList = document.getElementById("alerts-list");
 const historyList = document.getElementById("history-list");
 const notificationCard = document.getElementById("notification-card");
-const weeklyReportCard = document.getElementById("weekly-report-card");
-
 let dashboardState = null;
 
 function formatDateTime(value) {
@@ -298,40 +253,25 @@ function formatNotificationStatus(notification) {
   return status || "Sem status";
 }
 
-function populateProviderOptions(providers = [], selected = "log") {
-  const providerSelect = document.getElementById("config-provider");
-  providerSelect.innerHTML = providers.map((provider) => `
-    <option value="${escapeHtml(provider)}" ${provider === selected ? "selected" : ""}>${escapeHtml(provider)}</option>
-  `).join("");
-}
-
-function syncConfigForm(config = {}, adminWhatsapp = "", providers = []) {
+function syncConfigForm(config = {}, adminWhatsapp = "") {
   document.getElementById("config-enabled").checked = Boolean(config.enabled);
   document.getElementById("config-auto-evaluation").checked = Boolean(config.autoEvaluation);
+  document.getElementById("config-daily-enabled").checked = config.dailyAdminAlertEnabled !== false;
   document.getElementById("config-admin-whatsapp").value = adminWhatsapp || "";
-  populateProviderOptions(providers, config.whatsappProvider || "log");
-  document.getElementById("config-interval").value = String(toNumber(config.evaluationIntervalMinutes, 60));
   document.getElementById("config-hour").value = String(toNumber(config.scheduledHour, 8));
-  document.getElementById("config-cooldown").value = String(toNumber(config.notificationCooldownHours, 12));
-  document.getElementById("config-target-days").value = String(toNumber(config.targetCoverageDays, 7));
-  document.getElementById("config-critical-percent").value = String(Math.round(toNumber(config.criticalPercentOfMinimum, 0.5) * 100));
-  document.getElementById("config-ideal-multiplier").value = String(toNumber(config.idealFallbackMultiplier, 2));
-  document.getElementById("config-weekly-enabled").checked = Boolean(config.weeklyReportEnabled);
-  document.getElementById("config-weekly-weekday").value = config.weeklyReportWeekday || "seg";
-  document.getElementById("config-weekly-hour").value = String(toNumber(config.weeklyReportHour, 9));
+  document.getElementById("config-cooldown").value = String(toNumber(config.notificationCooldownHours, 24));
 }
 
 function renderSummary(data) {
   document.getElementById("metric-attention").textContent = String(toNumber(data.attentionCount, 0));
   document.getElementById("metric-urgent").textContent = String(toNumber(data.urgentCount, 0));
-  document.getElementById("metric-savings").textContent = formatCurrency(data.estimatedSavings || 0);
   document.getElementById("metric-notification").textContent = formatNotificationStatus(data.latestNotification);
   document.getElementById("metric-notification-meta").textContent = data.latestNotification
     ? `${formatDateTime(data.latestNotification.createdAt)} | ${toNumber(data.latestNotification.itemCount, 0)} item(ns)`
     : "Nenhum disparo ainda.";
 
   document.getElementById("hero-next-run").textContent = `Ultima avaliacao: ${formatDateTime(data.generatedAt)}`;
-  document.getElementById("hero-provider").textContent = `Canal: ${data.config?.whatsappProvider || "log"}`;
+  document.getElementById("hero-provider").textContent = "Canal: WhatsApp";
   document.getElementById("hero-recipient").textContent = data.adminWhatsapp
     ? `Admin: ${data.adminWhatsapp}`
     : "Admin: nao configurado";
@@ -465,37 +405,6 @@ function renderNotificationCard(data) {
   }
 }
 
-function renderWeeklyReport(data) {
-  const report = data.weeklyReport;
-
-  if (!report) {
-    weeklyReportCard.innerHTML = `
-      <h3>Relatorio semanal</h3>
-      <p class="muted" style="margin-top: 12px;">Ainda nao ha dados suficientes para montar o relatorio semanal.</p>
-    `;
-    return;
-  }
-
-  weeklyReportCard.innerHTML = `
-    <div class="summary-line">
-      <span>Relatorio semanal de reposicao</span>
-      <strong>${toNumber(report.touchedProducts, 0)} item(ns)</strong>
-    </div>
-    <div class="analytics-month-meta" style="margin-top: 16px;">
-      <div>
-        <span class="muted">Fornecedor com melhor custo medio</span>
-        <strong>${escapeHtml(report.bestSupplier?.nome || "Sem dados suficientes")}</strong>
-        <p class="muted" style="margin-top: 8px;">${report.bestSupplier ? formatCurrency(report.bestSupplier.averageUnitCost) : "-"}</p>
-      </div>
-      <div>
-        <span class="muted">Produto com maior giro</span>
-        <strong>${escapeHtml(report.topMovingProduct?.nome || "Sem dados suficientes")}</strong>
-        <p class="muted" style="margin-top: 8px;">${report.topMovingProduct ? `${toNumber(report.topMovingProduct.quantidade, 0).toLocaleString("pt-BR")} unidades` : "-"}</p>
-      </div>
-    </div>
-  `;
-}
-
 function renderHistory(data) {
   historyList.innerHTML = "";
 
@@ -525,10 +434,9 @@ function renderHistory(data) {
 function applyDashboardData(data) {
   dashboardState = data;
   renderSummary(data);
-  syncConfigForm(data.config || {}, data.adminWhatsapp || "", data.supportedProviders || []);
+  syncConfigForm(data.config || {}, data.adminWhatsapp || "");
   renderAlerts(data);
   renderNotificationCard(data);
-  renderWeeklyReport(data);
   renderHistory(data);
 }
 
@@ -630,17 +538,11 @@ configForm.addEventListener("submit", async (event) => {
     const payload = {
       enabled: document.getElementById("config-enabled").checked,
       autoEvaluation: document.getElementById("config-auto-evaluation").checked,
+      dailyAdminAlertEnabled: document.getElementById("config-daily-enabled").checked,
       adminWhatsapp: normalizePhone(document.getElementById("config-admin-whatsapp").value),
-      whatsappProvider: document.getElementById("config-provider").value,
-      evaluationIntervalMinutes: Number(document.getElementById("config-interval").value),
       scheduledHour: Number(document.getElementById("config-hour").value),
       notificationCooldownHours: Number(document.getElementById("config-cooldown").value),
-      targetCoverageDays: Number(document.getElementById("config-target-days").value),
-      criticalPercentOfMinimum: Number(document.getElementById("config-critical-percent").value) / 100,
-      idealFallbackMultiplier: Number(document.getElementById("config-ideal-multiplier").value),
-      weeklyReportEnabled: document.getElementById("config-weekly-enabled").checked,
-      weeklyReportWeekday: document.getElementById("config-weekly-weekday").value,
-      weeklyReportHour: Number(document.getElementById("config-weekly-hour").value)
+      whatsappProvider: "log"
     };
 
     await apiFetch("/api/admin-alerts/config", {
