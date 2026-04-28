@@ -106,6 +106,11 @@
           <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
         </div>
 
+        <label class="inline-choice" style="margin-top: 16px;">
+          <input id="manual-product-toggle" type="checkbox">
+          <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
+        </label>
+
         <div id="barcode-status" class="status info" hidden></div>
         <div id="barcode-reader" class="barcode-reader" hidden></div>
       </div>
@@ -282,7 +287,8 @@ import {
   normalizeText,
   requireAuth,
   setStatus,
-  toNumber
+  toNumber,
+  triggerReplenishmentEvaluation
 } from "./app.js";
 
 const DEFAULT_IMPORTED_PRODUCT = Object.freeze({
@@ -295,6 +301,7 @@ const form = document.getElementById("product-form");
 const resetButton = document.getElementById("reset-button");
 const createButton = document.getElementById("create-button");
 const barcodeInput = document.getElementById("novo_codigo_barras");
+const nameInput = document.getElementById("novo_nome");
 const brandInput = document.getElementById("novo_marca");
 const categoryInput = document.getElementById("novo_categoria");
 const unitMeasureInput = document.getElementById("novo_unidade_medida");
@@ -320,6 +327,7 @@ const xmlPreview = document.getElementById("xml-preview");
 const lookupBarcodeButton = document.getElementById("lookup-barcode-button");
 const startScanButton = document.getElementById("start-scan-button");
 const stopScanButton = document.getElementById("stop-scan-button");
+const manualProductToggle = document.getElementById("manual-product-toggle");
 const barcodeStatus = document.getElementById("barcode-status");
 const barcodeReader = document.getElementById("barcode-reader");
 const list = document.getElementById("lista");
@@ -350,6 +358,53 @@ function syncUnitMeasureFields() {
   usageUnitInput.value = normalizedUnit;
 }
 
+function isManualProductModeEnabled() {
+  return Boolean(manualProductToggle.checked);
+}
+
+async function updateBarcodeModeState() {
+  const manualMode = isManualProductModeEnabled();
+
+  lookupBarcodeButton.disabled = manualMode;
+  startScanButton.disabled = manualMode;
+
+  if (manualMode) {
+    await stopBarcodeScanner();
+    setStatus(
+      "barcode-status",
+      "Cadastro manual ativo. O codigo de barras fica opcional para este item artesanal ou interno.",
+      "info"
+    );
+    return;
+  }
+
+  if (!barcodeStatus.textContent.trim() || barcodeStatus.textContent.includes("Cadastro manual ativo")) {
+    setStatus(
+      "barcode-status",
+      "Leia pela camera ou consulte o codigo para preencher nome, marca e categoria automaticamente.",
+      "info"
+    );
+  }
+}
+
+function formatProductBarcodeLabel(item) {
+  return item.codigoBarras
+    ? `Codigo ${item.codigoBarras}`
+    : "Sem codigo de barras (cadastro manual)";
+}
+
+function formatSupplierScheduleDescription(supplier) {
+  if (!supplier?.frequenciaAtiva) {
+    return "Sem frequencia programada.";
+  }
+
+  return [
+    `Pedir: ${formatWeekdayList(supplier.diasPedido, "long")}`,
+    `Entrega: ${formatWeekdayList(supplier.diasEntrega, "long")}`,
+    `Pedido padrao: ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)`
+  ].join(" | ");
+}
+
 function applyBarcodeLookupProduct(product, options = {}) {
   const {
     source = "manual",
@@ -364,8 +419,12 @@ function applyBarcodeLookupProduct(product, options = {}) {
 
   const nextName = normalizeLookupField(product?.nome);
 
-  if (nextName && (!preserveName || !document.getElementById("novo_nome").value.trim())) {
-    document.getElementById("novo_nome").value = nextName;
+  if (nextName && (!preserveName || !nameInput.value.trim())) {
+    nameInput.value = nextName;
+  }
+
+  if (!nextName && !preserveName) {
+    nameInput.value = "";
   }
 
   setStatus(
@@ -375,6 +434,37 @@ function applyBarcodeLookupProduct(product, options = {}) {
       : "Produto nao encontrado nas bases automaticas. Continue com o cadastro manual.",
     nextName ? "success" : "info"
   );
+}
+
+function resetCreateProductForm() {
+  form.reset();
+  barcodeInput.value = "";
+  nameInput.value = "";
+  brandInput.value = "";
+  categoryInput.value = "";
+  unitMeasureInput.value = "un";
+  document.getElementById("novo_qtd").value = "0";
+  document.getElementById("novo_min").value = "2";
+  document.getElementById("novo_max").value = "50";
+  document.getElementById("novo_conv").value = "1";
+  document.getElementById("novo_custo").value = "0";
+  document.getElementById("novo_custo_promocional").value = "";
+  document.getElementById("novo_unidade").value = "un";
+  createPrimarySelect.value = "sim";
+  createPromotionActiveSelect.value = "nao";
+  createPromotionStartInput.value = "";
+  createPromotionEndInput.value = "";
+  createFrequencyActiveSelect.value = "nao";
+  createOrderQuantityInput.value = "1";
+  manualProductToggle.checked = false;
+  populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
+  populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
+  syncUnitMeasureFields();
+  syncCreateFrequencyState();
+  newSuppliersList.innerHTML = "";
+  refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
+  updateCreateCostPreview();
+  setStatus("barcode-status", "", "info");
 }
 
 async function lookupBarcodeProduct(barcode) {
@@ -1318,9 +1408,60 @@ function renderProducts(items) {
     frequencySummary.className = "muted";
     frequencySummary.textContent = scheduledSuppliers.length
       ? scheduledSuppliers
-        .map((supplier) => `${supplier.nome}: pedir ${formatWeekdayList(supplier.diasPedido)} | entregar ${formatWeekdayList(supplier.diasEntrega)} | ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)`)
+        .map((supplier) => `${supplier.nome}: ${formatSupplierScheduleDescription(supplier)}`)
         .join(" | ")
       : "Nenhuma frequencia de pedido cadastrada para este item.";
+
+    const supplierOverviewSection = document.createElement("div");
+    supplierOverviewSection.className = "supplier-price-grid";
+    supplierOverviewSection.style.marginTop = "16px";
+
+    if (!productSuppliers.length) {
+      supplierOverviewSection.innerHTML = '<div class="empty-state">Nenhum fornecedor vinculado. Esse produto ainda nao vai aparecer bem sugerido na tela de compras.</div>';
+    } else {
+      const supplierCards = [...productSuppliers].sort((left, right) => {
+        if (left.fornecedorId === cheapestSupplier?.fornecedorId) {
+          return -1;
+        }
+
+        if (right.fornecedorId === cheapestSupplier?.fornecedorId) {
+          return 1;
+        }
+
+        return getEffectiveSupplierUnitCost(left) - getEffectiveSupplierUnitCost(right);
+      });
+
+      supplierCards.forEach((supplier) => {
+        const supplierCard = document.createElement("article");
+        supplierCard.className = "supplier-price-card product-supplier-card";
+
+        if (supplier.fornecedorId === cheapestSupplier?.fornecedorId) {
+          supplierCard.classList.add("best");
+        }
+
+        const badges = [
+          supplier.principal ? "Principal" : "",
+          supplier.fornecedorId === cheapestSupplier?.fornecedorId ? "Melhor custo" : "",
+          supplier.promocaoAplicada ? "Promocao ativa" : "",
+          supplier.frequenciaAtiva ? "Com frequencia" : ""
+        ].filter(Boolean);
+
+        supplierCard.innerHTML = `
+          <div class="summary-line">
+            <strong>${escapeHtml(supplier.nome || "Fornecedor sem nome")}</strong>
+            <span>${formatCurrency(getEffectiveSupplierUnitCost(supplier))} por ${escapeHtml(supplier.unidadeUso)}</span>
+          </div>
+          <span class="supplier-price">${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))}</span>
+          <p class="muted">Embalagem com ${supplier.conversao} ${escapeHtml(supplier.unidadeUso)} | CNPJ ${escapeHtml(formatDocumentNumber(supplier.cnpj) || "Nao informado")}</p>
+          <p class="muted">${escapeHtml(formatSupplierScheduleDescription(supplier))}</p>
+          <div class="product-tag-row">
+            ${badges.map((badge) => `<span class="product-tag">${escapeHtml(badge)}</span>`).join("")}
+          </div>
+        `;
+
+        supplierOverviewSection.appendChild(supplierCard);
+      });
+    }
 
     const supplierSection = document.createElement("div");
     supplierSection.className = "supplier-section";
@@ -1428,10 +1569,12 @@ function renderProducts(items) {
           quantidade,
           minimo,
           maximo,
+          origemCadastro: codigoBarras ? "codigo_barras" : "manual",
           ...buildPrimarySupplierFields(nextSuppliers, item),
           atualizadoEm: serverTimestamp()
         });
 
+        triggerReplenishmentEvaluation("estoque_atualizado").catch(() => null);
         setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
         await loadProducts();
       } catch (error) {
@@ -1459,6 +1602,7 @@ function renderProducts(items) {
         data: serverTimestamp()
       });
 
+      triggerReplenishmentEvaluation("estoque_excluido").catch(() => null);
       setStatus("status", `Produto ${item.nome} removido.`, "success");
       await loadProducts();
     });
@@ -1470,18 +1614,36 @@ function renderProducts(items) {
     const cnpjDescription = primarySupplier?.cnpj || item.cnpjFornecedor
       ? ` | CNPJ ${formatDocumentNumber(primarySupplier?.cnpj || item.cnpjFornecedor)}`
       : "";
+    const collapsible = document.createElement("details");
+    collapsible.className = "product-card-details";
+    collapsible.open = item.quantidade <= item.minimo;
+    const detailsSummary = document.createElement("summary");
+    detailsSummary.className = "product-card-details-summary";
+    detailsSummary.innerHTML = `
+      <div>
+        <strong>${productSuppliers.length ? `${productSuppliers.length} fornecedor(es) para este produto` : "Organizar fornecedores e agenda deste produto"}</strong>
+        <p class="muted">${scheduledSuppliers.length ? `${scheduledSuppliers.length} fornecedor(es) com pedido programado.` : "Abra para ver dias de pedido, dias de entrega e custos por fornecedor."}</p>
+      </div>
+      <span class="product-card-details-cta">Ver e editar detalhes</span>
+    `;
+    const detailsBody = document.createElement("div");
+    detailsBody.className = "product-card-details-body";
 
     article.innerHTML = `
       <h3>${escapeHtml(item.nome)}</h3>
       <p class="muted">Fornecedor principal atual: ${escapeHtml(`${supplierDescription}${cnpjDescription}`)}</p>
-      <p class="muted">${escapeHtml(`Codigo ${item.codigoBarras || "Nao informado"} | Marca ${item.marca || "Nao informada"} | Categoria ${item.categoria || "Nao informada"} | Unidade ${item.unidadeMedida || getUsageUnit(item)}`)}</p>
+      <p class="muted">${escapeHtml(`${formatProductBarcodeLabel(item)} | Marca ${item.marca || "Nao informada"} | Categoria ${item.categoria || "Nao informada"} | Unidade ${item.unidadeMedida || getUsageUnit(item)}`)}</p>
     `;
-    article.appendChild(summary);
-    article.appendChild(supplierSummary);
-    article.appendChild(frequencySummary);
-    article.appendChild(fields);
-    article.appendChild(supplierSection);
-    article.appendChild(actions);
+    detailsBody.appendChild(summary);
+    detailsBody.appendChild(supplierSummary);
+    detailsBody.appendChild(frequencySummary);
+    detailsBody.appendChild(supplierOverviewSection);
+    detailsBody.appendChild(fields);
+    detailsBody.appendChild(supplierSection);
+    detailsBody.appendChild(actions);
+    collapsible.appendChild(detailsSummary);
+    collapsible.appendChild(detailsBody);
+    article.appendChild(collapsible);
     list.appendChild(article);
   });
 }
@@ -1616,6 +1778,7 @@ function parseInvoiceXml(fileName, xmlContent) {
 
       return {
         codigo: readXmlText(product, "cProd"),
+        barcode: normalizeBarcode(readXmlText(product, "cEAN") || readXmlText(product, "cEANTrib")),
         nome,
         quantidade,
         unidade: readXmlText(product, "uCom") || readXmlText(product, "uTrib") || "un",
@@ -1686,7 +1849,7 @@ function renderXmlPreview(notes) {
           <span>${escapeHtml(`${formatQuantity(item.quantidade)} ${item.unidade}`)}</span>
         </div>
         <span class="xml-item-meta">
-          ${escapeHtml(`Cod. ${item.codigo || "-"} | Unit. ${formatCurrency(item.custoUnitario)} | Total ${formatCurrency(item.total)}`)}
+          ${escapeHtml(`Cod. interno ${item.codigo || "-"} | Barcode ${item.barcode || "-"} | Unit. ${formatCurrency(item.custoUnitario)} | Total ${formatCurrency(item.total)}`)}
         </span>
       </li>
     `).join("");
@@ -1815,7 +1978,11 @@ async function ensureSupplierForImport(supplierData) {
   };
 }
 
-function findMatchingProduct(importedItem, inventoryByName, inventoryByCode) {
+function findMatchingProduct(importedItem, inventoryByName, inventoryByBarcode, inventoryByCode) {
+  if (importedItem.barcode && inventoryByBarcode.has(importedItem.barcode)) {
+    return inventoryByBarcode.get(importedItem.barcode);
+  }
+
   if (importedItem.codigo && inventoryByCode.has(importedItem.codigo)) {
     return inventoryByCode.get(importedItem.codigo);
   }
@@ -1887,6 +2054,11 @@ async function importXmlInvoices() {
   try {
     const currentItems = await loadProducts();
     const inventoryByName = new Map(currentItems.map((item) => [normalizeText(item.nome), item]));
+    const inventoryByBarcode = new Map(
+      currentItems
+        .filter((item) => item.codigoBarras)
+        .map((item) => [normalizeBarcode(item.codigoBarras), item])
+    );
     const inventoryByCode = new Map(
       currentItems
         .filter((item) => item.codigoProduto)
@@ -1921,13 +2093,14 @@ async function importXmlInvoices() {
       const batch = writeBatch(db);
 
       note.itens.forEach((importedItem) => {
-        const matchedItem = findMatchingProduct(importedItem, inventoryByName, inventoryByCode);
+        const matchedItem = findMatchingProduct(importedItem, inventoryByName, inventoryByBarcode, inventoryByCode);
         const importedPurchaseCost = Math.max(
           0,
           toNumber(importedItem.total, 0) || (toNumber(importedItem.custoUnitario, 0) * Math.max(1, toNumber(importedItem.quantidade, 1)))
         );
         const importedPackageQuantity = Math.max(1, toNumber(importedItem.quantidade, 1));
         const importedUsageUnit = importedItem.unidade || matchedItem?.unidadeUso || matchedItem?.unidadeCompra || "un";
+        const importedBarcode = normalizeBarcode(importedItem.barcode);
 
         if (matchedItem) {
           const nextQuantity = Math.max(0, toNumber(matchedItem.quantidade, 0) + importedItem.quantidade);
@@ -1941,6 +2114,8 @@ async function importXmlInvoices() {
           batch.update(doc(db, "estoque", matchedItem.id), {
             quantidade: nextQuantity,
             ...primarySupplierFields,
+            codigoBarras: matchedItem.codigoBarras || importedBarcode || "",
+            codigoBarrasNormalizado: matchedItem.codigoBarras || importedBarcode || "",
             unidadeCompra: importedUsageUnit || matchedItem.unidadeCompra || "",
             codigoProduto: importedItem.codigo || matchedItem.codigoProduto || "",
             ncm: importedItem.ncm || matchedItem.ncm || "",
@@ -1954,6 +2129,7 @@ async function importXmlInvoices() {
           matchedItem.custoUnitario = primarySupplierFields.custoUnitario;
           matchedItem.custo = primarySupplierFields.custo;
           matchedItem.unidadeUso = primarySupplierFields.unidadeUso;
+          matchedItem.codigoBarras = matchedItem.codigoBarras || importedBarcode || "";
           matchedItem.unidadeCompra = importedUsageUnit || matchedItem.unidadeCompra || "";
           matchedItem.codigoProduto = importedItem.codigo || matchedItem.codigoProduto || "";
           matchedItem.ncm = importedItem.ncm || matchedItem.ncm || "";
@@ -1963,6 +2139,10 @@ async function importXmlInvoices() {
           matchedItem.cnpjFornecedor = primarySupplierFields.cnpjFornecedor;
 
           inventoryByName.set(normalizeText(matchedItem.nome), matchedItem);
+
+          if (matchedItem.codigoBarras) {
+            inventoryByBarcode.set(normalizeBarcode(matchedItem.codigoBarras), matchedItem);
+          }
 
           if (matchedItem.codigoProduto) {
             inventoryByCode.set(String(matchedItem.codigoProduto).trim(), matchedItem);
@@ -2014,13 +2194,17 @@ async function importXmlInvoices() {
         const newProduct = {
           nome: importedItem.nome,
           nomeNormalizado: normalizeText(importedItem.nome),
+          codigoBarras: importedBarcode || "",
+          codigoBarrasNormalizado: importedBarcode || "",
           quantidade: importedItem.quantidade,
           minimo: DEFAULT_IMPORTED_PRODUCT.minimo,
           maximo: DEFAULT_IMPORTED_PRODUCT.maximo,
           ...primarySupplierFields,
+          unidadeMedida: importedUsageUnit || "un",
           unidadeCompra: importedUsageUnit || "",
           codigoProduto: importedItem.codigo || "",
           ncm: importedItem.ncm || "",
+          origemCadastro: importedBarcode ? "xml_barcode" : "xml_manual",
           criadoEm: serverTimestamp(),
           atualizadoEm: serverTimestamp()
         };
@@ -2029,6 +2213,10 @@ async function importXmlInvoices() {
 
         const cachedProduct = { id: newProductRef.id, ...newProduct };
         inventoryByName.set(newProduct.nomeNormalizado, cachedProduct);
+
+        if (cachedProduct.codigoBarras) {
+          inventoryByBarcode.set(normalizeBarcode(cachedProduct.codigoBarras), cachedProduct);
+        }
 
         if (cachedProduct.codigoProduto) {
           inventoryByCode.set(String(cachedProduct.codigoProduto).trim(), cachedProduct);
@@ -2121,6 +2309,7 @@ async function importXmlInvoices() {
     }
 
     const statusType = ignoredNotes ? "info" : "success";
+    triggerReplenishmentEvaluation("importacao_xml").catch(() => null);
     setStatus("xml-status", `Importacao concluida: ${summary.join(", ")}.`, statusType);
   } catch (error) {
     console.error(error);
@@ -2136,6 +2325,9 @@ xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
 barcodeInput.addEventListener("input", () => {
   barcodeInput.value = normalizeBarcode(barcodeInput.value);
+});
+manualProductToggle.addEventListener("change", async () => {
+  await updateBarcodeModeState();
 });
 lookupBarcodeButton.addEventListener("click", async () => {
   await lookupBarcodeProduct(barcodeInput.value);
@@ -2229,16 +2421,17 @@ form.addEventListener("submit", async (event) => {
   setStatus("status", "", "info");
 
   const codigoBarras = normalizeBarcode(barcodeInput.value);
-  const nome = document.getElementById("novo_nome").value.trim();
+  const nome = nameInput.value.trim();
   const marca = brandInput.value.trim();
   const categoria = categoryInput.value.trim();
   const unidadeMedida = String(unitMeasureInput.value || "un").trim() || "un";
   const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
   const minimo = Math.max(0, toNumber(document.getElementById("novo_min").value, 0));
   const maximo = Math.max(1, toNumber(document.getElementById("novo_max").value, 1));
+  const cadastroManual = isManualProductModeEnabled();
 
-  if (!codigoBarras) {
-    setStatus("status", "Informe ou leia um codigo de barras valido para cadastrar o produto.", "error");
+  if (!codigoBarras && !cadastroManual) {
+    setStatus("status", "Leia ou informe um codigo de barras. Se o item for artesanal ou interno, ative o cadastro manual.", "error");
     return;
   }
 
@@ -2257,7 +2450,9 @@ form.addEventListener("submit", async (event) => {
   try {
     const existingItems = await loadProducts();
     const duplicated = existingItems.some((item) => normalizeText(item.nome) === normalizeText(nome));
-    const duplicatedBarcode = existingItems.some((item) => normalizeBarcode(item.codigoBarras) === codigoBarras);
+    const duplicatedBarcode = codigoBarras
+      ? existingItems.some((item) => normalizeBarcode(item.codigoBarras) === codigoBarras)
+      : false;
 
     if (duplicated) {
       throw new Error("Ja existe um produto com esse nome.");
@@ -2287,45 +2482,26 @@ form.addEventListener("submit", async (event) => {
       quantidade,
       minimo,
       maximo,
+      origemCadastro: codigoBarras ? "codigo_barras" : "manual",
       ...buildPrimarySupplierFields(productSuppliers),
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp()
     });
 
-    await saveCachedBarcodeProduct({
-      barcode: codigoBarras,
-      nome,
-      marca,
-      categoria,
-      fonte: "cadastro-manual"
-    }).catch(() => null);
+    if (codigoBarras) {
+      await saveCachedBarcodeProduct({
+        barcode: codigoBarras,
+        nome,
+        marca,
+        categoria,
+        fonte: cadastroManual ? "cadastro-manual" : "codigo-barras"
+      }).catch(() => null);
+    }
 
-    form.reset();
-    barcodeInput.value = "";
-    brandInput.value = "";
-    categoryInput.value = "";
-    unitMeasureInput.value = "un";
-    document.getElementById("novo_qtd").value = "0";
-    document.getElementById("novo_min").value = "2";
-    document.getElementById("novo_max").value = "50";
-    document.getElementById("novo_conv").value = "1";
-    document.getElementById("novo_custo").value = "0";
-    document.getElementById("novo_custo_promocional").value = "";
-    document.getElementById("novo_unidade").value = "un";
-    createPrimarySelect.value = "sim";
-    createPromotionActiveSelect.value = "nao";
-    createPromotionStartInput.value = "";
-    createPromotionEndInput.value = "";
-    createFrequencyActiveSelect.value = "nao";
-    createOrderQuantityInput.value = "1";
-    populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
-    populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
-    syncCreateFrequencyState();
-    newSuppliersList.innerHTML = "";
-    refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
-    updateCreateCostPreview();
-    setStatus("barcode-status", "", "info");
+    resetCreateProductForm();
+    await updateBarcodeModeState();
 
+    triggerReplenishmentEvaluation("produto_criado").catch(() => null);
     setStatus("status", "Produto criado com sucesso.", "success");
     await loadProducts();
   } catch (error) {
@@ -2362,6 +2538,7 @@ resetButton.addEventListener("click", async () => {
       data: serverTimestamp()
     });
 
+    triggerReplenishmentEvaluation("estoque_zerado").catch(() => null);
     setStatus("status", "Todas as quantidades foram zeradas.", "success");
     await loadProducts();
   } catch (error) {
@@ -2381,6 +2558,7 @@ syncUnitMeasureFields();
 updateCreateCostPreview();
 syncCreateFrequencyState();
 refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
+await updateBarcodeModeState();
 await loadProducts();
 </script>
 </body>

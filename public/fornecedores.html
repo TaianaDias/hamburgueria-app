@@ -99,7 +99,8 @@ import {
   normalizeProductSuppliers,
   normalizeText,
   requireAuth,
-  setStatus
+  setStatus,
+  triggerReplenishmentEvaluation
 } from "./app.js";
 
 const form = document.getElementById("supplier-form");
@@ -337,6 +338,7 @@ function renderSuppliers() {
             : "Fornecedor removido com sucesso.",
           "success"
         );
+        triggerReplenishmentEvaluation("fornecedor_excluido").catch(() => null);
         await loadSuppliers();
       } catch (error) {
         console.error(error);
@@ -434,6 +436,7 @@ form.addEventListener("submit", async (event) => {
           : "Fornecedor atualizado com sucesso.",
         "success"
       );
+      triggerReplenishmentEvaluation("fornecedor_atualizado").catch(() => null);
     } else {
       await addDoc(collection(db, "fornecedores"), {
         nome,
@@ -446,6 +449,7 @@ form.addEventListener("submit", async (event) => {
 
       resetForm();
       setStatus("status", "Fornecedor salvo com sucesso.", "success");
+      triggerReplenishmentEvaluation("fornecedor_criado").catch(() => null);
     }
 
     await loadSuppliers();

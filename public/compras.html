@@ -25,6 +25,7 @@
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
+      <a id="alerts-link" class="button secondary" href="alertas-reposicao.html" hidden>Alertas</a>
       <a class="button secondary" href="dashboard-compras.html">Dashboard</a>
       <a class="button secondary" href="analise-compras.html">Analise</a>
       <button id="send-button" type="button">Enviar pedidos</button>
@@ -131,8 +132,10 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   serverTimestamp,
+  setDoc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
@@ -153,7 +156,8 @@ import {
   normalizePhone,
   requireAuth,
   setStatus,
-  toNumber
+  toNumber,
+  triggerReplenishmentEvaluation
 } from "./app.js";
 
 const list = document.getElementById("lista");
@@ -173,17 +177,20 @@ const adminWhatsappInput = document.getElementById("admin-whatsapp");
 const adminReminderPreviewInput = document.getElementById("admin-reminder-preview");
 const sendAdminReminderButton = document.getElementById("send-admin-reminder");
 const adminReminderStatus = document.getElementById("admin-reminder-status");
+const alertsLink = document.getElementById("alerts-link");
 
 bindLogoutButton();
 
 const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
+alertsLink.hidden = profile.tipo !== "admin";
 
 let pedidos = [];
 let sugestoes = [];
 let fornecedoresCatalogo = [];
 let produtosEstoque = [];
 const ADMIN_REMINDER_PHONE_KEY = "burgerops.admin.whatsapp";
+const SYSTEM_SETTINGS_REF = doc(db, "configuracoes", "sistema");
 
 function buildMessage(pedido) {
   const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
@@ -216,6 +223,53 @@ function storeAdminWhatsapp(value) {
     window.localStorage.setItem(ADMIN_REMINDER_PHONE_KEY, value);
   } catch (error) {
     console.warn("Nao foi possivel salvar o WhatsApp do admin.", error);
+  }
+}
+
+async function loadSharedAdminWhatsapp() {
+  try {
+    const snapshot = await getDoc(SYSTEM_SETTINGS_REF);
+    const sharedValue = normalizePhone(snapshot.data()?.adminWhatsapp || "");
+
+    if (sharedValue) {
+      storeAdminWhatsapp(sharedValue);
+      return {
+        value: sharedValue,
+        source: "sistema"
+      };
+    }
+  } catch (error) {
+    console.warn("Nao foi possivel carregar o WhatsApp compartilhado do admin.", error);
+  }
+
+  const localValue = normalizePhone(getStoredAdminWhatsapp());
+  return {
+    value: localValue,
+    source: localValue ? "navegador" : ""
+  };
+}
+
+async function persistAdminWhatsapp(value) {
+  const normalized = normalizePhone(value);
+  storeAdminWhatsapp(normalized);
+
+  try {
+    await setDoc(SYSTEM_SETTINGS_REF, {
+      adminWhatsapp: normalized,
+      atualizadoEm: serverTimestamp(),
+      atualizadoPor: profile.email
+    }, { merge: true });
+
+    return {
+      value: normalized,
+      source: "sistema"
+    };
+  } catch (error) {
+    console.warn("Nao foi possivel salvar o WhatsApp do admin no sistema. Mantendo fallback local.", error);
+    return {
+      value: normalized,
+      source: normalized ? "navegador" : ""
+    };
   }
 }
 
@@ -569,8 +623,6 @@ sendButton.addEventListener("click", () => {
 adminWhatsappInput.addEventListener("change", () => {
   const normalized = normalizePhone(adminWhatsappInput.value);
   adminWhatsappInput.value = normalized;
-  storeAdminWhatsapp(normalized);
-  setStatus("admin-reminder-status", normalized ? "WhatsApp do admin salvo neste navegador." : "", "success");
 });
 
 sendAdminReminderButton.addEventListener("click", () => {
@@ -586,7 +638,7 @@ sendAdminReminderButton.addEventListener("click", () => {
     return;
   }
 
-  storeAdminWhatsapp(phone);
+  persistAdminWhatsapp(phone).catch(() => null);
   const url = `https://wa.me/${phone}?text=${buildAdminReminderMessage(pedidos)}`;
   window.open(url, "_blank", "noopener,noreferrer");
   setStatus("admin-reminder-status", "Lembrete do admin aberto no WhatsApp.", "success");
@@ -682,6 +734,7 @@ purchaseForm.addEventListener("submit", async (event) => {
       "success"
     );
 
+    triggerReplenishmentEvaluation("compra_registrada").catch(() => null);
     await loadPageData({ preserveProduct: true, preserveSupplier: true });
   } catch (error) {
     console.error(error);
@@ -689,7 +742,38 @@ purchaseForm.addEventListener("submit", async (event) => {
   }
 });
 
-adminWhatsappInput.value = getStoredAdminWhatsapp();
+const adminWhatsappState = await loadSharedAdminWhatsapp();
+adminWhatsappInput.value = adminWhatsappState.value;
+
+if (adminWhatsappState.value) {
+  setStatus(
+    "admin-reminder-status",
+    adminWhatsappState.source === "sistema"
+      ? "WhatsApp do admin carregado do sistema."
+      : "WhatsApp do admin carregado do navegador deste dispositivo.",
+    "info"
+  );
+}
+
+adminWhatsappInput.addEventListener("blur", async () => {
+  const normalized = normalizePhone(adminWhatsappInput.value);
+  adminWhatsappInput.value = normalized;
+
+  if (!normalized) {
+    setStatus("admin-reminder-status", "", "info");
+    return;
+  }
+
+  const persisted = await persistAdminWhatsapp(normalized);
+  setStatus(
+    "admin-reminder-status",
+    persisted.source === "sistema"
+      ? "WhatsApp do admin salvo no sistema."
+      : "WhatsApp do admin salvo apenas neste navegador.",
+    "success"
+  );
+});
+
 purchaseDateInput.value = getTodayDateValue();
 await loadPageData({ preserveProduct: false, preserveSupplier: false });
 </script>

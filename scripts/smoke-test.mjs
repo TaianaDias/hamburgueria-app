@@ -1,10 +1,5 @@
-import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
-
-if (process.env.GITHUB_ACTIONS !== "true") {
-  console.log("Smoke test completo sera executado no GitHub Actions.");
-  process.exit(0);
-}
+import { startServer } from "../server.js";
 
 const port = Number(process.env.PORT || 3100);
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -16,28 +11,12 @@ const pathsToCheck = [
   "/fornecedores.html",
   "/receitas.html",
   "/compras.html",
+  "/alertas-reposicao.html",
   "/dashboard.html",
   "/funcionarios.html"
 ];
 
-const server = spawn(process.execPath, ["server.js"], {
-  cwd: process.cwd(),
-  env: {
-    ...process.env,
-    PORT: String(port)
-  },
-  stdio: ["ignore", "pipe", "pipe"]
-});
-
-let combinedLogs = "";
-
-server.stdout.on("data", (chunk) => {
-  combinedLogs += chunk.toString();
-});
-
-server.stderr.on("data", (chunk) => {
-  combinedLogs += chunk.toString();
-});
+const server = startServer({ port, host: "127.0.0.1", startScheduler: false });
 
 async function waitForServer() {
   const timeoutAt = Date.now() + 20000;
@@ -53,14 +32,10 @@ async function waitForServer() {
       // Ignora tentativas enquanto o servidor ainda sobe.
     }
 
-    if (server.exitCode != null) {
-      throw new Error(`O servidor encerrou antes do teste.\n${combinedLogs}`.trim());
-    }
-
     await delay(500);
   }
 
-  throw new Error(`Timeout esperando o servidor subir.\n${combinedLogs}`.trim());
+  throw new Error("Timeout esperando o servidor subir.");
 }
 
 try {
@@ -77,12 +52,5 @@ try {
 
   console.log(`Smoke test concluido com sucesso em ${pathsToCheck.length} rota(s).`);
 } finally {
-  if (server.exitCode == null) {
-    server.kill("SIGTERM");
-    await delay(500);
-  }
-
-  if (server.exitCode == null) {
-    server.kill("SIGKILL");
-  }
+  await new Promise((resolve) => server.close(resolve));
 }

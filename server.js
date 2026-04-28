@@ -4,10 +4,13 @@ import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createStockAlertService } from "./server/stock-alerts.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
 const validRoles = new Set(["admin", "estoque", "caixa"]);
+const validWeekdayKeys = new Set(["seg", "ter", "qua", "qui", "sex", "sab", "dom"]);
+const LOOKUP_TIMEOUT_MS = 8000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, "public");
@@ -152,6 +155,11 @@ if (!admin.apps.length) {
   });
 }
 
+const stockAlertService = createStockAlertService({
+  admin,
+  logger: console
+});
+
 app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json());
@@ -176,6 +184,107 @@ function normalizeBarcode(value) {
 
 function normalizeLookupText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizePhone(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  return digits.startsWith("55") ? digits : `55${digits}`;
+}
+
+function parseBooleanValue(value, fallback = false) {
+  if (value == null) {
+    return fallback;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+
+  if (["true", "1", "sim", "yes"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "0", "nao", "não", "no"].includes(normalized)) {
+    return false;
+  }
+
+  return fallback;
+}
+
+function clampNumber(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(maximum, Math.max(minimum, parsed));
+}
+
+function normalizeWeekdayKey(value, fallback) {
+  const normalized = String(value ?? "").trim().toLowerCase().slice(0, 3);
+  return validWeekdayKeys.has(normalized) ? normalized : fallback;
+}
+
+function sanitizeAlertConfigPayload(body = {}) {
+  const nextConfig = {};
+
+  if ("enabled" in body) {
+    nextConfig.enabled = parseBooleanValue(body.enabled, true);
+  }
+
+  if ("autoEvaluation" in body) {
+    nextConfig.autoEvaluation = parseBooleanValue(body.autoEvaluation, true);
+  }
+
+  if ("evaluationIntervalMinutes" in body) {
+    nextConfig.evaluationIntervalMinutes = clampNumber(body.evaluationIntervalMinutes, 60, 15, 1440);
+  }
+
+  if ("scheduledHour" in body) {
+    nextConfig.scheduledHour = clampNumber(body.scheduledHour, 8, 0, 23);
+  }
+
+  if ("notificationCooldownHours" in body) {
+    nextConfig.notificationCooldownHours = clampNumber(body.notificationCooldownHours, 12, 1, 168);
+  }
+
+  if ("targetCoverageDays" in body) {
+    nextConfig.targetCoverageDays = clampNumber(body.targetCoverageDays, 7, 1, 60);
+  }
+
+  if ("criticalPercentOfMinimum" in body) {
+    nextConfig.criticalPercentOfMinimum = clampNumber(body.criticalPercentOfMinimum, 0.5, 0.1, 1);
+  }
+
+  if ("idealFallbackMultiplier" in body) {
+    nextConfig.idealFallbackMultiplier = clampNumber(body.idealFallbackMultiplier, 2, 1, 10);
+  }
+
+  if ("weeklyReportEnabled" in body) {
+    nextConfig.weeklyReportEnabled = parseBooleanValue(body.weeklyReportEnabled, true);
+  }
+
+  if ("weeklyReportWeekday" in body) {
+    nextConfig.weeklyReportWeekday = normalizeWeekdayKey(body.weeklyReportWeekday, "seg");
+  }
+
+  if ("weeklyReportHour" in body) {
+    nextConfig.weeklyReportHour = clampNumber(body.weeklyReportHour, 9, 0, 23);
+  }
+
+  if ("whatsappProvider" in body) {
+    nextConfig.whatsappProvider = String(body.whatsappProvider ?? "").trim().toLowerCase() || "log";
+  }
+
+  return nextConfig;
 }
 
 function inferCategoryFromText(value) {
@@ -209,7 +318,8 @@ async function lookupOpenFoodFactsProduct(barcode) {
     {
       headers: {
         "User-Agent": "BurgerOps/1.0 (barcode lookup)"
-      }
+      },
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS)
     }
   );
 
@@ -249,7 +359,8 @@ async function lookupCosmosProduct(barcode) {
       "Content-Type": "application/json",
       "User-Agent": cosmosUserAgent,
       "X-Cosmos-Token": cosmosToken
-    }
+    },
+    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS)
   });
 
   if (response.status === 404) {
@@ -315,6 +426,12 @@ async function barcodeLookup(req, res) {
       }
     });
   } catch (error) {
+    if (error?.name === "TimeoutError") {
+      return res.status(504).json({
+        erro: "A consulta do codigo de barras demorou mais do que o esperado. Tente novamente em instantes."
+      });
+    }
+
     return res.status(502).json({ erro: error.message || "Nao foi possivel consultar o codigo de barras." });
   }
 }
@@ -497,6 +614,86 @@ async function bootstrapRegister(req, res) {
   }
 }
 
+async function getAdminAlertsDashboard(req, res) {
+  try {
+    const dashboard = await stockAlertService.getDashboardData({
+      actor: req.profile?.email || req.user?.email || "admin",
+      force: String(req.query.force ?? "").trim().toLowerCase() === "true"
+    });
+
+    return res.json({
+      ok: true,
+      ...dashboard
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Nao foi possivel carregar o painel de alertas de reposicao." });
+  }
+}
+
+async function evaluateAdminAlerts(req, res) {
+  try {
+    const result = await stockAlertService.evaluateAlerts({
+      force: parseBooleanValue(req.body?.force, false),
+      actor: req.profile?.email || req.user?.email || "usuario",
+      trigger: normalizeLookupText(req.body?.reason || req.body?.trigger || "manual") || "manual"
+    });
+
+    return res.json({
+      ok: true,
+      data: result
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Nao foi possivel avaliar os alertas de reposicao." });
+  }
+}
+
+async function updateAdminAlertConfig(req, res) {
+  try {
+    const nextConfig = sanitizeAlertConfigPayload(req.body);
+    const updatedConfig = await stockAlertService.updateAlertConfig(nextConfig, req.profile?.email || req.user?.email || "admin");
+    const hasAdminWhatsappField = Object.prototype.hasOwnProperty.call(req.body || {}, "adminWhatsapp");
+    const adminWhatsapp = normalizePhone(req.body?.adminWhatsapp || "");
+
+    if (hasAdminWhatsappField) {
+      await admin.firestore().collection("configuracoes").doc("sistema").set({
+        adminWhatsapp,
+        atualizadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        atualizadoPor: req.profile?.email || req.user?.email || "admin"
+      }, { merge: true });
+    }
+
+    return res.json({
+      ok: true,
+      config: updatedConfig,
+      adminWhatsapp
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Nao foi possivel salvar a configuracao dos alertas de reposicao." });
+  }
+}
+
+async function resolveAdminAlert(req, res) {
+  const productId = String(req.params?.productId ?? "").trim();
+
+  if (!productId) {
+    return res.status(400).json({ erro: "Produto nao informado." });
+  }
+
+  try {
+    await stockAlertService.markAlertResolved(productId, req.profile?.email || req.user?.email || "admin");
+
+    return res.json({
+      ok: true
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ erro: error.message || "Nao foi possivel resolver o alerta." });
+  }
+}
+
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
@@ -506,6 +703,10 @@ app.post("/api/bootstrap/register", bootstrapRegister);
 app.get("/api/usuarios", requireAdmin, listUsers);
 app.post("/api/usuarios", requireAdmin, createUser);
 app.get("/api/barcodes/:barcode", requireAuthenticated, barcodeLookup);
+app.get("/api/admin-alerts/dashboard", requireAdmin, getAdminAlertsDashboard);
+app.post("/api/admin-alerts/evaluate", requireAuthenticated, evaluateAdminAlerts);
+app.post("/api/admin-alerts/config", requireAdmin, updateAdminAlertConfig);
+app.post("/api/admin-alerts/:productId/resolve", requireAdmin, resolveAdminAlert);
 app.post("/criar-usuario", requireAdmin, createUser);
 
 app.get("/", (req, res) => {
@@ -517,6 +718,20 @@ app.use(express.static(publicDir, {
   index: false
 }));
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Servidor rodando na porta ${port} com credenciais via ${firebaseCredentialSource.source}.`);
-});
+export function startServer(options = {}) {
+  const host = options.host || "0.0.0.0";
+  const runtimePort = options.port || port;
+  const shouldStartScheduler = options.startScheduler !== false;
+
+  if (shouldStartScheduler) {
+    stockAlertService.startScheduler();
+  }
+
+  return app.listen(runtimePort, host, () => {
+    console.log(`Servidor rodando na porta ${runtimePort} com credenciais via ${firebaseCredentialSource.source}.`);
+  });
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  startServer();
+}

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Alertas de reposicao | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Inteligencia de estoque</p>
+      <h1>Alertas de reposicao</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="dashboard.html">Dashboard</a>
+      <a class="button secondary" href="compras.html">Compras</a>
+      <button id="evaluate-button" type="button">Avaliar agora</button>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="purchase-dashboard-hero">
+    <div class="purchase-dashboard-hero-header">
+      <div>
+        <p class="eyebrow" style="color: rgba(255, 255, 255, 0.78);">Painel admin</p>
+        <h2>Prevencao de ruptura e decisao de compra</h2>
+        <p class="muted" style="color: rgba(226, 232, 240, 0.88); margin-top: 10px;">O sistema consolida itens em atencao, compara fornecedores, estima cobertura e prepara a mensagem de WhatsApp para o admin.</p>
+      </div>
+
+      <div class="purchase-dashboard-badges">
+        <span id="hero-next-run" class="purchase-badge">Ultima avaliacao: -</span>
+        <span id="hero-provider" class="purchase-badge">Canal: WhatsApp</span>
+        <span id="hero-recipient" class="purchase-badge">Admin: nao configurado</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-grid" style="margin-top: 20px;">
+    <article class="card">
+      <span class="muted">Produtos em atencao</span>
+      <strong id="metric-attention" class="metric-value">0</strong>
+    </article>
+
+    <article class="card critical">
+      <span class="muted">Produtos criticos</span>
+      <strong id="metric-urgent" class="metric-value">0</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Economia potencial</span>
+      <strong id="metric-savings" class="metric-value">R$ 0,00</strong>
+    </article>
+
+    <article class="card">
+      <span class="muted">Alerta mais recente</span>
+      <strong id="metric-notification" class="metric-value">-</strong>
+      <p id="metric-notification-meta" class="muted" style="margin-top: 8px;">Nenhum disparo ainda.</p>
+    </article>
+  </section>
+
+  <section class="layout-grid" style="margin-top: 20px;">
+    <article class="panel">
+      <div class="page-header" style="margin-bottom: 16px;">
+        <div>
+          <h3>Configuracao automatica</h3>
+          <p class="muted">Ajuste janela de avaliacao, cooldown do WhatsApp e relatorio semanal.</p>
+        </div>
+      </div>
+
+      <form id="config-form" class="form-grid alert-config-grid">
+        <div class="field-group">
+          <span>Modulo ativo</span>
+          <label class="inline-choice">
+            <input id="config-enabled" type="checkbox">
+            <span>Monitorar reposicao automaticamente</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <span>Reavaliacao automatica</span>
+          <label class="inline-choice">
+            <input id="config-auto-evaluation" type="checkbox">
+            <span>Rodar sem intervencao manual</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label for="config-admin-whatsapp">WhatsApp do admin</label>
+          <input id="config-admin-whatsapp" type="tel" placeholder="21999999999">
+        </div>
+
+        <div class="field-group">
+          <label for="config-provider">Provedor WhatsApp</label>
+          <select id="config-provider"></select>
+        </div>
+
+        <div class="field-group">
+          <label for="config-interval">Intervalo de avaliacao (min)</label>
+          <input id="config-interval" type="number" min="15" step="15" value="60">
+        </div>
+
+        <div class="field-group">
+          <label for="config-hour">Horario base da rodada diaria</label>
+          <input id="config-hour" type="number" min="0" max="23" step="1" value="8">
+        </div>
+
+        <div class="field-group">
+          <label for="config-cooldown">Cooldown do alerta (h)</label>
+          <input id="config-cooldown" type="number" min="1" max="168" step="1" value="12">
+        </div>
+
+        <div class="field-group">
+          <label for="config-target-days">Cobertura alvo (dias)</label>
+          <input id="config-target-days" type="number" min="1" max="60" step="1" value="7">
+        </div>
+
+        <div class="field-group">
+          <label for="config-critical-percent">Faixa critica do minimo (%)</label>
+          <input id="config-critical-percent" type="number" min="10" max="100" step="5" value="50">
+        </div>
+
+        <div class="field-group">
+          <label for="config-ideal-multiplier">Multiplicador do estoque ideal</label>
+          <input id="config-ideal-multiplier" type="number" min="1" max="10" step="0.5" value="2">
+        </div>
+
+        <div class="field-group">
+          <span>Relatorio semanal</span>
+          <label class="inline-choice">
+            <input id="config-weekly-enabled" type="checkbox">
+            <span>Enviar consolidado de reposicao</span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label for="config-weekly-weekday">Dia do relatorio</label>
+          <select id="config-weekly-weekday">
+            <option value="seg">Segunda</option>
+            <option value="ter">Terca</option>
+            <option value="qua">Quarta</option>
+            <option value="qui">Quinta</option>
+            <option value="sex">Sexta</option>
+            <option value="sab">Sabado</option>
+            <option value="dom">Domingo</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="config-weekly-hour">Horario do relatorio</label>
+          <input id="config-weekly-hour" type="number" min="0" max="23" step="1" value="9">
+        </div>
+
+        <button id="save-config-button" type="submit">Salvar configuracao</button>
+      </form>
+
+      <div id="config-status" class="status info" hidden></div>
+    </article>
+
+    <article class="panel">
+      <div class="page-header" style="margin-bottom: 16px;">
+        <div>
+          <h3>Ultimo disparo e relatorio</h3>
+          <p class="muted">Acompanhe o consolidado enviado ao admin e o resumo semanal de reposicao.</p>
+        </div>
+      </div>
+
+      <div id="notification-card" class="card"></div>
+      <div id="weekly-report-card" class="card" style="margin-top: 16px;"></div>
+    </article>
+  </section>
+
+  <section class="panel" style="margin-top: 20px;">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Itens em alerta</h3>
+        <p class="muted">Os cards abaixo priorizam risco de ruptura, custo atual e a melhor rota de compra.</p>
+      </div>
+    </div>
+
+    <div id="dashboard-status" class="status info" hidden></div>
+    <div id="alerts-list" class="list"></div>
+  </section>
+
+  <section class="panel" style="margin-top: 20px;">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div>
+        <h3>Historico de alertas</h3>
+        <p class="muted">Use este historico para entender recorrencia, escalonamento e resolucao.</p>
+      </div>
+    </div>
+
+    <div id="history-list" class="list"></div>
+  </section>
+</main>
+
+<script type="module">
+import {
+  apiFetch,
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatCurrency,
+  formatWeekdayList,
+  normalizePhone,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+bindLogoutButton();
+
+const { profile } = await requireAuth({ adminOnly: true });
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+const evaluateButton = document.getElementById("evaluate-button");
+const configForm = document.getElementById("config-form");
+const saveConfigButton = document.getElementById("save-config-button");
+const alertsList = document.getElementById("alerts-list");
+const historyList = document.getElementById("history-list");
+const notificationCard = document.getElementById("notification-card");
+const weeklyReportCard = document.getElementById("weekly-report-card");
+
+let dashboardState = null;
+
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(parsed);
+}
+
+function formatDayCoverage(value) {
+  if (value == null) {
+    return "Nao calculada";
+  }
+
+  return `${toNumber(value, 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dia(s)`;
+}
+
+function formatAlertLevel(level) {
+  if (level === "urgent") {
+    return "Urgente";
+  }
+
+  if (level === "attention") {
+    return "Atencao";
+  }
+
+  return "Normal";
+}
+
+function formatNotificationStatus(notification) {
+  if (!notification) {
+    return "Nenhum disparo";
+  }
+
+  const status = String(notification.status || "").trim();
+
+  if (status === "logged") {
+    return "Pronto para WhatsApp";
+  }
+
+  if (status === "ready_for_provider_integration") {
+    return "Integracao preparada";
+  }
+
+  if (status === "pending_configuration") {
+    return "Configuracao pendente";
+  }
+
+  if (status === "missing_recipient") {
+    return "WhatsApp do admin nao configurado";
+  }
+
+  return status || "Sem status";
+}
+
+function populateProviderOptions(providers = [], selected = "log") {
+  const providerSelect = document.getElementById("config-provider");
+  providerSelect.innerHTML = providers.map((provider) => `
+    <option value="${escapeHtml(provider)}" ${provider === selected ? "selected" : ""}>${escapeHtml(provider)}</option>
+  `).join("");
+}
+
+function syncConfigForm(config = {}, adminWhatsapp = "", providers = []) {
+  document.getElementById("config-enabled").checked = Boolean(config.enabled);
+  document.getElementById("config-auto-evaluation").checked = Boolean(config.autoEvaluation);
+  document.getElementById("config-admin-whatsapp").value = adminWhatsapp || "";
+  populateProviderOptions(providers, config.whatsappProvider || "log");
+  document.getElementById("config-interval").value = String(toNumber(config.evaluationIntervalMinutes, 60));
+  document.getElementById("config-hour").value = String(toNumber(config.scheduledHour, 8));
+  document.getElementById("config-cooldown").value = String(toNumber(config.notificationCooldownHours, 12));
+  document.getElementById("config-target-days").value = String(toNumber(config.targetCoverageDays, 7));
+  document.getElementById("config-critical-percent").value = String(Math.round(toNumber(config.criticalPercentOfMinimum, 0.5) * 100));
+  document.getElementById("config-ideal-multiplier").value = String(toNumber(config.idealFallbackMultiplier, 2));
+  document.getElementById("config-weekly-enabled").checked = Boolean(config.weeklyReportEnabled);
+  document.getElementById("config-weekly-weekday").value = config.weeklyReportWeekday || "seg";
+  document.getElementById("config-weekly-hour").value = String(toNumber(config.weeklyReportHour, 9));
+}
+
+function renderSummary(data) {
+  document.getElementById("metric-attention").textContent = String(toNumber(data.attentionCount, 0));
+  document.getElementById("metric-urgent").textContent = String(toNumber(data.urgentCount, 0));
+  document.getElementById("metric-savings").textContent = formatCurrency(data.estimatedSavings || 0);
+  document.getElementById("metric-notification").textContent = formatNotificationStatus(data.latestNotification);
+  document.getElementById("metric-notification-meta").textContent = data.latestNotification
+    ? `${formatDateTime(data.latestNotification.createdAt)} | ${toNumber(data.latestNotification.itemCount, 0)} item(ns)`
+    : "Nenhum disparo ainda.";
+
+  document.getElementById("hero-next-run").textContent = `Ultima avaliacao: ${formatDateTime(data.generatedAt)}`;
+  document.getElementById("hero-provider").textContent = `Canal: ${data.config?.whatsappProvider || "log"}`;
+  document.getElementById("hero-recipient").textContent = data.adminWhatsapp
+    ? `Admin: ${data.adminWhatsapp}`
+    : "Admin: nao configurado";
+}
+
+function buildSupplierComparisonMarkup(supplier, index) {
+  return `
+    <article class="supplier-price-card ${index === 0 ? "best" : ""}">
+      <strong>${escapeHtml(supplier.nome || "Fornecedor")}</strong>
+      <span class="supplier-price">${formatCurrency(supplier.custoCompra)}</span>
+      <p class="muted">
+        ${escapeHtml(`${formatCurrency(supplier.custoUnitario)} por ${supplier.unidadeUso || "un"}`)}<br>
+        ${supplier.promocaoAtiva ? "Promocao ativa" : "Preco base"}<br>
+        ${supplier.frequenciaAtiva ? `Pedir: ${escapeHtml(formatWeekdayList(supplier.diasPedido, "long"))}` : "Sem frequencia definida"}<br>
+        ${supplier.diasEntrega?.length ? `Entrega: ${escapeHtml(formatWeekdayList(supplier.diasEntrega, "long"))}` : "Entrega nao definida"}
+      </p>
+    </article>
+  `;
+}
+
+function renderAlerts(data) {
+  alertsList.innerHTML = "";
+
+  if (!data.activeAlerts?.length) {
+    alertsList.innerHTML = '<div class="empty-state">Nenhum produto precisa de reposicao neste momento.</div>';
+    return;
+  }
+
+  data.activeAlerts.forEach((alert) => {
+    const article = document.createElement("article");
+    article.className = `card alert-card alert-card-${alert.level}`;
+    const recommendation = alert.suggestedPurchase?.packagesToBuy
+      ? `${alert.suggestedPurchase.packagesToBuy} embalagem(ns) | cobertura estimada de ${formatDayCoverage(alert.suggestedPurchase.estimatedCoverageDays)}`
+      : "Revisar manualmente a quantidade de compra.";
+    const supplierCards = alert.supplierComparisons?.length
+      ? alert.supplierComparisons.map((supplier, index) => buildSupplierComparisonMarkup(supplier, index)).join("")
+      : '<div class="empty-state">Nenhum fornecedor cadastrado para este item.</div>';
+    const reasonLabel = Array.isArray(alert.reasons) && alert.reasons.length
+      ? alert.reasons.join(" | ")
+      : "Sem motivo adicional registrado";
+    const detailsId = `details-${alert.productId}`;
+
+    article.innerHTML = `
+      <div class="page-header" style="margin-bottom: 12px;">
+        <div>
+          <div class="summary-line">
+            <span class="alert-level-chip alert-level-chip-${alert.level}">${escapeHtml(formatAlertLevel(alert.level))}</span>
+            <strong>${escapeHtml(alert.productName)}</strong>
+          </div>
+          <p class="muted" style="margin-top: 12px;">
+            Estoque atual: ${toNumber(alert.currentStock, 0)} ${escapeHtml(alert.usageUnit || "un")}
+            | Minimo: ${toNumber(alert.minimumStock, 0)}
+            | Ideal: ${toNumber(alert.idealStock, 0)}
+          </p>
+        </div>
+      </div>
+
+      <div class="analytics-month-meta alert-meta-grid">
+        <div>
+          <span class="muted">Motivos</span>
+          <strong>${escapeHtml(reasonLabel)}</strong>
+        </div>
+        <div>
+          <span class="muted">Cobertura estimada</span>
+          <strong>${escapeHtml(formatDayCoverage(alert.daysCoverage))}</strong>
+        </div>
+        <div>
+          <span class="muted">Melhor fornecedor</span>
+          <strong>${escapeHtml(alert.recommendedSupplier?.nome || "Nao definido")}</strong>
+        </div>
+        <div>
+          <span class="muted">Economia estimada</span>
+          <strong>${formatCurrency(alert.estimatedSavings || 0)}</strong>
+        </div>
+      </div>
+
+      <p class="muted" style="margin-top: 16px;">
+        Acao recomendada: ${escapeHtml(recommendation)}
+      </p>
+
+      <div class="inline-actions" style="margin-top: 16px;">
+        <button type="button" class="${alert.supplierOrderUrl ? "" : "secondary"}" data-action="send-order" data-url="${escapeHtml(alert.supplierOrderUrl || "")}" ${alert.supplierOrderUrl ? "" : "disabled"}>Enviar pedido</button>
+        <button type="button" class="secondary" data-action="toggle-suppliers" data-target="${detailsId}">Comparar fornecedores</button>
+        <button type="button" class="ghost" data-action="resolve-alert" data-product-id="${escapeHtml(alert.productId)}">Marcar como resolvido</button>
+      </div>
+
+      <details id="${detailsId}" class="product-card-details" ${alert.level === "urgent" ? "open" : ""} style="margin-top: 16px;">
+        <summary class="product-card-details-summary">
+          <strong>Comparativo de fornecedores</strong>
+          <span>${escapeHtml(alert.supplierComparisons?.length ? `${alert.supplierComparisons.length} opcao(oes) cadastrada(s)` : "Sem fornecedores cadastrados")}</span>
+        </summary>
+        <div class="supplier-price-grid" style="margin-top: 16px;">
+          ${supplierCards}
+        </div>
+      </details>
+    `;
+
+    alertsList.appendChild(article);
+  });
+}
+
+function renderNotificationCard(data) {
+  const notification = data.latestNotification;
+
+  if (!notification) {
+    notificationCard.innerHTML = `
+      <h3>WhatsApp do admin</h3>
+      <p class="muted" style="margin-top: 12px;">Nenhum consolidado foi disparado ainda.</p>
+    `;
+    return;
+  }
+
+  notificationCard.innerHTML = `
+    <div class="summary-line">
+      <span>Ultimo consolidado</span>
+      <strong>${escapeHtml(formatNotificationStatus(notification))}</strong>
+    </div>
+    <p class="muted" style="margin-top: 12px;">${escapeHtml(formatDateTime(notification.createdAt))} | ${escapeHtml(notification.provider || "log")} | ${toNumber(notification.itemCount, 0)} item(ns)</p>
+    <textarea readonly style="margin-top: 16px; min-height: 150px;">${notification.message || "Sem mensagem registrada."}</textarea>
+    <div class="inline-actions" style="margin-top: 16px;">
+      <button type="button" id="open-admin-preview" ${notification.previewUrl ? "" : "disabled"}>Abrir preview no WhatsApp</button>
+    </div>
+  `;
+
+  const openPreviewButton = document.getElementById("open-admin-preview");
+
+  if (openPreviewButton && notification.previewUrl) {
+    openPreviewButton.addEventListener("click", () => {
+      window.open(notification.previewUrl, "_blank", "noopener,noreferrer");
+    });
+  }
+}
+
+function renderWeeklyReport(data) {
+  const report = data.weeklyReport;
+
+  if (!report) {
+    weeklyReportCard.innerHTML = `
+      <h3>Relatorio semanal</h3>
+      <p class="muted" style="margin-top: 12px;">Ainda nao ha dados suficientes para montar o relatorio semanal.</p>
+    `;
+    return;
+  }
+
+  weeklyReportCard.innerHTML = `
+    <div class="summary-line">
+      <span>Relatorio semanal de reposicao</span>
+      <strong>${toNumber(report.touchedProducts, 0)} item(ns)</strong>
+    </div>
+    <div class="analytics-month-meta" style="margin-top: 16px;">
+      <div>
+        <span class="muted">Fornecedor com melhor custo medio</span>
+        <strong>${escapeHtml(report.bestSupplier?.nome || "Sem dados suficientes")}</strong>
+        <p class="muted" style="margin-top: 8px;">${report.bestSupplier ? formatCurrency(report.bestSupplier.averageUnitCost) : "-"}</p>
+      </div>
+      <div>
+        <span class="muted">Produto com maior giro</span>
+        <strong>${escapeHtml(report.topMovingProduct?.nome || "Sem dados suficientes")}</strong>
+        <p class="muted" style="margin-top: 8px;">${report.topMovingProduct ? `${toNumber(report.topMovingProduct.quantidade, 0).toLocaleString("pt-BR")} unidades` : "-"}</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistory(data) {
+  historyList.innerHTML = "";
+
+  if (!data.history?.length) {
+    historyList.innerHTML = '<div class="empty-state">Ainda nao ha eventos registrados no historico de alertas.</div>';
+    return;
+  }
+
+  data.history.forEach((entry) => {
+    const article = document.createElement("article");
+    article.className = "card";
+    article.innerHTML = `
+      <div class="summary-line">
+        <span>${escapeHtml(entry.productName || "Produto")}</span>
+        <strong>${escapeHtml(entry.eventType || "evento")}</strong>
+      </div>
+      <p class="muted" style="margin-top: 12px;">
+        ${escapeHtml(entry.actor || "sistema")}
+        | ${escapeHtml(entry.level || entry.reason || "sem detalhe")}
+        | ${escapeHtml(formatDateTime(entry.createdAt))}
+      </p>
+    `;
+    historyList.appendChild(article);
+  });
+}
+
+function applyDashboardData(data) {
+  dashboardState = data;
+  renderSummary(data);
+  syncConfigForm(data.config || {}, data.adminWhatsapp || "", data.supportedProviders || []);
+  renderAlerts(data);
+  renderNotificationCard(data);
+  renderWeeklyReport(data);
+  renderHistory(data);
+}
+
+async function loadDashboard(options = {}) {
+  const { force = false, statusMessage = "" } = options;
+
+  if (statusMessage) {
+    setStatus("dashboard-status", statusMessage, "info");
+  }
+
+  const response = await apiFetch(`/api/admin-alerts/dashboard${force ? "?force=true" : ""}`);
+  applyDashboardData(response);
+  setStatus("dashboard-status", "", "info");
+}
+
+alertsList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+
+  if (!button) {
+    return;
+  }
+
+  const action = button.dataset.action;
+
+  if (action === "send-order") {
+    const url = button.dataset.url;
+
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    return;
+  }
+
+  if (action === "toggle-suppliers") {
+    const target = document.getElementById(button.dataset.target || "");
+
+    if (target) {
+      target.open = !target.open;
+    }
+
+    return;
+  }
+
+  if (action === "resolve-alert") {
+    const productId = button.dataset.productId;
+
+    if (!productId || !window.confirm("Deseja marcar este alerta como resolvido por enquanto?")) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      await apiFetch(`/api/admin-alerts/${productId}/resolve`, {
+        method: "POST"
+      });
+
+      setStatus("dashboard-status", "Alerta marcado como resolvido.", "success");
+      await loadDashboard();
+    } catch (error) {
+      console.error(error);
+      setStatus("dashboard-status", error.message || "Nao foi possivel resolver o alerta.", "error");
+    } finally {
+      button.disabled = false;
+    }
+  }
+});
+
+evaluateButton.addEventListener("click", async () => {
+  evaluateButton.disabled = true;
+  setStatus("dashboard-status", "Rodando avaliacao inteligente de reposicao...", "info");
+
+  try {
+    const response = await apiFetch("/api/admin-alerts/evaluate", {
+      method: "POST",
+      body: JSON.stringify({
+        force: true,
+        reason: "painel_admin"
+      })
+    });
+
+    applyDashboardData(response.data || response);
+    setStatus("dashboard-status", "Avaliacao concluida com sucesso.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus("dashboard-status", error.message || "Nao foi possivel avaliar os alertas.", "error");
+  } finally {
+    evaluateButton.disabled = false;
+  }
+});
+
+configForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  saveConfigButton.disabled = true;
+  setStatus("config-status", "Salvando configuracao...", "info");
+
+  try {
+    const payload = {
+      enabled: document.getElementById("config-enabled").checked,
+      autoEvaluation: document.getElementById("config-auto-evaluation").checked,
+      adminWhatsapp: normalizePhone(document.getElementById("config-admin-whatsapp").value),
+      whatsappProvider: document.getElementById("config-provider").value,
+      evaluationIntervalMinutes: Number(document.getElementById("config-interval").value),
+      scheduledHour: Number(document.getElementById("config-hour").value),
+      notificationCooldownHours: Number(document.getElementById("config-cooldown").value),
+      targetCoverageDays: Number(document.getElementById("config-target-days").value),
+      criticalPercentOfMinimum: Number(document.getElementById("config-critical-percent").value) / 100,
+      idealFallbackMultiplier: Number(document.getElementById("config-ideal-multiplier").value),
+      weeklyReportEnabled: document.getElementById("config-weekly-enabled").checked,
+      weeklyReportWeekday: document.getElementById("config-weekly-weekday").value,
+      weeklyReportHour: Number(document.getElementById("config-weekly-hour").value)
+    };
+
+    await apiFetch("/api/admin-alerts/config", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    setStatus("config-status", "Configuracao salva com sucesso.", "success");
+    await loadDashboard({ statusMessage: "Configuracao atualizada. Recarregando painel..." });
+  } catch (error) {
+    console.error(error);
+    setStatus("config-status", error.message || "Nao foi possivel salvar a configuracao.", "error");
+  } finally {
+    saveConfigButton.disabled = false;
+  }
+});
+
+try {
+  await loadDashboard();
+} catch (error) {
+  console.error(error);
+  setStatus("dashboard-status", error.message || "Nao foi possivel carregar o painel de alertas.", "error");
+  alertsList.innerHTML = '<div class="empty-state">Nao foi possivel carregar os alertas agora.</div>';
+}
+</script>
+</body>
+</html>

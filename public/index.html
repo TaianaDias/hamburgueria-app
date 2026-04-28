@@ -55,6 +55,11 @@
       <p class="muted">Veja a evolucao mensal em grafico e os itens que mais pesam em cada mes.</p>
     </a>
 
+    <a id="alerts-link" class="card" href="alertas-reposicao.html" hidden>
+      <h3>Alertas de reposicao</h3>
+      <p class="muted">Painel inteligente com criticidade, historico e WhatsApp do admin.</p>
+    </a>
+
     <a class="card" href="fornecedores.html">
       <h3>Fornecedores</h3>
       <p class="muted">Organize contatos e referencia de cada item.</p>
@@ -87,6 +92,7 @@ import {
 async function init() {
   const userInfo = document.getElementById("user-info");
   const employeesLink = document.getElementById("employees-link");
+  const alertsLink = document.getElementById("alerts-link");
 
   registerServiceWorker();
   bindLogoutButton();
@@ -94,6 +100,7 @@ async function init() {
   const { profile } = await requireAuth();
   userInfo.textContent = describeProfile(profile);
   employeesLink.hidden = profile.tipo !== "admin";
+  alertsLink.hidden = profile.tipo !== "admin";
 }
 
 init().catch((error) => {

@@ -766,6 +766,21 @@ export async function apiFetch(path, options = {}) {
   return performApiRequest(path, options, { requireAuth: true });
 }
 
+export async function triggerReplenishmentEvaluation(reason = "app_event", options = {}) {
+  try {
+    return await apiFetch("/api/admin-alerts/evaluate", {
+      method: "POST",
+      body: JSON.stringify({
+        reason,
+        force: Boolean(options.force)
+      })
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel reavaliar os alertas de reposicao.", error);
+    return null;
+  }
+}
+
 export async function getRuntimeConfig() {
   return loadRuntimeConfig();
 }

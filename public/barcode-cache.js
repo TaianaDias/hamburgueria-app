@@ -1,6 +1,8 @@
 const DATABASE_NAME = "burgerops-barcode-cache";
 const DATABASE_VERSION = 1;
 const STORE_NAME = "products";
+const CACHE_TTL_IN_DAYS = 30;
+const CACHE_TTL_IN_MS = CACHE_TTL_IN_DAYS * 24 * 60 * 60 * 1000;
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -57,7 +59,23 @@ export async function getCachedBarcodeProduct(barcode) {
     return null;
   }
 
-  return withStore("readonly", (store) => store.get(normalizedBarcode));
+  const cachedProduct = await withStore("readonly", (store) => store.get(normalizedBarcode));
+
+  if (!cachedProduct?.updatedAt) {
+    return cachedProduct || null;
+  }
+
+  const updatedAt = new Date(cachedProduct.updatedAt).getTime();
+
+  if (!Number.isFinite(updatedAt)) {
+    return null;
+  }
+
+  if ((Date.now() - updatedAt) > CACHE_TTL_IN_MS) {
+    return null;
+  }
+
+  return cachedProduct;
 }
 
 export async function saveCachedBarcodeProduct(product) {
