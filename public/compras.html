@@ -105,6 +105,15 @@
       </div>
 
       <div class="field-group">
+        <label for="admin-reminder-reason">Motivo da sugestao</label>
+        <select id="admin-reminder-reason">
+          <option value="Reposicao urgente">Reposicao urgente</option>
+          <option value="Compra preventiva">Compra preventiva</option>
+          <option value="Pedido programado">Pedido programado</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label for="admin-reminder-preview">Resumo atual</label>
         <input id="admin-reminder-preview" type="text" readonly value="Nenhum item pendente">
       </div>
@@ -173,6 +182,7 @@ const purchaseNoteInput = document.getElementById("purchase-note");
 const purchaseUpdateStockCheckbox = document.getElementById("purchase-update-stock");
 const purchaseStatus = document.getElementById("purchase-status");
 const adminWhatsappInput = document.getElementById("admin-whatsapp");
+const adminReminderReasonSelect = document.getElementById("admin-reminder-reason");
 const adminReminderPreviewInput = document.getElementById("admin-reminder-preview");
 const sendAdminReminderButton = document.getElementById("send-admin-reminder");
 const adminReminderStatus = document.getElementById("admin-reminder-status");
@@ -292,12 +302,14 @@ function getTriggerLabel(triggers = []) {
 }
 
 function buildAdminReminderMessage(groups) {
+  const reminderReason = String(adminReminderReasonSelect.value || "").trim() || "Reposicao urgente";
   const todayLabel = new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "full"
   }).format(new Date());
   const lines = [
     "Lembrete de compras e pedidos",
     todayLabel,
+    `Motivo: ${reminderReason}`,
     ""
   ];
 
@@ -323,7 +335,7 @@ function updateAdminReminderPreview() {
 
   const supplierCount = pedidos.length;
   const itemCount = pedidos.reduce((sum, group) => sum + group.itens.length, 0);
-  adminReminderPreviewInput.value = `${itemCount} item(ns) em ${supplierCount} fornecedor(es)`;
+  adminReminderPreviewInput.value = `${adminReminderReasonSelect.value} | ${itemCount} item(ns) em ${supplierCount} fornecedor(es)`;
   sendAdminReminderButton.disabled = false;
 }
 
@@ -653,6 +665,8 @@ sendAdminReminderButton.addEventListener("click", () => {
   window.open(url, "_blank", "noopener,noreferrer");
   setStatus("admin-reminder-status", "Lembrete do admin aberto no WhatsApp.", "success");
 });
+
+adminReminderReasonSelect.addEventListener("change", updateAdminReminderPreview);
 
 purchaseProductSelect.addEventListener("change", () => syncPurchaseSupplierOptions());
 purchaseSupplierSelect.addEventListener("change", applySelectedSupplierPrice);
