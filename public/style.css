@@ -514,43 +514,15 @@ pre {
 }
 
 .product-operational-grid {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
-.operational-metric-card {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(15, 23, 42, 0.36);
-  line-height: 1.2;
-}
-
-.operational-metric-card span {
-  color: var(--text);
-  font-size: 0.84rem;
-  font-weight: 600;
-}
-
-.operational-metric-card strong {
-  font-size: 0.78rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.operational-metric-card em {
+.product-operational-line {
   margin: 0;
-  font-size: 0.78rem;
-  font-style: normal;
+  font-size: 0.88rem;
+  line-height: 1.4;
   color: var(--muted);
 }
 
@@ -1063,13 +1035,7 @@ pre {
   }
 
   .product-operational-grid {
-    gap: 8px;
-  }
-
-  .operational-metric-card {
-    width: 100%;
-    justify-content: space-between;
-    border-radius: 12px;
+    margin-top: 10px;
   }
 
   .detail-subaccordion-summary,
@@ -1133,7 +1099,7 @@ pre {
 }
 
 @media (max-width: 1080px) and (min-width: 761px) {
-  .product-operational-grid {
-    gap: 8px;
+  .product-operational-line {
+    font-size: 0.84rem;
   }
 }

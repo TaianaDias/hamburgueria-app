@@ -485,14 +485,15 @@ function getSupplierNamesSummary(productSuppliers) {
   return names.length ? names.join(" | ") : "Sem fornecedores";
 }
 
-function buildOperationalMetric(label, value, details = "") {
-  return `
-    <article class="operational-metric-card">
-      <strong>${escapeHtml(label)}:</strong>
-      <span>${escapeHtml(value)}</span>
-      ${details ? `<em>${escapeHtml(details)}</em>` : ""}
-    </article>
-  `;
+function buildOperationalSummaryLine(entries = []) {
+  return entries
+    .filter((entry) => entry && String(entry.value ?? "").trim())
+    .map((entry) => {
+      const detail = String(entry.details || "").trim();
+      const detailSuffix = detail ? ` (${detail})` : "";
+      return `${entry.label}: ${entry.value}${detailSuffix}`;
+    })
+    .join(" | ");
 }
 
 function buildDetailAccordionSummaryChips(entries = []) {
@@ -1936,11 +1937,34 @@ function renderProducts(items) {
       </div>
 
       <div class="product-operational-grid">
-        ${buildOperationalMetric("Estoque atual", `${toNumber(item.quantidade, 0)} ${item.unidadeMedida || getUsageUnit(item)}`)}
-        ${buildOperationalMetric("Compra", orderDaysSummary, scheduledSuppliers.length ? `${scheduledSuppliers.length} fornecedor(es) com agenda` : "Sem frequencia configurada")}
-        ${buildOperationalMetric("Entrega", deliveryDaysSummary, primarySupplier ? primarySupplier.nome : "Sem fornecedor principal")}
-        ${buildOperationalMetric("Custo atual", currentCostLabel, currentCostDetails)}
-        ${buildOperationalMetric("Fornecedores", `${productSuppliers.length}`, suppliersSummary)}
+        <p class="product-operational-line">
+          ${escapeHtml(buildOperationalSummaryLine([
+            {
+              label: "Estoque",
+              value: `${toNumber(item.quantidade, 0)} ${item.unidadeMedida || getUsageUnit(item)}`
+            },
+            {
+              label: "Compra",
+              value: orderDaysSummary,
+              details: scheduledSuppliers.length ? `${scheduledSuppliers.length} com agenda` : "sem frequencia"
+            },
+            {
+              label: "Entrega",
+              value: deliveryDaysSummary,
+              details: primarySupplier ? primarySupplier.nome : "sem principal"
+            },
+            {
+              label: "Custo",
+              value: currentCostLabel,
+              details: currentCostDetails
+            },
+            {
+              label: "Fornecedores",
+              value: `${productSuppliers.length}`,
+              details: suppliersSummary
+            }
+          ]))}
+        </p>
       </div>
     `;
 
