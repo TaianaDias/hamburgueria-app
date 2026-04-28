@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Reposicao para Producao | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Operacao de cozinha</p>
+      <h1>Reposicao para producao</h1>
+      <p id="user-info" class="muted"></p>
+      <p id="header-meta" class="muted" style="margin-top: 8px;"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="estoque.html">Estoque</a>
+      <span id="selected-badge" class="product-tag">0 item(ns) selecionado(s)</span>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="page-header" style="margin-bottom: 12px;">
+      <div>
+        <h3>Adicionar insumo</h3>
+        <p class="muted">Cadastre novos itens para usar na reposicao do dia.</p>
+      </div>
+    </div>
+    <form id="novo-insumo-form" class="form-grid">
+      <div class="field-group">
+        <label for="novo-nome-insumo">Nome</label>
+        <input id="novo-nome-insumo" placeholder="Ex.: Cebola caramelizada">
+      </div>
+      <div class="field-group">
+        <label for="novo-unidade-insumo">Unidade</label>
+        <input id="novo-unidade-insumo" placeholder="kg, pacotes, grades" value="un">
+      </div>
+      <div class="field-group">
+        <label for="novo-estoque-insumo">Estoque inicial</label>
+        <input id="novo-estoque-insumo" type="number" min="0" step="0.1" value="0">
+      </div>
+      <button type="submit">Adicionar insumo</button>
+    </form>
+  </section>
+
+  <section class="layout-grid" style="margin-top: 20px;">
+    <article class="panel">
+      <div class="page-header" style="margin-bottom: 12px;">
+        <div>
+          <h3>Insumos para reposicao</h3>
+          <p class="muted">Marque os itens, informe retirada e minimo para o dia.</p>
+        </div>
+      </div>
+      <div id="insumos-lista" class="list"></div>
+      <div id="status-reposicao" class="status info" hidden></div>
+    </article>
+
+    <article class="panel">
+      <div class="page-header" style="margin-bottom: 12px;">
+        <div>
+          <h3>Resumo da reposicao</h3>
+          <p class="muted">Confirme somente quando tudo estiver valido.</p>
+        </div>
+      </div>
+      <div id="resumo-lista" class="list"></div>
+      <button id="confirmar-reposicao" style="margin-top: 16px;" disabled>Confirmar reposicao</button>
+
+      <div class="page-header" style="margin: 22px 0 12px;">
+        <div>
+          <h3>Historico do dia</h3>
+          <p class="muted">Reposicoes ja confirmadas neste dia.</p>
+        </div>
+      </div>
+      <div id="historico-lista" class="list"></div>
+    </article>
+  </section>
+</main>
+
+<script type="module">
+import {
+  bindLogoutButton,
+  describeProfile,
+  formatCurrency,
+  normalizeText,
+  requireAuth,
+  setStatus,
+  toNumber
+} from "./app.js";
+
+const ESTOQUE_KEY = "reposicao-producao-estoque-v1";
+const HISTORICO_KEY = "reposicao-producao-historico-v1";
+
+const defaultInsumos = [
+  { id: "paes", nome: "Paes", unidade: "grades", estoque: 7 },
+  { id: "carne", nome: "Hamburguer (patties)", unidade: "kg", estoque: 15 },
+  { id: "queijo", nome: "Queijo fatiado", unidade: "pacotes", estoque: 12 },
+  { id: "alface", nome: "Alface", unidade: "macos", estoque: 8 },
+  { id: "tomate", nome: "Tomate", unidade: "kg", estoque: 6 },
+  { id: "molho", nome: "Molho especial", unidade: "potes", estoque: 10 },
+  { id: "bacon", nome: "Bacon", unidade: "pacotes", estoque: 5 }
+];
+
+const insumosLista = document.getElementById("insumos-lista");
+const resumoLista = document.getElementById("resumo-lista");
+const historicoLista = document.getElementById("historico-lista");
+const selectedBadge = document.getElementById("selected-badge");
+const confirmButton = document.getElementById("confirmar-reposicao");
+const novoInsumoForm = document.getElementById("novo-insumo-form");
+const novoNomeInput = document.getElementById("novo-nome-insumo");
+const novoUnidadeInput = document.getElementById("novo-unidade-insumo");
+const novoEstoqueInput = document.getElementById("novo-estoque-insumo");
+const headerMeta = document.getElementById("header-meta");
+
+let insumos = [];
+let selecionados = {};
+let historico = [];
+
+function readJsonStorage(key, fallbackValue) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallbackValue;
+  } catch (error) {
+    console.warn("Falha ao ler localStorage.", key, error);
+    return fallbackValue;
+  }
+}
+
+function saveState() {
+  localStorage.setItem(ESTOQUE_KEY, JSON.stringify(insumos));
+  localStorage.setItem(HISTORICO_KEY, JSON.stringify(historico));
+}
+
+function getTurnoAtual() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Manha";
+  if (hour < 18) return "Tarde";
+  return "Noite";
+}
+
+function getHeaderDateLabel() {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date());
+}
+
+function evaluateStatus(restante, minimoDia) {
+  if (restante < minimoDia) return "red";
+  if (restante <= (minimoDia * 1.3)) return "yellow";
+  return "green";
+}
+
+function getStatusLabel(status) {
+  if (status === "green") return "OK";
+  if (status === "yellow") return "Atencao";
+  return "Critico";
+}
+
+function getStatusClass(status) {
+  if (status === "green") return "status success";
+  if (status === "yellow") return "status info";
+  return "status error";
+}
+
+function getResumoSelecionados() {
+  return insumos
+    .filter((item) => selecionados[item.id])
+    .map((item) => {
+      const retirar = Math.max(0, toNumber(selecionados[item.id].retirar, 0));
+      const minimoDia = Math.max(0, toNumber(selecionados[item.id].minimoDia, 0));
+      const restante = item.estoque - retirar;
+      const invalido = retirar > item.estoque || retirar <= 0;
+      const status = evaluateStatus(restante, minimoDia);
+      return { item, retirar, minimoDia, restante, invalido, status };
+    });
+}
+
+function renderInsumos() {
+  insumosLista.innerHTML = "";
+  const resumo = getResumoSelecionados();
+  selectedBadge.textContent = `${resumo.length} item(ns) selecionado(s)`;
+
+  if (!insumos.length) {
+    insumosLista.innerHTML = '<div class="empty-state">Nenhum insumo cadastrado.</div>';
+    return;
+  }
+
+  insumos.forEach((item) => {
+    const checked = Boolean(selecionados[item.id]);
+    const withdraw = toNumber(selecionados[item.id]?.retirar, 0);
+    const minimum = toNumber(selecionados[item.id]?.minimoDia, 0);
+    const remaining = item.estoque - withdraw;
+    const status = evaluateStatus(remaining, minimum);
+    const invalid = withdraw > item.estoque;
+    const barPercent = item.estoque > 0 ? Math.max(0, Math.min(100, (remaining / item.estoque) * 100)) : 0;
+
+    const article = document.createElement("article");
+    article.className = "card";
+    article.innerHTML = `
+      <label class="summary-line" style="align-items: center;">
+        <span style="display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" data-toggle-id="${item.id}" ${checked ? "checked" : ""}>
+          <strong>${item.nome}</strong>
+        </span>
+        <span>${item.estoque} ${item.unidade}</span>
+      </label>
+      ${checked ? `
+        <div class="form-grid" style="margin-top: 12px;">
+          <div class="field-group">
+            <label>Quantidade a retirar (${item.unidade})</label>
+            <input data-retirar-id="${item.id}" type="number" min="0" max="${item.estoque}" step="0.1" value="${withdraw}">
+          </div>
+          <div class="field-group">
+            <label>Minimo para o dia (${item.unidade})</label>
+            <input data-minimo-id="${item.id}" type="number" min="0" step="0.1" value="${minimum}">
+          </div>
+        </div>
+        <p class="muted" style="margin-top: 12px;">Restara ${remaining.toLocaleString("pt-BR")} ${item.unidade} no estoque.</p>
+        <div style="margin-top: 8px; height: 10px; border-radius: 999px; background: rgba(148, 163, 184, 0.18); overflow: hidden;">
+          <div style="height: 100%; width: ${barPercent}%; background: ${
+            status === "green" ? "rgba(34,197,94,0.9)" : status === "yellow" ? "rgba(250,204,21,0.95)" : "rgba(239,68,68,0.95)"
+          };"></div>
+        </div>
+        <div class="${getStatusClass(status)}" style="margin-top: 12px;" ${invalid ? "" : "hidden"}>
+          Nao e permitido retirar mais do que o estoque disponivel.
+        </div>
+      ` : ""}
+    `;
+    insumosLista.appendChild(article);
+  });
+
+  Array.from(document.querySelectorAll("[data-toggle-id]")).forEach((input) => {
+    input.addEventListener("change", (event) => {
+      const id = event.target.getAttribute("data-toggle-id");
+      if (event.target.checked) {
+        selecionados[id] = { retirar: 0, minimoDia: 0 };
+      } else {
+        delete selecionados[id];
+      }
+      renderAll();
+    });
+  });
+
+  Array.from(document.querySelectorAll("[data-retirar-id]")).forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const id = event.target.getAttribute("data-retirar-id");
+      selecionados[id].retirar = Math.max(0, toNumber(event.target.value, 0));
+      renderAll();
+    });
+  });
+
+  Array.from(document.querySelectorAll("[data-minimo-id]")).forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const id = event.target.getAttribute("data-minimo-id");
+      selecionados[id].minimoDia = Math.max(0, toNumber(event.target.value, 0));
+      renderAll();
+    });
+  });
+}
+
+function renderResumo() {
+  resumoLista.innerHTML = "";
+  const resumo = getResumoSelecionados();
+
+  if (!resumo.length) {
+    resumoLista.innerHTML = '<div class="empty-state">Selecione ao menos um item para montar a reposicao.</div>';
+    confirmButton.disabled = true;
+    return;
+  }
+
+  let hasInvalid = false;
+
+  resumo.forEach((entry) => {
+    if (entry.invalido) {
+      hasInvalid = true;
+    }
+    const statusText = getStatusLabel(entry.status);
+    const card = document.createElement("article");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="summary-line">
+        <strong>${entry.item.nome}</strong>
+        <span>${statusText}</span>
+      </div>
+      <p class="muted" style="margin-top: 10px;">
+        Retirar ${entry.retirar.toLocaleString("pt-BR")} ${entry.item.unidade}
+        | Minimo ${entry.minimoDia.toLocaleString("pt-BR")}
+        | Restante ${entry.restante.toLocaleString("pt-BR")}
+      </p>
+    `;
+    resumoLista.appendChild(card);
+  });
+
+  confirmButton.disabled = hasInvalid || !resumo.length;
+}
+
+function renderHistorico() {
+  historicoLista.innerHTML = "";
+  const today = new Date().toISOString().slice(0, 10);
+  const todayLogs = historico.filter((entry) => String(entry.timestamp || "").startsWith(today));
+
+  if (!todayLogs.length) {
+    historicoLista.innerHTML = '<div class="empty-state">Nenhuma reposicao confirmada hoje.</div>';
+    return;
+  }
+
+  todayLogs.forEach((entry) => {
+    const card = document.createElement("article");
+    card.className = "card";
+    const lines = entry.itens
+      .map((item) => `${item.nome}: -${item.retirado.toLocaleString("pt-BR")} ${item.unidade} (restou ${item.estoqueDepois.toLocaleString("pt-BR")})`)
+      .join(" | ");
+    card.innerHTML = `
+      <div class="summary-line">
+        <strong>${new Date(entry.timestamp).toLocaleTimeString("pt-BR")}</strong>
+        <span>${entry.turno}</span>
+      </div>
+      <p class="muted" style="margin-top: 10px;">${lines}</p>
+    `;
+    historicoLista.appendChild(card);
+  });
+}
+
+function renderAll() {
+  renderInsumos();
+  renderResumo();
+  renderHistorico();
+}
+
+confirmButton.addEventListener("click", () => {
+  const resumo = getResumoSelecionados();
+  if (!resumo.length) {
+    return;
+  }
+
+  const hasInvalid = resumo.some((item) => item.invalido);
+  if (hasInvalid) {
+    setStatus("status-reposicao", "Corrija os itens invalidos antes de confirmar.", "error");
+    return;
+  }
+
+  const itensHistorico = [];
+
+  insumos = insumos.map((item) => {
+    const selected = selecionados[item.id];
+    if (!selected) return item;
+    const retirar = Math.max(0, toNumber(selected.retirar, 0));
+    const estoqueDepois = item.estoque - retirar;
+    itensHistorico.push({
+      id: item.id,
+      nome: item.nome,
+      unidade: item.unidade,
+      retirado: retirar,
+      minimoDia: Math.max(0, toNumber(selected.minimoDia, 0)),
+      estoqueAntes: item.estoque,
+      estoqueDepois
+    });
+    return { ...item, estoque: estoqueDepois };
+  });
+
+  historico.unshift({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    timestamp: new Date().toISOString(),
+    turno: getTurnoAtual(),
+    itens: itensHistorico
+  });
+
+  selecionados = {};
+  saveState();
+  setStatus("status-reposicao", "Reposicao confirmada com sucesso. Estoque atualizado.", "success");
+  renderAll();
+});
+
+novoInsumoForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  setStatus("status-reposicao", "", "info");
+
+  const nome = String(novoNomeInput.value || "").trim();
+  const unidade = String(novoUnidadeInput.value || "").trim() || "un";
+  const estoque = Math.max(0, toNumber(novoEstoqueInput.value, 0));
+  const alreadyExists = insumos.some((item) => normalizeText(item.nome) === normalizeText(nome));
+
+  if (!nome) {
+    setStatus("status-reposicao", "Informe o nome do insumo.", "error");
+    return;
+  }
+
+  if (alreadyExists) {
+    setStatus("status-reposicao", "Ja existe um insumo com esse nome.", "error");
+    return;
+  }
+
+  insumos.push({
+    id: `${normalizeText(nome).replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+    nome,
+    unidade,
+    estoque
+  });
+
+  novoInsumoForm.reset();
+  novoUnidadeInput.value = "un";
+  novoEstoqueInput.value = "0";
+  saveState();
+  setStatus("status-reposicao", `Insumo ${nome} adicionado com sucesso.`, "success");
+  renderAll();
+});
+
+async function init() {
+  bindLogoutButton();
+  const { profile } = await requireAuth();
+  document.getElementById("user-info").textContent = describeProfile(profile);
+  headerMeta.textContent = `${getHeaderDateLabel()} | Turno atual: ${getTurnoAtual()}`;
+
+  insumos = readJsonStorage(ESTOQUE_KEY, defaultInsumos);
+  historico = readJsonStorage(HISTORICO_KEY, []);
+  renderAll();
+}
+
+init().catch((error) => {
+  console.error(error);
+  setStatus("status-reposicao", "Nao foi possivel carregar a aba de reposicao.", "error");
+});
+</script>
+</body>
+</html>
