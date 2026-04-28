@@ -26,7 +26,6 @@
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
       <a class="button secondary" href="compras.html">Compras</a>
-      <a class="button secondary" href="analise-compras.html">Analise</a>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
@@ -95,6 +94,17 @@
     </div>
 
     <div id="dashboard-month-list" class="list purchase-dashboard-month-grid"></div>
+  </section>
+
+  <section class="panel" style="margin-top: 20px;">
+    <div class="page-header" style="margin-bottom: 12px;">
+      <div>
+        <h3>Analise mensal de compras</h3>
+        <p class="muted">Comparativo do gasto por periodo com destaque de maior e menor mes.</p>
+      </div>
+    </div>
+
+    <div id="monthly-analysis-list" class="list analytics-month-list"></div>
   </section>
 </main>
 
@@ -250,14 +260,17 @@ document.getElementById("top-expensive-meta").textContent = latestMonth?.mostExp
 renderPurchaseChart(monthlySummaries, maxPaid);
 
 const monthList = document.getElementById("dashboard-month-list");
+const monthlyAnalysisList = document.getElementById("monthly-analysis-list");
 
 if (!monthlySummaries.length) {
   monthList.innerHTML = '<div class="empty-state">Ainda nao ha compras registradas para montar o dashboard visual.</div>';
+  monthlyAnalysisList.innerHTML = '<div class="empty-state">Ainda nao ha compras registradas para analisar.</div>';
 } else {
-  monthlySummaries
+  const sortedSummaries = monthlySummaries
     .slice()
-    .sort((left, right) => right.monthKey.localeCompare(left.monthKey))
-    .forEach((month) => {
+    .sort((left, right) => right.monthKey.localeCompare(left.monthKey));
+
+  sortedSummaries.forEach((month) => {
       const article = document.createElement("article");
       article.className = "card purchase-dashboard-month-card";
       const badges = [
@@ -295,6 +308,57 @@ if (!monthlySummaries.length) {
 
       monthList.appendChild(article);
     });
+
+  sortedSummaries.forEach((month) => {
+    const article = document.createElement("article");
+    article.className = "card analytics-month-card";
+
+    if (highestMonth && month.monthKey === highestMonth.monthKey) {
+      article.classList.add("analytics-month-card-high");
+    }
+
+    if (lowestMonth && month.monthKey === lowestMonth.monthKey) {
+      article.classList.add("analytics-month-card-low");
+    }
+
+    const barWidth = maxPaid > 0 ? `${Math.max(8, (month.totalPaid / maxPaid) * 100)}%` : "8%";
+    const economyRate = month.totalReference > 0 ? (month.totalDiscount / month.totalReference) : 0;
+    const badges = [
+      highestMonth && month.monthKey === highestMonth.monthKey ? "Maior gasto" : "",
+      lowestMonth && month.monthKey === lowestMonth.monthKey ? "Menor gasto" : ""
+    ].filter(Boolean).join(" | ");
+
+    article.innerHTML = `
+      <div class="summary-line">
+        <span>${escapeHtml(formatMonthLabel(month.monthKey))}</span>
+        <strong>${formatCurrency(month.totalPaid)}</strong>
+      </div>
+      <div class="month-bar-track" style="margin-top: 16px;">
+        <div class="month-bar-fill" style="width: ${barWidth};"></div>
+      </div>
+      <div class="analytics-month-meta" style="margin-top: 16px;">
+        <div>
+          <span class="muted">Desconto no mes</span>
+          <strong>${formatCurrency(month.totalDiscount)}</strong>
+        </div>
+        <div>
+          <span class="muted">Compras registradas</span>
+          <strong>${month.purchaseCount}</strong>
+        </div>
+        <div>
+          <span class="muted">Produtos comprados</span>
+          <strong>${month.uniqueProducts}</strong>
+        </div>
+        <div>
+          <span class="muted">Economia no mes</span>
+          <strong>${new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(economyRate)}</strong>
+        </div>
+      </div>
+      <p class="muted" style="margin-top: 14px;">${escapeHtml(badges || "Mes acompanhado no controle de compras.")}</p>
+    `;
+
+    monthlyAnalysisList.appendChild(article);
+  });
 }
 </script>
 </body>
