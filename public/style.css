@@ -514,63 +514,44 @@ pre {
 }
 
 .product-operational-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
-  align-items: start;
 }
 
 .operational-metric-card {
-  display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: 5px;
-  min-width: 0;
-  padding: 2px 12px;
-  position: relative;
-}
-
-.operational-metric-card:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  right: 0;
-  width: 1px;
-  height: calc(100% - 8px);
-  background: rgba(148, 163, 184, 0.12);
-}
-
-.operational-metric-main {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.36);
+  line-height: 1.2;
 }
 
 .operational-metric-card span {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  line-height: 1.1;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 600;
 }
 
 .operational-metric-card strong {
-  display: block;
-  font-size: 0.94rem;
-  line-height: 1.15;
-  color: var(--text);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.operational-metric-card .muted {
+.operational-metric-card em {
   margin: 0;
-  max-width: 18ch;
-  font-size: 0.8rem;
-  line-height: 1.2;
+  font-size: 0.78rem;
+  font-style: normal;
+  color: var(--muted);
 }
 
 .advanced-config-section {
@@ -1082,16 +1063,13 @@ pre {
   }
 
   .product-operational-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 8px;
+    gap: 8px;
   }
 
   .operational-metric-card {
-    padding: 2px 4px;
-  }
-
-  .operational-metric-card::after {
-    display: none;
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 12px;
   }
 
   .detail-subaccordion-summary,
@@ -1156,11 +1134,6 @@ pre {
 
 @media (max-width: 1080px) and (min-width: 761px) {
   .product-operational-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px 10px;
-  }
-
-  .operational-metric-card::after {
-    display: none;
+    gap: 8px;
   }
 }
