@@ -417,8 +417,24 @@ h3 {
   background: rgba(22, 101, 52, 0.34);
 }
 
+.waste-employee-grid {
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  align-items: end;
+}
+
 .waste-history-card {
   padding: 14px;
+}
+
+.waste-history-actions {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) auto auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.waste-history-actions input {
+  min-width: 0;
 }
 
 .product-create-panel {

@@ -91,6 +91,20 @@
         <input id="waste-note" placeholder="Opcional">
       </div>
 
+      <div class="form-grid waste-employee-grid">
+        <div class="field-group">
+          <label for="waste-employee">Funcionario responsavel</label>
+          <select id="waste-employee"></select>
+        </div>
+
+        <div id="new-employee-field" class="field-group" hidden>
+          <label for="new-employee-name">Novo funcionario</label>
+          <input id="new-employee-name" placeholder="Nome para desconto">
+        </div>
+
+        <button id="add-employee-button" class="secondary" type="button" hidden>Cadastrar funcionario</button>
+      </div>
+
       <button id="save-waste-button" type="button">Registrar desperdicio</button>
     </div>
 
@@ -117,6 +131,7 @@ import { db } from "./firebase.js";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   increment,
@@ -147,6 +162,10 @@ const conversionPreview = document.getElementById("waste-conversion-preview");
 const minusButton = document.getElementById("waste-minus");
 const plusButton = document.getElementById("waste-plus");
 const noteInput = document.getElementById("waste-note");
+const employeeSelect = document.getElementById("waste-employee");
+const newEmployeeField = document.getElementById("new-employee-field");
+const newEmployeeNameInput = document.getElementById("new-employee-name");
+const addEmployeeButton = document.getElementById("add-employee-button");
 const saveButton = document.getElementById("save-waste-button");
 const historyList = document.getElementById("waste-history-list");
 const metricWasteCount = document.getElementById("metric-waste-count");
@@ -167,8 +186,10 @@ stockLink.hidden = profile.tipo !== "admin";
 
 let products = [];
 let wasteEvents = [];
+let wasteEmployees = [];
 let selectedProduct = null;
 let selectedReason = "Sobra final";
+const isAdmin = profile.tipo === "admin";
 
 function normalizeBarcode(value) {
   return String(value ?? "").replace(/\D/g, "").slice(0, 24);
@@ -212,10 +233,117 @@ function getUnitCost(product) {
   return Math.max(0, toNumber(product?.unit_cost ?? product?.custoUnitario ?? product?.custo, 0));
 }
 
-function formatDecimal(value, maximumFractionDigits = 3) {
-  return toNumber(value, 0).toLocaleString("pt-BR", {
-    maximumFractionDigits
+function getEmployeeDisplayName(employee = {}) {
+  return String(employee.nome || employee.name || employee.email || "").trim();
+}
+
+function renderEmployeeOptions(preferredId = "") {
+  employeeSelect.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecione o funcionario";
+  employeeSelect.appendChild(placeholder);
+
+  wasteEmployees.forEach((employee) => {
+    const name = getEmployeeDisplayName(employee);
+
+    if (!name) {
+      return;
+    }
+
+    const option = document.createElement("option");
+    option.value = employee.id;
+    option.textContent = name;
+    option.selected = preferredId ? employee.id === preferredId : false;
+    employeeSelect.appendChild(option);
   });
+
+  const newOption = document.createElement("option");
+  newOption.value = "__new__";
+  newOption.textContent = "Cadastrar novo funcionario";
+  employeeSelect.appendChild(newOption);
+
+  syncNewEmployeeFields();
+}
+
+function syncNewEmployeeFields() {
+  const creatingNew = employeeSelect.value === "__new__";
+  newEmployeeField.hidden = !creatingNew;
+  addEmployeeButton.hidden = !creatingNew;
+
+  if (creatingNew) {
+    newEmployeeNameInput.focus();
+  }
+}
+
+async function createWasteEmployee() {
+  const name = newEmployeeNameInput.value.trim();
+
+  if (!name) {
+    setStatus("waste-status", "Informe o nome do funcionario.", "error");
+    return null;
+  }
+
+  const normalizedName = normalizeText(name);
+  const existing = wasteEmployees.find((employee) => normalizeText(getEmployeeDisplayName(employee)) === normalizedName);
+
+  if (existing) {
+    renderEmployeeOptions(existing.id);
+    setStatus("waste-status", "Funcionario ja estava na lista.", "info");
+    return existing;
+  }
+
+  addEmployeeButton.disabled = true;
+
+  try {
+    const createdRef = await addDoc(collection(db, "funcionariosDesperdicio"), {
+      nome: name,
+      nomeNormalizado: normalizedName,
+      ativo: true,
+      criadoPor: profile.email,
+      criadoEm: serverTimestamp()
+    });
+    const createdEmployee = {
+      id: createdRef.id,
+      nome: name,
+      nomeNormalizado: normalizedName,
+      ativo: true
+    };
+
+    wasteEmployees.push(createdEmployee);
+    wasteEmployees.sort((left, right) => getEmployeeDisplayName(left).localeCompare(getEmployeeDisplayName(right), "pt-BR"));
+    newEmployeeNameInput.value = "";
+    renderEmployeeOptions(createdEmployee.id);
+    setStatus("waste-status", "Funcionario cadastrado para lancamentos de desperdicio.", "success");
+    return createdEmployee;
+  } catch (error) {
+    console.error(error);
+    setStatus("waste-status", error.message || "Nao foi possivel cadastrar o funcionario.", "error");
+    return null;
+  } finally {
+    addEmployeeButton.disabled = false;
+  }
+}
+
+async function getSelectedWasteEmployee() {
+  if (employeeSelect.value === "__new__") {
+    return createWasteEmployee();
+  }
+
+  const employee = wasteEmployees.find((item) => item.id === employeeSelect.value) || null;
+
+  if (!employee) {
+    setStatus("waste-status", "Selecione o funcionario responsavel pelo desperdicio.", "error");
+    employeeSelect.focus();
+    return null;
+  }
+
+  return employee;
+}
+
+function getWasteEventQuantity(event = {}) {
+  return Math.max(0, Math.floor(toNumber(event.quantityUnits ?? event.quantity, 0)));
 }
 
 function getWasteConversion(product = selectedProduct, quantityValue = quantityInput.value) {
@@ -293,6 +421,7 @@ function renderSelectedProduct() {
   quantityInput.value = "1";
   noteInput.value = "";
   formCard.hidden = false;
+  syncNewEmployeeFields();
   updateWasteConversionPreview();
 }
 
@@ -301,7 +430,7 @@ function renderWasteHistory() {
   const todayEvents = wasteEvents
     .filter((event) => event.dateKey === todayKey)
     .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
-  const totalUnits = todayEvents.reduce((sum, event) => sum + toNumber(event.quantity, 0), 0);
+  const totalUnits = todayEvents.reduce((sum, event) => sum + getWasteEventQuantity(event), 0);
   const totalCost = todayEvents.reduce((sum, event) => sum + toNumber(event.estimatedCost, 0), 0);
 
   metricWasteCount.textContent = String(todayEvents.length);
@@ -318,22 +447,110 @@ function renderWasteHistory() {
   todayEvents.slice(0, 20).forEach((event) => {
     const article = document.createElement("article");
     article.className = "card waste-history-card";
+    const quantity = getWasteEventQuantity(event);
     article.innerHTML = `
       <div class="summary-line">
         <span>${escapeHtml(event.productName || "Produto")}</span>
-        <strong>${toNumber(event.quantityUnits ?? event.quantity, 0)} un</strong>
+        <strong>${quantity} un</strong>
       </div>
-      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | ${escapeHtml(event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
+      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | Responsavel: ${escapeHtml(event.responsibleEmployeeName || event.employeeName || event.responsible || "nao informado")} | Lancado por: ${escapeHtml(event.registeredBy || event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
       ${event.note ? `<p class="muted compact-meta">${escapeHtml(event.note)}</p>` : ""}
+      <div class="waste-history-actions">
+        <input type="number" min="1" step="1" value="${quantity}" aria-label="Quantidade desperdicada" data-waste-quantity="${escapeHtml(event.id)}">
+        <button type="button" class="secondary" data-action="update-waste" data-waste-id="${escapeHtml(event.id)}">Atualizar</button>
+        ${isAdmin ? `<button type="button" class="ghost" data-action="delete-waste" data-waste-id="${escapeHtml(event.id)}">Excluir</button>` : ""}
+      </div>
     `;
     historyList.appendChild(article);
   });
 }
 
+async function adjustProductWasteTotals(event, quantityDelta, costDelta) {
+  if (!event?.productId || (!quantityDelta && !costDelta)) {
+    return;
+  }
+
+  await updateDoc(doc(db, "estoque", event.productId), {
+    desperdicioTotalUnidades: increment(quantityDelta),
+    desperdicioTotalCusto: increment(costDelta),
+    ultimoDesperdicioEm: serverTimestamp()
+  }).catch((error) => {
+    console.warn("Registro atualizado, mas o agregado do produto nao foi ajustado.", error);
+  });
+}
+
+async function updateWasteQuantity(wasteId, nextQuantityValue) {
+  const event = wasteEvents.find((item) => item.id === wasteId);
+
+  if (!event) {
+    setStatus("waste-status", "Registro de desperdicio nao encontrado.", "error");
+    return;
+  }
+
+  const nextQuantity = Math.max(1, Math.floor(toNumber(nextQuantityValue, 1)));
+  const previousQuantity = getWasteEventQuantity(event);
+  const unitCost = Math.max(0, toNumber(event.unitCost, 0));
+  const unitsPerBox = Math.max(1, toNumber(event.unitsPerBox, 1));
+  const nextEstimatedCost = nextQuantity * unitCost;
+  const previousEstimatedCost = Math.max(0, toNumber(event.estimatedCost, previousQuantity * unitCost));
+
+  if (nextQuantity === previousQuantity) {
+    setStatus("waste-status", "Quantidade mantida sem alteracao.", "info");
+    return;
+  }
+
+  await updateDoc(doc(db, "desperdicios", wasteId), {
+    quantity: nextQuantity,
+    quantityUnits: nextQuantity,
+    operationUnit: "unidade",
+    equivalentBoxes: nextQuantity / unitsPerBox,
+    estimatedCost: nextEstimatedCost,
+    updatedAt: serverTimestamp(),
+    updatedBy: profile.email
+  });
+
+  await adjustProductWasteTotals(
+    event,
+    nextQuantity - previousQuantity,
+    nextEstimatedCost - previousEstimatedCost
+  );
+
+  setStatus("waste-status", "Quantidade do desperdicio atualizada.", "success");
+  await loadData();
+}
+
+async function deleteWasteEvent(wasteId) {
+  if (!isAdmin) {
+    setStatus("waste-status", "Apenas administradores podem excluir registros.", "error");
+    return;
+  }
+
+  const event = wasteEvents.find((item) => item.id === wasteId);
+
+  if (!event) {
+    setStatus("waste-status", "Registro de desperdicio nao encontrado.", "error");
+    return;
+  }
+
+  if (!window.confirm(`Excluir o desperdicio de ${event.productName || "produto"}?`)) {
+    return;
+  }
+
+  const quantity = getWasteEventQuantity(event);
+  const estimatedCost = Math.max(0, toNumber(event.estimatedCost, quantity * toNumber(event.unitCost, 0)));
+
+  await deleteDoc(doc(db, "desperdicios", wasteId));
+  await adjustProductWasteTotals(event, -quantity, -estimatedCost);
+
+  setStatus("waste-status", "Registro de desperdicio excluido.", "success");
+  await loadData();
+}
+
 async function loadData() {
-  const [productsSnapshot, wasteSnapshot] = await Promise.all([
+  const [productsSnapshot, wasteSnapshot, employeesSnapshot] = await Promise.all([
     getDocs(collection(db, "estoque")),
-    getDocs(collection(db, "desperdicios"))
+    getDocs(collection(db, "desperdicios")),
+    getDocs(collection(db, "funcionariosDesperdicio"))
   ]);
 
   products = productsSnapshot.docs
@@ -350,6 +567,15 @@ async function loadData() {
     ...document.data()
   }));
 
+  wasteEmployees = employeesSnapshot.docs
+    .map((document) => ({
+      id: document.id,
+      ...document.data()
+    }))
+    .filter((employee) => employee.ativo !== false && getEmployeeDisplayName(employee))
+    .sort((left, right) => getEmployeeDisplayName(left).localeCompare(getEmployeeDisplayName(right), "pt-BR"));
+
+  renderEmployeeOptions(employeeSelect.value);
   renderProducts();
   renderWasteHistory();
 }
@@ -375,6 +601,13 @@ async function saveWaste() {
   const conversion = getWasteConversion(selectedProduct, quantity);
   const unitCost = getUnitCost(selectedProduct);
   const unitLabel = selectedProduct.unidadeUso || "un";
+  const wasteEmployee = await getSelectedWasteEmployee();
+
+  if (!wasteEmployee) {
+    return;
+  }
+
+  const employeeName = getEmployeeDisplayName(wasteEmployee);
   const payload = {
     productId: selectedProduct.id,
     productName: selectedProduct.nome || "Produto",
@@ -391,7 +624,12 @@ async function saveWaste() {
     equivalentBoxes: conversion.equivalentBoxes,
     unitCost,
     estimatedCost: conversion.estimatedCost,
-    responsible: profile.email,
+    responsible: employeeName,
+    responsibleEmployeeId: wasteEmployee.id,
+    responsibleEmployeeName: employeeName,
+    employeeId: wasteEmployee.id,
+    employeeName,
+    registeredBy: profile.email,
     responsibleRole: profile.tipo,
     dateKey: formatDateKey(),
     createdAt: serverTimestamp()
@@ -428,9 +666,45 @@ productList.addEventListener("click", (event) => {
     selectProduct(button.dataset.productId);
   }
 });
+historyList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+
+  if (!button) {
+    return;
+  }
+
+  const wasteId = button.dataset.wasteId || "";
+
+  try {
+    button.disabled = true;
+
+    if (button.dataset.action === "update-waste") {
+      const quantityField = historyList.querySelector(`[data-waste-quantity="${CSS.escape(wasteId)}"]`);
+      await updateWasteQuantity(wasteId, quantityField?.value);
+      return;
+    }
+
+    if (button.dataset.action === "delete-waste") {
+      await deleteWasteEvent(wasteId);
+    }
+  } catch (error) {
+    console.error(error);
+    setStatus("waste-status", error.message || "Nao foi possivel alterar o registro de desperdicio.", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 minusButton.addEventListener("click", () => setQuantity(toNumber(quantityInput.value, 1) - 1));
 plusButton.addEventListener("click", () => setQuantity(toNumber(quantityInput.value, 1) + 1));
 quantityInput.addEventListener("input", () => setQuantity(quantityInput.value));
+employeeSelect.addEventListener("change", syncNewEmployeeFields);
+newEmployeeNameInput.addEventListener("keydown", async (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    await createWasteEmployee();
+  }
+});
+addEmployeeButton.addEventListener("click", createWasteEmployee);
 document.querySelectorAll(".waste-reason").forEach((button) => {
   button.addEventListener("click", () => {
     selectedReason = button.dataset.reason || "Outro";
