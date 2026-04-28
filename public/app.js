@@ -683,9 +683,17 @@ export function setStatus(targetId, message, type = "info") {
 
 export function registerServiceWorker() {
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.warn("Falha ao registrar service worker.", error);
-    });
+    navigator.serviceWorker.register("/sw.js")
+      .then(async (registration) => {
+        try {
+          await registration.update();
+        } catch (error) {
+          console.warn("Falha ao atualizar o service worker.", error);
+        }
+      })
+      .catch((error) => {
+        console.warn("Falha ao registrar service worker.", error);
+      });
   }
 }
 

@@ -30,22 +30,22 @@
   </header>
 
   <section class="menu-grid">
-    <a id="menu-estoque" class="card" href="estoque.html">
+    <a id="menu-estoque" class="card" href="estoque.html" hidden>
       <h3>Estoque</h3>
       <p class="muted">Cadastre produtos, limites, custos e fornecedores.</p>
     </a>
 
-    <a id="menu-reposicao" class="card" href="reposicao-producao.html">
+    <a id="menu-reposicao" class="card" href="reposicao-producao.html" hidden>
       <h3>Reposicao para producao</h3>
       <p class="muted">Separe insumos do estoque central para a producao do dia com baixa automatica.</p>
     </a>
 
-    <a id="menu-compras" class="card" href="compras.html">
+    <a id="menu-compras" class="card" href="compras.html" hidden>
       <h3>Compras</h3>
       <p class="muted">Veja reposicoes necessarias e envie pedidos rapido.</p>
     </a>
 
-    <a id="menu-dashboard-compras" class="card" href="dashboard-compras.html">
+    <a id="menu-dashboard-compras" class="card" href="dashboard-compras.html" hidden>
       <h3>Compras: dashboard + analise</h3>
       <p class="muted">Acompanhe evolucao mensal, comparativos, descontos e itens que mais impactam o custo.</p>
     </a>
@@ -55,12 +55,12 @@
       <p class="muted">Painel inteligente com criticidade, historico e WhatsApp do admin.</p>
     </a>
 
-    <a id="menu-fornecedores" class="card" href="fornecedores.html">
+    <a id="menu-fornecedores" class="card" href="fornecedores.html" hidden>
       <h3>Fornecedores</h3>
       <p class="muted">Organize contatos e referencia de cada item.</p>
     </a>
 
-    <a id="menu-dashboard" class="card" href="dashboard.html">
+    <a id="menu-dashboard" class="card" href="dashboard.html" hidden>
       <h3>Dashboard</h3>
       <p class="muted">Resumo da operacao com alertas de estoque.</p>
     </a>
@@ -100,16 +100,20 @@ async function init() {
 
   const { profile } = await requireAuth();
   userInfo.textContent = describeProfile(profile);
-  employeesLink.hidden = profile.tipo !== "admin";
-  alertsLink.hidden = profile.tipo !== "admin";
+  
+  if (profile.tipo === "admin") {
+    menuEstoque.hidden = false;
+    menuReposicao.hidden = false;
+    menuCompras.hidden = false;
+    menuDashboardCompras.hidden = false;
+    menuFornecedores.hidden = false;
+    menuDashboard.hidden = false;
+    alertsLink.hidden = false;
+    employeesLink.hidden = false;
+    return;
+  }
 
   if (profile.tipo === "estoque") {
-    menuEstoque.hidden = true;
-    menuDashboardCompras.hidden = true;
-    menuFornecedores.hidden = true;
-    menuDashboard.hidden = true;
-    alertsLink.hidden = true;
-    employeesLink.hidden = true;
     menuReposicao.hidden = false;
     menuCompras.hidden = false;
   }

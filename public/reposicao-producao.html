@@ -26,7 +26,7 @@
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
-      <a class="button secondary" href="estoque.html">Estoque</a>
+      <a id="stock-link" class="button secondary" href="estoque.html" hidden>Estoque</a>
       <span id="selected-badge" class="product-tag">0 item(ns) selecionado(s)</span>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
@@ -119,6 +119,7 @@ const novoNomeInput = document.getElementById("novo-nome-insumo");
 const novoUnidadeInput = document.getElementById("novo-unidade-insumo");
 const novoEstoqueInput = document.getElementById("novo-estoque-insumo");
 const headerMeta = document.getElementById("header-meta");
+const stockLink = document.getElementById("stock-link");
 
 let insumos = [];
 let selecionados = {};
@@ -481,6 +482,7 @@ async function init() {
   profileContext = await requireAuth();
   document.getElementById("user-info").textContent = describeProfile(profileContext.profile);
   headerMeta.textContent = `${getHeaderDateLabel()} | Turno atual: ${getTurnoAtual()}`;
+  stockLink.hidden = profileContext.profile.tipo !== "admin";
 
   await loadInsumosFromFirestore();
   await loadHistoricoFromFirestore();
