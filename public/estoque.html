@@ -267,6 +267,13 @@
       </summary>
 
       <div class="section-accordion-body">
+        <div class="inventory-toolbar">
+          <div class="field-group">
+            <label for="inventory-search">Buscar item no estoque</label>
+            <input id="inventory-search" type="search" placeholder="Nome, marca, categoria ou codigo de barras">
+          </div>
+          <span id="inventory-filter-meta" class="inventory-filter-meta muted">Sem filtro aplicado</span>
+        </div>
         <div id="lista" class="list"></div>
       </div>
     </details>
@@ -351,6 +358,8 @@ const createDeliveryDaysContainer = document.getElementById("novo_dias_entrega")
 const barcodeAccordionSummary = document.getElementById("barcode-accordion-summary");
 const suppliersAccordionSummary = document.getElementById("suppliers-accordion-summary");
 const registeredItemsSummary = document.getElementById("registered-items-summary");
+const inventorySearchInput = document.getElementById("inventory-search");
+const inventoryFilterMeta = document.getElementById("inventory-filter-meta");
 const addSupplierButton = document.getElementById("add-supplier-button");
 const newSuppliersList = document.getElementById("new-suppliers-list");
 const xmlInput = document.getElementById("xml-files");
@@ -813,6 +822,51 @@ function syncCreateFrequencyState() {
 
 function sortByName(items) {
   return [...items].sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
+}
+
+function matchesInventorySearch(item, searchTerm) {
+  if (!searchTerm) {
+    return true;
+  }
+
+  const normalizedTerm = normalizeText(searchTerm);
+  const searchableFields = [
+    item?.nome,
+    item?.marca,
+    item?.categoria,
+    item?.codigoBarras
+  ];
+
+  return searchableFields.some((field) => normalizeText(field).includes(normalizedTerm));
+}
+
+function getFilteredProducts(items = []) {
+  const searchTerm = String(inventorySearchInput?.value || "").trim();
+  return items.filter((item) => matchesInventorySearch(item, searchTerm));
+}
+
+function updateInventoryFilterMeta(totalCount, filteredCount) {
+  if (!inventoryFilterMeta) {
+    return;
+  }
+
+  if (!totalCount) {
+    inventoryFilterMeta.textContent = "Sem itens cadastrados";
+    return;
+  }
+
+  if (filteredCount === totalCount) {
+    inventoryFilterMeta.textContent = `${totalCount} item(ns) exibidos`;
+    return;
+  }
+
+  inventoryFilterMeta.textContent = `${filteredCount} de ${totalCount} item(ns) exibidos`;
+}
+
+function applyProductsView() {
+  const filteredItems = getFilteredProducts(produtos);
+  updateInventoryFilterMeta(produtos.length, filteredItems.length);
+  renderProducts(filteredItems);
 }
 
 function populateWeekdaySelector(container, selectedDays = [], inputName = `weekday_${Date.now()}`) {
@@ -1945,7 +1999,7 @@ async function loadProducts() {
     }))
     .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"));
 
-  renderProducts(produtos);
+  applyProductsView();
   return produtos;
 }
 
@@ -2663,6 +2717,9 @@ createPromotionStartInput.addEventListener("input", updateCreateCostPreview);
 createPromotionEndInput.addEventListener("input", updateCreateCostPreview);
 createFrequencyActiveSelect.addEventListener("change", syncCreateFrequencyState);
 newSuppliersList.addEventListener("change", updateSuppliersAccordionSummary);
+inventorySearchInput.addEventListener("input", () => {
+  applyProductsView();
+});
 addSupplierButton.addEventListener("click", () => {
   setStatus("status", "", "info");
 

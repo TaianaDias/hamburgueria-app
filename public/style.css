@@ -261,6 +261,29 @@ h3 {
   gap: 14px;
 }
 
+.inventory-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.inventory-toolbar .field-group {
+  flex: 1 1 320px;
+  margin: 0;
+}
+
+.inventory-filter-meta {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .order-items {
   margin: 10px 0 0;
   padding-left: 18px;
