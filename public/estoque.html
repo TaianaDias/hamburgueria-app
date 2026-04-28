@@ -283,8 +283,11 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  query,
   serverTimestamp,
   updateDoc,
+  where,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
@@ -366,6 +369,11 @@ bindLogoutButton();
 
 const { profile } = await requireAuth();
 userInfo.textContent = describeProfile(profile);
+const isAdmin = profile?.tipo === "admin";
+
+if (!isAdmin) {
+  resetButton.hidden = true;
+}
 
 let fornecedores = [];
 let produtos = [];
@@ -1806,7 +1814,13 @@ function renderProducts(items) {
     deleteButton.type = "button";
     deleteButton.className = "secondary";
     deleteButton.textContent = "Excluir";
+    deleteButton.hidden = !isAdmin;
     deleteButton.addEventListener("click", async () => {
+      if (!isAdmin) {
+        setStatus("status", "Apenas administradores podem excluir itens do estoque.", "error");
+        return;
+      }
+
       if (!window.confirm(`Deseja excluir ${item.nome}?`)) {
         return;
       }
@@ -2352,9 +2366,41 @@ async function importXmlInvoices() {
         createdSuppliers += 1;
       }
 
-      const batch = writeBatch(db);
+      const BATCH_LIMIT = 400;
+      let batch = writeBatch(db);
+      let pendingOperations = 0;
 
-      note.itens.forEach((importedItem) => {
+      async function flushBatch(force = false) {
+        if (!pendingOperations) {
+          return;
+        }
+
+        if (force || pendingOperations >= BATCH_LIMIT) {
+          await batch.commit();
+          batch = writeBatch(db);
+          pendingOperations = 0;
+        }
+      }
+
+      async function queueBatchUpdate(documentRef, payload) {
+        if (pendingOperations >= BATCH_LIMIT) {
+          await flushBatch(true);
+        }
+
+        batch.update(documentRef, payload);
+        pendingOperations += 1;
+      }
+
+      async function queueBatchSet(documentRef, payload) {
+        if (pendingOperations >= BATCH_LIMIT) {
+          await flushBatch(true);
+        }
+
+        batch.set(documentRef, payload);
+        pendingOperations += 1;
+      }
+
+      for (const importedItem of note.itens) {
         const matchedItem = findMatchingProduct(importedItem, inventoryByName, inventoryByBarcode, inventoryByCode);
         const importedPurchaseCost = Math.max(
           0,
@@ -2373,7 +2419,7 @@ async function importXmlInvoices() {
           });
           const primarySupplierFields = buildPrimarySupplierFields(nextSuppliers, matchedItem);
 
-          batch.update(doc(db, "estoque", matchedItem.id), {
+          await queueBatchUpdate(doc(db, "estoque", matchedItem.id), {
             quantidade: nextQuantity,
             ...primarySupplierFields,
             codigoBarras: matchedItem.codigoBarras || importedBarcode || "",
@@ -2411,7 +2457,7 @@ async function importXmlInvoices() {
           }
 
           const purchaseRef = doc(collection(db, "comprasMensais"));
-          batch.set(purchaseRef, {
+          await queueBatchSet(purchaseRef, {
             produtoId: matchedItem.id,
             produtoNome: matchedItem.nome,
             fornecedorId: supplier.id,
@@ -2438,7 +2484,7 @@ async function importXmlInvoices() {
           });
 
           updatedItems += 1;
-          return;
+          continue;
         }
 
         const newProductRef = doc(collection(db, "estoque"));
@@ -2471,7 +2517,7 @@ async function importXmlInvoices() {
           atualizadoEm: serverTimestamp()
         };
 
-        batch.set(newProductRef, newProduct);
+        await queueBatchSet(newProductRef, newProduct);
 
         const cachedProduct = { id: newProductRef.id, ...newProduct };
         inventoryByName.set(newProduct.nomeNormalizado, cachedProduct);
@@ -2485,7 +2531,7 @@ async function importXmlInvoices() {
         }
 
         const purchaseRef = doc(collection(db, "comprasMensais"));
-        batch.set(purchaseRef, {
+        await queueBatchSet(purchaseRef, {
           produtoId: newProductRef.id,
           produtoNome: importedItem.nome,
           fornecedorId: supplier.id,
@@ -2512,11 +2558,11 @@ async function importXmlInvoices() {
         });
 
         createdItems += 1;
-      });
+      }
 
       const historyRef = doc(collection(db, "historico"));
 
-      batch.set(historyRef, {
+      await queueBatchSet(historyRef, {
         tipo: "importacao_xml",
         importacaoId: note.importId,
         chaveAcesso: note.chaveAcesso || note.importId,
@@ -2532,7 +2578,7 @@ async function importXmlInvoices() {
         data: serverTimestamp()
       });
 
-      batch.set(importRef, {
+      await queueBatchSet(importRef, {
         importacaoId: note.importId,
         chaveAcesso: note.chaveAcesso || "",
         numeroNota: note.numero || "",
@@ -2547,7 +2593,7 @@ async function importXmlInvoices() {
         criadoEm: serverTimestamp()
       });
 
-      await batch.commit();
+      await flushBatch(true);
       importedNotes += 1;
     }
 
@@ -2716,11 +2762,23 @@ form.addEventListener("submit", async (event) => {
   createButton.disabled = true;
 
   try {
-    const existingItems = await loadProducts();
-    const duplicated = existingItems.some((item) => normalizeText(item.nome) === normalizeText(nome));
-    const duplicatedBarcode = codigoBarras
-      ? existingItems.some((item) => normalizeBarcode(item.codigoBarras) === codigoBarras)
-      : false;
+    const normalizedName = normalizeText(nome);
+    const duplicatedByNameSnapshot = await getDocs(query(
+      collection(db, "estoque"),
+      where("nomeNormalizado", "==", normalizedName),
+      limit(1)
+    ));
+    const duplicated = !duplicatedByNameSnapshot.empty;
+    let duplicatedBarcode = false;
+
+    if (codigoBarras) {
+      const duplicatedByBarcodeSnapshot = await getDocs(query(
+        collection(db, "estoque"),
+        where("codigoBarrasNormalizado", "==", codigoBarras),
+        limit(1)
+      ));
+      duplicatedBarcode = !duplicatedByBarcodeSnapshot.empty;
+    }
 
     if (duplicated) {
       throw new Error("Ja existe um produto com esse nome.");
@@ -2743,7 +2801,7 @@ form.addEventListener("submit", async (event) => {
       codigoBarras,
       codigoBarrasNormalizado: codigoBarras,
       nome,
-      nomeNormalizado: normalizeText(nome),
+      nomeNormalizado: normalizedName,
       marca,
       categoria,
       unidadeMedida,
@@ -2783,22 +2841,38 @@ form.addEventListener("submit", async (event) => {
 resetButton.addEventListener("click", async () => {
   setStatus("status", "", "info");
 
+  if (!isAdmin) {
+    setStatus("status", "Apenas administradores podem zerar o estoque.", "error");
+    return;
+  }
+
   if (!window.confirm("Deseja zerar todas as quantidades do estoque?")) {
     return;
   }
 
   try {
     const snapshot = await getDocs(collection(db, "estoque"));
-    const batch = writeBatch(db);
+    const BATCH_LIMIT = 400;
+    let batch = writeBatch(db);
+    let pendingOperations = 0;
 
-    snapshot.docs.forEach((document) => {
-      batch.update(doc(db, "estoque", document.id), {
+    for (const stockDocument of snapshot.docs) {
+      batch.update(doc(db, "estoque", stockDocument.id), {
         quantidade: 0,
         atualizadoEm: serverTimestamp()
       });
-    });
+      pendingOperations += 1;
 
-    await batch.commit();
+      if (pendingOperations >= BATCH_LIMIT) {
+        await batch.commit();
+        batch = writeBatch(db);
+        pendingOperations = 0;
+      }
+    }
+
+    if (pendingOperations > 0) {
+      await batch.commit();
+    }
 
     await addDoc(collection(db, "historico"), {
       tipo: "zerar",
