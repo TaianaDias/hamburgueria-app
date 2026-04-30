@@ -876,6 +876,74 @@ function getSupplierNamesSummary(productSuppliers) {
   return names.length ? names.join(" | ") : "Sem fornecedores";
 }
 
+function formatCompactWeekdayRange(days = []) {
+  const normalizedDays = normalizeWeekdayList(days);
+  const mondayToSaturday = ["seg", "ter", "qua", "qui", "sex", "sab"];
+
+  if (normalizedDays.length === mondayToSaturday.length && mondayToSaturday.every((day) => normalizedDays.includes(day))) {
+    return "Seg - Sab";
+  }
+
+  return normalizedDays.length ? formatWeekdayList(normalizedDays) : "";
+}
+
+function getSupplierDeliveryLabel(supplier) {
+  if (!supplier?.frequenciaAtiva) {
+    return "Configurar frequencia";
+  }
+
+  const deliveryLabel = formatCompactWeekdayRange(supplier.diasEntrega);
+  return deliveryLabel || "Configurar frequencia";
+}
+
+function getStockStatus(stockQuantity, minimumQuantity) {
+  const stock = Math.max(0, toNumber(stockQuantity, 0));
+  const minimum = Math.max(0, toNumber(minimumQuantity, 0));
+
+  if (minimum > 0 && stock <= minimum) {
+    return {
+      label: "Reposicao urgente",
+      className: "urgent"
+    };
+  }
+
+  if (minimum > 0 && stock <= Math.ceil(minimum * 1.5)) {
+    return {
+      label: "Estoque baixo",
+      className: "low"
+    };
+  }
+
+  return {
+    label: "Dentro do limite",
+    className: "healthy"
+  };
+}
+
+function buildProductStockHighlights(item, stockBoxes) {
+  const quantity = formatQuantity(toNumber(item.quantidade, 0));
+  const unit = item.unidadeMedida || getUsageUnit(item);
+  const highlights = [`${quantity} ${unit}`];
+
+  if (item.purchase_unit === "caixa") {
+    highlights.push(`${formatQuantity(stockBoxes)} CX`);
+  }
+
+  return highlights;
+}
+
+function buildSupplierCountLabel(productSuppliers) {
+  if (!productSuppliers.length) {
+    return "Configurar fornecedor";
+  }
+
+  if (productSuppliers.length === 1) {
+    return "1 fornecedor disponivel";
+  }
+
+  return `${productSuppliers.length} fornecedores disponiveis`;
+}
+
 function buildOperationalSummaryLine(entries = []) {
   return entries
     .filter((entry) => entry && String(entry.value ?? "").trim())
@@ -2057,11 +2125,9 @@ function renderProducts(items) {
 
   items.forEach((item) => {
     const article = document.createElement("article");
-    article.className = getBoxOperationStock(item) <= getBoxOperationMinimum(item) ? "card critical" : "card";
     const productSuppliers = normalizeProductSuppliers(item, fornecedores);
     const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
     const cheapestSupplier = getCheapestProductSupplier(item, fornecedores);
-    const scheduledSuppliers = productSuppliers.filter((supplier) => supplier.frequenciaAtiva);
     const fields = document.createElement("div");
     fields.className = "form-grid";
     fields.style.marginTop = "16px";
@@ -2084,12 +2150,11 @@ function renderProducts(items) {
 
     const orderDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasPedido");
     const deliveryDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasEntrega");
-    const suppliersSummary = getSupplierNamesSummary(productSuppliers);
     const currentCostLabel = cheapestSupplier
       ? formatCurrency(getEffectiveSupplierPurchaseCost(cheapestSupplier))
       : item.purchase_unit === "caixa" && item.last_box_price
         ? formatCurrency(item.last_box_price)
-        : "Nao definido";
+        : "Configurar custo";
     const currentCostDetails = cheapestSupplier
       ? `${cheapestSupplier.nome}${cheapestSupplier.promocaoAplicada ? " | promocao ativa" : ""}`
       : item.purchase_unit === "caixa"
@@ -2097,9 +2162,16 @@ function renderProducts(items) {
         : "Cadastre um fornecedor para calcular custo";
     const stockBoxes = getBoxOperationStock(item);
     const minimumBoxes = getBoxOperationMinimum(item);
-    const stockStatusLabel = stockBoxes <= minimumBoxes
-      ? "Atencao para reposicao"
-      : "Operacao dentro do limite";
+    const stockStatus = getStockStatus(stockBoxes, minimumBoxes);
+    const stockHighlights = buildProductStockHighlights(item, stockBoxes);
+    const supplierCountLabel = buildSupplierCountLabel(productSuppliers);
+    const primarySupplierName = primarySupplier?.nome || "Configurar fornecedor";
+    const deliveryLabel = getSupplierDeliveryLabel(primarySupplier);
+    const orderDaysLabel = primarySupplier?.frequenciaAtiva
+      ? (formatCompactWeekdayRange(primarySupplier.diasPedido) || "Configurar frequencia")
+      : "Configurar frequencia";
+    const compactCategory = [item.categoria, item.marca].map((value) => String(value || "").trim()).filter(Boolean).join(" | ");
+    article.className = `card inventory-product-card inventory-product-card-${stockStatus.className}`;
 
     const supplierOverviewSection = document.createElement("div");
     supplierOverviewSection.className = "supplier-price-grid";
@@ -2309,67 +2381,68 @@ function renderProducts(items) {
 
     const collapsible = document.createElement("details");
     collapsible.className = "product-card-details";
-    collapsible.open = item.quantidade <= item.minimo;
+    collapsible.open = stockStatus.className === "urgent";
     const detailsSummary = document.createElement("summary");
     detailsSummary.className = "product-card-details-summary";
     detailsSummary.innerHTML = `
       <div>
-        <strong>Detalhes do item</strong>
-        <p class="muted">Abra para editar descricao e fornecedores.</p>
+        <strong>Ver detalhes</strong>
+        <p class="muted">Descricao completa, fornecedores, custos e configuracoes.</p>
       </div>
-      <span class="product-card-details-cta">Abrir detalhes</span>
+      <span class="product-card-details-cta">Abrir</span>
     `;
     const detailsBody = document.createElement("div");
     detailsBody.className = "product-card-details-body";
 
     article.innerHTML = `
-      <div class="product-operational-header">
-        <div>
-          <div class="summary-line">
-            <h3>${escapeHtml(item.nome)}</h3>
-            <strong>${escapeHtml(stockStatusLabel)}</strong>
-          </div>
-          <p class="muted">${escapeHtml(`Fornecedores: ${suppliersSummary}`)}</p>
+      <div class="inventory-product-topline">
+        <div class="inventory-product-title">
+          <span class="inventory-product-kicker">${escapeHtml(compactCategory || formatProductBarcodeLabel(item))}</span>
+          <h3>${escapeHtml(item.nome)}</h3>
         </div>
+        <span class="stock-badge stock-badge-${stockStatus.className}">${escapeHtml(stockStatus.label)}</span>
       </div>
 
-      <div class="product-operational-grid">
-        <p class="product-operational-line">
-          ${escapeHtml(buildOperationalSummaryLine([
-            {
-              label: "Estoque",
-              value: item.purchase_unit === "caixa"
-                ? `${stockBoxes} caixa(s)`
-                : `${toNumber(item.quantidade, 0)} ${item.unidadeMedida || getUsageUnit(item)}`
-            },
-            {
-              label: "Compra",
-              value: orderDaysSummary,
-              details: scheduledSuppliers.length ? `${scheduledSuppliers.length} com agenda` : "sem frequencia"
-            },
-            {
-              label: "Entrega",
-              value: deliveryDaysSummary,
-              details: primarySupplier ? primarySupplier.nome : "sem principal"
-            },
-            {
-              label: "Custo",
-              value: currentCostLabel,
-              details: currentCostDetails
-            },
-            {
-              label: "Fornecedores",
-              value: `${productSuppliers.length}`,
-              details: suppliersSummary
-            }
-          ]))}
-        </p>
+      <div class="inventory-stock-strip">
+        ${stockHighlights.map((highlight, index) => `
+          <div class="inventory-stock-value${index === 0 ? " primary" : ""}">
+            <strong>${escapeHtml(highlight)}</strong>
+            <span>${index === 0 ? "Estoque atual" : "Caixas"}</span>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="inventory-quick-grid">
+        <div class="inventory-quick-item">
+          <span class="inventory-quick-icon" aria-hidden="true">F</span>
+          <div>
+            <span>Fornecedor</span>
+            <strong>${escapeHtml(primarySupplierName)}</strong>
+            ${productSuppliers.length > 1 ? `<small>${escapeHtml(supplierCountLabel)}</small>` : ""}
+          </div>
+        </div>
+        <div class="inventory-quick-item">
+          <span class="inventory-quick-icon" aria-hidden="true">E</span>
+          <div>
+            <span>Entrega</span>
+            <strong>${escapeHtml(deliveryLabel)}</strong>
+            <small>Pedido: ${escapeHtml(orderDaysLabel)}</small>
+          </div>
+        </div>
+        <div class="inventory-quick-item">
+          <span class="inventory-quick-icon" aria-hidden="true">R$</span>
+          <div>
+            <span>Custo atual</span>
+            <strong>${escapeHtml(currentCostLabel)}</strong>
+            <small>${escapeHtml(currentCostDetails)}</small>
+          </div>
+        </div>
       </div>
     `;
 
     const advancedOverview = createDetailAccordion({
-      title: "Custos e alternativas",
-      helperText: "Compare custo entre fornecedores.",
+      title: "Fornecedores alternativos e historico de custo",
+      helperText: productSuppliers.length > 1 ? supplierCountLabel : "Compare custo entre fornecedores.",
       summaryEntries: [
         { label: "Melhor custo", value: currentCostLabel },
         { label: "Fornecedores", value: String(productSuppliers.length || 0) }
@@ -2380,7 +2453,7 @@ function renderProducts(items) {
     });
 
     const productConfigSection = createDetailAccordion({
-      title: "Descricao",
+      title: "Descricao completa",
       summaryEntries: [
         { label: "Qtd. maxima", value: String(toNumber(item.maximo, 0)) },
         { label: "Estoque minimo", value: String(toNumber(item.minimo, 0)) },
@@ -2392,11 +2465,11 @@ function renderProducts(items) {
     });
 
     const supplierConfigSection = createDetailAccordion({
-      title: "Fornecedores",
-      helperText: "Defina custo, prioridade e frequencia.",
+      title: "Dias, entrega e configuracoes avancadas",
+      helperText: "Defina custo, prioridade, compra e frequencia.",
       summaryEntries: [
         { label: "Fornecedores", value: String(productSuppliers.length || 0) },
-        { label: "Principal", value: primarySupplier?.nome || "Nao definido" }
+        { label: "Principal", value: primarySupplier?.nome || "Configurar" }
       ],
       contentNode: supplierSection,
       ctaLabel: "Editar"

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -44,11 +44,6 @@
     <article class="card">
       <span class="muted">Valor estimado em estoque</span>
       <strong id="metric-valor" class="metric-value">R$ 0,00</strong>
-    </article>
-
-    <article class="card">
-      <span class="muted">Receitas cadastradas</span>
-      <strong id="metric-receitas" class="metric-value">0</strong>
     </article>
 
     <article class="card">
@@ -100,15 +95,13 @@ if (profile.tipo === "estoque") {
   throw new Error("Acesso restrito.");
 }
 
-const [stockSnapshot, recipeSnapshot, supplierSnapshot, historySnapshot] = await Promise.all([
+const [stockSnapshot, supplierSnapshot, historySnapshot] = await Promise.all([
   getDocs(collection(db, "estoque")),
-  getDocs(collection(db, "receitas")),
   getDocs(collection(db, "fornecedores")),
   getDocs(collection(db, "historico"))
 ]);
 
 const estoque = stockSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
-const receitas = recipeSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
 const fornecedores = supplierSnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
 const historico = historySnapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
 
@@ -121,7 +114,6 @@ const valorEstoque = estoque.reduce(
 document.getElementById("metric-produtos").textContent = String(estoque.length);
 document.getElementById("metric-baixa").textContent = String(itensEmBaixa.length);
 document.getElementById("metric-valor").textContent = formatCurrency(valorEstoque);
-document.getElementById("metric-receitas").textContent = String(receitas.length);
 document.getElementById("metric-fornecedores").textContent = String(fornecedores.length);
 
 const lowStockList = document.getElementById("low-stock-list");
@@ -239,4 +231,3 @@ clearHistoryButton.addEventListener("click", async () => {
 </script>
 </body>
 </html>
-

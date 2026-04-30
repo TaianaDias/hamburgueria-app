@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Padronizacao & Etiquetagem | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Producao inteligente</p>
+      <h1>Padronizacao & Etiquetagem</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="impressora.html">Impressora</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="layout-grid">
+    <article class="panel">
+      <h3>Registrar producao ou porcionamento</h3>
+      <form id="production-form" class="form-grid" style="margin-top: 16px;">
+        <div class="field-group">
+          <label for="product">Produto produzido</label>
+          <select id="product"></select>
+        </div>
+        <div class="field-group">
+          <label for="quantity">Quantidade produzida</label>
+          <input id="quantity" type="number" min="0.01" step="0.01" value="1">
+        </div>
+        <div class="field-group">
+          <label for="unit">Unidade</label>
+          <input id="unit" placeholder="un, kg, porcao" value="un">
+        </div>
+        <div class="field-group">
+          <label for="validity">Validade padrao (horas)</label>
+          <input id="validity" type="number" min="1" step="1" value="72">
+        </div>
+        <div class="field-group">
+          <label for="storage">Armazenamento</label>
+          <input id="storage" placeholder="Refrigerado">
+        </div>
+        <div class="field-group">
+          <label for="responsible">Responsavel</label>
+          <input id="responsible" placeholder="Nome do operador">
+        </div>
+        <div class="field-group" style="grid-column: 1 / -1;">
+          <label for="notes">Ficha tecnica, alergenicos e observacoes</label>
+          <textarea id="notes" placeholder="Modo de preparo, conservacao, alergenicos e padrao de porcao"></textarea>
+        </div>
+        <button id="save-production-button" type="submit">Salvar e gerar etiqueta</button>
+      </form>
+      <div id="status" class="status info" hidden></div>
+    </article>
+
+    <article id="etiqueta" class="panel">
+      <h3>Etiqueta gerada</h3>
+      <div id="label-preview" class="thermal-label-preview" style="margin-top: 16px;"></div>
+      <div class="actions" style="margin-top: 16px;">
+        <button id="print-label-button" class="secondary" type="button">Imprimir etiqueta</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel" style="margin-top: 20px;">
+    <h3>Historico de etiquetas</h3>
+    <div id="label-history" class="list" style="margin-top: 16px;"></div>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus, toNumber } from "./app.js";
+import { calculateExpirationDate, formatDateTime, generateLotCode, OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+
+bindLogoutButton();
+const { profile } = await requireAuth();
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+const productSelect = document.getElementById("product");
+const labelPreview = document.getElementById("label-preview");
+const labelHistory = document.getElementById("label-history");
+let estoque = [];
+let lastLabelHtml = "";
+
+async function loadProducts() {
+  const snapshot = await getDocs(collection(db, "estoque"));
+  estoque = snapshot.docs.map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => String(left.nome || "").localeCompare(String(right.nome || ""), "pt-BR"));
+  productSelect.innerHTML = estoque.length
+    ? estoque.map((item) => `<option value="${item.id}">${escapeHtml(item.nome)}</option>`).join("")
+    : '<option value="">Cadastre produtos no estoque</option>';
+}
+
+function renderLabel(data) {
+  lastLabelHtml = `
+    <div class="thermal-label">
+      <strong>Sistema Carioca's</strong>
+      <h3>${escapeHtml(data.productName)}</h3>
+      <p>Produzido em: ${escapeHtml(formatDateTime(data.producedAt))}</p>
+      <p>Validade: ${escapeHtml(formatDateTime(data.expiresAt))}</p>
+      <p>Responsavel: ${escapeHtml(data.responsible || profile.email)}</p>
+      <p>Lote: ${escapeHtml(data.lot)}</p>
+      <p>Armazenamento: ${escapeHtml(data.storage || "Configurar")}</p>
+      <p>Qtd.: ${escapeHtml(`${data.quantity} ${data.unit}`)}</p>
+    </div>
+  `;
+  labelPreview.innerHTML = lastLabelHtml;
+}
+
+async function loadLabelHistory() {
+  const snapshot = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.etiquetas), orderBy("criadoEm", "desc")));
+  const items = snapshot.docs.slice(0, 8).map((document) => ({ id: document.id, ...document.data() }));
+  labelHistory.innerHTML = items.length ? "" : '<div class="empty-state">Nenhuma etiqueta emitida ainda.</div>';
+  items.forEach((item) => {
+    const article = document.createElement("article");
+    article.className = "card";
+    article.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(item.produtoNome || "Produto")}</strong>
+        <span>${escapeHtml(item.lote || "-")}</span>
+      </div>
+      <p class="muted">Quantidade: ${toNumber(item.quantidade, 1)} | Impressora: ${escapeHtml(item.impressora || "navegador/PDF")} | Status: ${escapeHtml(item.status || "registrada")}</p>
+    `;
+    labelHistory.appendChild(article);
+  });
+}
+
+document.getElementById("production-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const product = estoque.find((item) => item.id === productSelect.value);
+
+  if (!product) {
+    setStatus("status", "Cadastre ou selecione um produto antes de produzir.", "error");
+    return;
+  }
+
+  const producedAt = new Date();
+  const expiresAt = calculateExpirationDate(document.getElementById("validity").value, producedAt);
+  const quantity = Math.max(0.01, toNumber(document.getElementById("quantity").value, 1));
+  const unit = document.getElementById("unit").value.trim() || "un";
+  const lot = generateLotCode(product.nome, producedAt);
+  const responsible = document.getElementById("responsible").value.trim() || profile.email;
+  const storage = document.getElementById("storage").value.trim();
+  const notes = document.getElementById("notes").value.trim();
+
+  const productionRef = await addDoc(collection(db, OPERATIONAL_COLLECTIONS.producoes), {
+    produtoId: product.id,
+    produtoNome: product.nome,
+    quantidadeProduzida: quantity,
+    unidade: unit,
+    validade: expiresAt.toISOString(),
+    lote: lot,
+    armazenamento: storage,
+    responsavel: responsible,
+    observacao: notes,
+    origem: "app",
+    criadoEm: serverTimestamp()
+  });
+
+  await addDoc(collection(db, OPERATIONAL_COLLECTIONS.etiquetas), {
+    producaoId: productionRef.id,
+    produtoId: product.id,
+    produtoNome: product.nome,
+    lote: lot,
+    quantidade: 1,
+    impressora: "navegador/PDF",
+    status: "registrada",
+    responsavel: responsible,
+    criadoEm: serverTimestamp()
+  });
+
+  renderLabel({ productName: product.nome, producedAt, expiresAt, lot, responsible, storage, quantity, unit });
+  setStatus("status", "Producao registrada e etiqueta gerada.", "success");
+  await loadLabelHistory();
+});
+
+document.getElementById("print-label-button").addEventListener("click", () => {
+  if (!lastLabelHtml) {
+    setStatus("status", "Gere uma etiqueta antes de imprimir.", "error");
+    return;
+  }
+  const printWindow = window.open("", "_blank", "width=420,height=520");
+  printWindow.document.write(`<html><head><title>Etiqueta</title><link rel="stylesheet" href="style.css"></head><body>${lastLabelHtml}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+});
+
+await loadProducts();
+await loadLabelHistory();
+</script>
+</body>
+</html>

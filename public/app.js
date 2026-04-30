@@ -793,32 +793,6 @@ export async function getRuntimeConfig() {
   return loadRuntimeConfig();
 }
 
-export function parseRecipeIngredients(recipe) {
-  if (Array.isArray(recipe?.ingredientes)) {
-    return recipe.ingredientes.map((item) => ({
-      nome: item.nome,
-      qtd: toNumber(item.qtd, 0)
-    }));
-  }
-
-  if (typeof recipe?.itens !== "string") {
-    return [];
-  }
-
-  return recipe.itens
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [nome, qtd] = line.split(":");
-      return {
-        nome: nome?.trim() || "",
-        qtd: toNumber(qtd, 0)
-      };
-    })
-    .filter((item) => item.nome);
-}
-
 export function getMonthKey(value) {
   const raw = String(value ?? "").trim();
   return raw.length >= 7 ? raw.slice(0, 7) : "";

@@ -196,6 +196,62 @@ function normalizePhone(value) {
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
+function resolveTenantContext(source = {}) {
+  const profile = source.profile || source;
+  const empresaId = normalizeLookupText(
+    source.empresaId ||
+    profile.empresaId ||
+    profile.empresa ||
+    process.env.DEFAULT_EMPRESA_ID ||
+    "default"
+  );
+  const lojaId = normalizeLookupText(
+    source.lojaId ||
+    profile.lojaId ||
+    profile.loja ||
+    process.env.DEFAULT_LOJA_ID ||
+    "matriz"
+  );
+
+  return {
+    empresaId,
+    lojaId
+  };
+}
+
+function withTenantMetadata(data = {}, source = {}) {
+  const tenant = resolveTenantContext(source);
+
+  return {
+    ...data,
+    empresaId: data.empresaId || tenant.empresaId,
+    lojaId: data.lojaId || tenant.lojaId
+  };
+}
+
+async function recordAuditLog({
+  tipo,
+  origem = "api",
+  actor = "",
+  tenant = {},
+  payload = {},
+  before = null,
+  after = null
+}) {
+  const scopedTenant = resolveTenantContext(tenant);
+  await admin.firestore().collection("auditoriaOperacional").add({
+    empresaId: scopedTenant.empresaId,
+    lojaId: scopedTenant.lojaId,
+    tipo: normalizeLookupText(tipo || "acao_operacional"),
+    origem: normalizeLookupText(origem || "api"),
+    actor: normalizeLookupText(actor || ""),
+    payload,
+    before,
+    after,
+    criadoEm: admin.firestore.FieldValue.serverTimestamp()
+  });
+}
+
 function parseBooleanValue(value, fallback = false) {
   if (value == null) {
     return fallback;
@@ -316,6 +372,107 @@ function inferCategoryFromText(value) {
   return "";
 }
 
+function inferOperationalIntent(message = "") {
+  const text = normalizeLookupText(message)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const quantityMatch = text.match(/(\d+(?:[,.]\d+)?)/);
+  const quantity = quantityMatch ? Number(quantityMatch[1].replace(",", ".")) : 0;
+  const moneyMatch = text.match(/r?\$?\s*(\d+(?:[,.]\d{1,2})?)/);
+  const cost = moneyMatch ? Number(moneyMatch[1].replace(",", ".")) : 0;
+  let intent = "consulta";
+
+  if (text.includes("entrou") || text.includes("comprei") || text.includes("chegou")) {
+    intent = "entrada_estoque";
+  } else if (text.includes("saiu") || text.includes("retirou") || text.includes("producao")) {
+    intent = "saida_producao";
+  } else if (text.includes("virou") || text.includes("porcion")) {
+    intent = "porcionamento";
+  } else if (text.includes("relatorio") || text.includes("resumo")) {
+    intent = "relatorio_diario";
+  } else if (text.includes("comprar") || text.includes("pedido")) {
+    intent = "sugestao_compra";
+  } else if (text.includes("venc")) {
+    intent = "validade";
+  }
+
+  return {
+    intent,
+    confidence: intent === "consulta" ? 0.45 : 0.82,
+    entities: {
+      quantidade: Number.isFinite(quantity) ? quantity : 0,
+      custoTotal: Number.isFinite(cost) ? cost : 0,
+      textoOriginal: message
+    }
+  };
+}
+
+function buildOperationalConfirmation(intent, entities = {}) {
+  const amount = entities.quantidade > 0 ? `${entities.quantidade} unidade(s)` : "a movimentacao informada";
+  const costText = entities.custoTotal > 0 ? ` com valor de R$ ${entities.custoTotal.toFixed(2)}` : "";
+
+  if (intent === "entrada_estoque") {
+    return `Confirma entrada de ${amount}${costText}?`;
+  }
+
+  if (intent === "saida_producao") {
+    return `Confirma saida para producao de ${amount}?`;
+  }
+
+  if (intent === "porcionamento") {
+    return `Confirma transformacao/porcionamento de ${amount}?`;
+  }
+
+  if (intent === "relatorio_diario") {
+    return "Confirma envio do relatorio diario?";
+  }
+
+  if (intent === "sugestao_compra") {
+    return "Confirma geracao de sugestao de compra?";
+  }
+
+  return "Preciso de mais contexto para confirmar este comando.";
+}
+
+async function recordOperationalCommand(payload = {}) {
+  const message = normalizeLookupText(payload.mensagem ?? payload.message ?? payload.Body ?? "");
+  const parsed = inferOperationalIntent(message);
+  const confirmation = buildOperationalConfirmation(parsed.intent, parsed.entities);
+  const tenant = resolveTenantContext(payload);
+  const document = withTenantMetadata({
+    mensagem: message,
+    telefone: normalizePhone(payload.telefone ?? payload.from ?? payload.From ?? ""),
+    usuarioId: normalizeLookupText(payload.usuarioId ?? ""),
+    intencao: parsed.intent,
+    confianca: parsed.confidence,
+    entidades: parsed.entities,
+    confirmacao: confirmation,
+    statusConfirmacao: "pendente",
+    origem: normalizeLookupText(payload.origem ?? "webhook"),
+    responsavel: normalizeLookupText(payload.responsavel ?? ""),
+    criadoEm: admin.firestore.FieldValue.serverTimestamp()
+  }, tenant);
+
+  const ref = await admin.firestore().collection("comandosWhatsApp").add(document);
+  await recordAuditLog({
+    tipo: "comando_whatsapp_interpretado",
+    origem: document.origem,
+    actor: document.responsavel || document.telefone,
+    tenant: document,
+    payload: {
+      comandoId: ref.id,
+      intencao: parsed.intent
+    }
+  });
+
+  return {
+    id: ref.id,
+    ...document,
+    criadoEm: undefined
+  };
+}
+
 async function lookupOpenFoodFactsProduct(barcode) {
   const response = await fetch(
     `https://world.openfoodfacts.net/api/v2/product/${barcode}?fields=code,product_name,brands,categories,categories_tags`,
@@ -348,6 +505,83 @@ async function lookupOpenFoodFactsProduct(barcode) {
     categoria: inferredCategory || categoryText || "insumo",
     fonte: "open-food-facts"
   };
+}
+
+async function interpretOperationalCommand(req, res) {
+  const message = normalizeLookupText(req.body?.mensagem ?? req.body?.message ?? "");
+
+  if (!message) {
+    return res.status(400).json({ erro: "Mensagem obrigatoria." });
+  }
+
+  try {
+    const command = await recordOperationalCommand({
+      mensagem: message,
+      telefone: req.body?.telefone,
+      usuarioId: req.user?.uid,
+      empresaId: req.body?.empresaId,
+      lojaId: req.body?.lojaId,
+      origem: "api_autenticada",
+      profile: req.profile,
+      responsavel: req.profile?.email || req.user?.email || ""
+    });
+    return res.json({ ok: true, comando: command });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Nao foi possivel interpretar o comando." });
+  }
+}
+
+async function whatsappWebhook(req, res) {
+  const expectedToken = String(process.env.WHATSAPP_WEBHOOK_TOKEN ?? "").trim();
+  const receivedToken = String(req.headers["x-webhook-token"] ?? req.query?.token ?? "").trim();
+
+  if (expectedToken && receivedToken !== expectedToken) {
+    return res.status(401).json({ erro: "Webhook nao autorizado." });
+  }
+
+  const message = normalizeLookupText(req.body?.mensagem ?? req.body?.message ?? req.body?.Body ?? "");
+
+  if (!message) {
+    return res.status(400).json({ erro: "Mensagem obrigatoria." });
+  }
+
+  try {
+    const command = await recordOperationalCommand({
+      ...req.body,
+      mensagem: message,
+      origem: normalizeLookupText(req.body?.origem ?? "whatsapp_webhook")
+    });
+    return res.json({
+      ok: true,
+      resposta: command.confirmacao,
+      comandoId: command.id,
+      intencao: command.intencao
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Nao foi possivel processar o webhook." });
+  }
+}
+
+async function getSaasContext(req, res) {
+  const tenant = resolveTenantContext(req.profile);
+
+  return res.json({
+    ok: true,
+    tenant,
+    profile: {
+      email: req.profile?.email || req.user?.email || "",
+      tipo: req.profile?.tipo || "",
+      nome: req.profile?.nome || ""
+    },
+    collections: {
+      empresas: "empresas",
+      unidades: "unidades",
+      auditoria: "auditoriaOperacional",
+      comandosWhatsApp: "comandosWhatsApp"
+    }
+  });
 }
 
 async function lookupCosmosProduct(barcode) {
@@ -735,6 +969,9 @@ app.post("/api/bootstrap/register", bootstrapRegister);
 app.get("/api/usuarios", requireAdmin, listUsers);
 app.post("/api/usuarios", requireAdmin, createUser);
 app.get("/api/barcodes/:barcode", requireAuthenticated, barcodeLookup);
+app.get("/api/saas/context", requireAuthenticated, getSaasContext);
+app.post("/api/operational/interpret", requireAuthenticated, interpretOperationalCommand);
+app.post("/api/webhooks/whatsapp", whatsappWebhook);
 app.get("/api/admin-alerts/dashboard", requireAdmin, getAdminAlertsDashboard);
 app.post("/api/admin-alerts/evaluate", requireAuthenticated, evaluateAdminAlerts);
 app.post("/api/admin-alerts/manual-suggestion", requireAuthenticated, recordManualAdminSuggestion);

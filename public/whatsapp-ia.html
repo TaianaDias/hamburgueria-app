@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>WhatsApp & IA | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Automacao operacional</p>
+      <h1>WhatsApp & IA</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="layout-grid">
+    <article class="panel">
+      <h3>Simulador de comando</h3>
+      <form id="ai-form" class="form-grid" style="margin-top: 16px;">
+        <div class="field-group" style="grid-column: 1 / -1;">
+          <label for="message">Mensagem recebida</label>
+          <textarea id="message" placeholder="Entrou 2 caixas de pao brioche com 96 unidades cada por R$142"></textarea>
+        </div>
+        <button type="submit">Interpretar</button>
+      </form>
+      <div id="ai-result" class="status info" hidden></div>
+    </article>
+
+    <article class="panel">
+      <h3>Fluxo preparado</h3>
+      <div class="timeline-list">
+        <span>Webhook recebe mensagem</span>
+        <span>IA interpreta intencao e entidades</span>
+        <span>Sistema pede confirmacao</span>
+        <span>Banco e auditoria sao atualizados</span>
+        <span>Usuario recebe resposta no WhatsApp</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel" style="margin-top: 20px;">
+    <h3>Comandos recentes</h3>
+    <div id="commands-list" class="list" style="margin-top: 16px;"></div>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { addDoc, collection, getDocs, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { apiFetch, bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus } from "./app.js";
+import { inferOperationalCommand, OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+
+bindLogoutButton();
+const { profile } = await requireAuth({ adminOnly: true });
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+async function loadCommands() {
+  const snapshot = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.whatsapp), orderBy("criadoEm", "desc")));
+  const commands = snapshot.docs.slice(0, 10).map((document) => ({ id: document.id, ...document.data() }));
+  const list = document.getElementById("commands-list");
+  list.innerHTML = commands.length ? "" : '<div class="empty-state">Nenhum comando registrado ainda.</div>';
+  commands.forEach((command) => {
+    const article = document.createElement("article");
+    article.className = "card";
+    article.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(command.intencao || "consulta")}</strong>
+        <span>${escapeHtml(command.statusConfirmacao || "pendente")}</span>
+      </div>
+      <p class="muted">${escapeHtml(command.mensagem || "")}</p>
+    `;
+    list.appendChild(article);
+  });
+}
+
+document.getElementById("ai-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = document.getElementById("message").value.trim();
+  if (!message) {
+    setStatus("ai-result", "Digite uma mensagem.", "error");
+    return;
+  }
+  let command;
+
+  try {
+    const response = await apiFetch("/api/operational/interpret", {
+      method: "POST",
+      body: JSON.stringify({ mensagem: message })
+    });
+    command = response.comando;
+  } catch (error) {
+    const parsed = inferOperationalCommand(message);
+    await addDoc(collection(db, OPERATIONAL_COLLECTIONS.whatsapp), {
+      mensagem: message,
+      intencao: parsed.intent,
+      confianca: parsed.confidence,
+      entidades: parsed.entities,
+      confirmacao: parsed.confirmationText,
+      statusConfirmacao: "pendente",
+      origem: "simulador_ia",
+      responsavel: profile.email,
+      criadoEm: serverTimestamp()
+    });
+    command = {
+      intencao: parsed.intent,
+      confianca: parsed.confidence,
+      confirmacao: parsed.confirmationText
+    };
+  }
+
+  setStatus("ai-result", `${command.confirmacao} | confianca ${Math.round(command.confianca * 100)}%`, "success");
+  await loadCommands();
+});
+
+await loadCommands();
+</script>
+</body>
+</html>

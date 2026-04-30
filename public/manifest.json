@@ -1,7 +1,7 @@
 {
   "name": "Hamburgueria",
   "short_name": "BurgerOps",
-  "description": "Controle de estoque, compras, fornecedores e receitas da hamburgueria.",
+  "description": "Copiloto operacional para estoque, compras, producao, etiquetas e alertas da hamburgueria.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

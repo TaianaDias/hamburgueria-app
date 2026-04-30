@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Dashboard SaaS | BurgerOps</title>
+</head>
+<body>
+<main class="page dashboard-prototype-page">
+  <header class="dashboard-prototype-hero">
+    <div>
+      <p class="eyebrow">Copiloto Operacional Inteligente</p>
+      <h1>Dashboard SaaS</h1>
+      <p id="user-info" class="muted">Carregando operacao...</p>
+    </div>
+    <div class="dashboard-prototype-controls">
+      <select id="store-filter" aria-label="Selecionar loja">
+        <option value="all">Todas as lojas</option>
+        <option value="matriz">Matriz</option>
+        <option value="dark">Dark Kitchen</option>
+        <option value="delivery">Unidade Delivery</option>
+      </select>
+      <select id="period-filter" aria-label="Selecionar periodo">
+        <option value="today">Hoje</option>
+        <option value="week" selected>7 dias</option>
+        <option value="month">30 dias</option>
+      </select>
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="prototype-command-bar">
+    <button class="prototype-command active" data-panel="overview" type="button">Visao geral</button>
+    <button class="prototype-command" data-panel="critical" type="button">Criticos</button>
+    <button class="prototype-command" data-panel="ai" type="button">IA</button>
+    <button class="prototype-command" data-panel="modules" type="button">Modulos</button>
+  </section>
+
+  <section class="prototype-kpi-grid">
+    <article class="prototype-kpi-card healthy">
+      <span>Saude do estoque</span>
+      <strong id="kpi-health">0%</strong>
+      <small id="kpi-health-note">Calculando...</small>
+    </article>
+    <article class="prototype-kpi-card warning">
+      <span>Itens em atencao</span>
+      <strong id="kpi-warning">0</strong>
+      <small id="kpi-warning-note">Produtos abaixo ou perto do minimo</small>
+    </article>
+    <article class="prototype-kpi-card urgent">
+      <span>Risco de ruptura</span>
+      <strong id="kpi-risk">0</strong>
+      <small id="kpi-risk-note">Itens no minimo ou abaixo</small>
+    </article>
+    <article class="prototype-kpi-card">
+      <span>Custo em estoque</span>
+      <strong id="kpi-stock-value">R$ 0,00</strong>
+      <small id="kpi-stock-note">Baseado no custo unitario atual</small>
+    </article>
+  </section>
+
+  <section class="prototype-main-grid">
+    <article class="panel prototype-panel" data-prototype-panel="overview">
+      <div class="section-heading">
+        <div>
+          <h3>Operacao em tempo real</h3>
+          <p class="muted">Compras, producao, etiquetas e perdas do periodo selecionado.</p>
+        </div>
+      </div>
+      <div id="operations-chart" class="prototype-chart" aria-label="Grafico de operacao"></div>
+      <div class="prototype-mini-stats">
+        <span><strong id="mini-purchases">R$ 0,00</strong> compras</span>
+        <span><strong id="mini-labels">0</strong> etiquetas</span>
+        <span><strong id="mini-waste">R$ 0,00</strong> perdas</span>
+      </div>
+    </article>
+
+    <article class="panel prototype-panel" data-prototype-panel="critical">
+      <div class="section-heading">
+        <div>
+          <h3>Itens criticos</h3>
+          <p class="muted">Clique em um item para gerar uma leitura operacional.</p>
+        </div>
+      </div>
+      <div id="critical-list" class="prototype-critical-list"></div>
+    </article>
+
+    <article class="panel prototype-panel prototype-ai-panel" data-prototype-panel="ai">
+      <div class="section-heading">
+        <div>
+          <h3>IA operacional</h3>
+          <p class="muted">Resumo simples para tomada de decisao.</p>
+        </div>
+      </div>
+      <div id="ai-insight" class="prototype-ai-bubble">Carregando resumo inteligente...</div>
+      <div class="actions compact-actions">
+        <button id="generate-report" type="button">Gerar resumo</button>
+        <button id="prepare-whatsapp" class="secondary" type="button">Preparar WhatsApp</button>
+      </div>
+    </article>
+
+    <article class="panel prototype-panel" data-prototype-panel="modules">
+      <div class="section-heading">
+        <div>
+          <h3>Modulos SaaS</h3>
+          <p class="muted">Pilares do produto conectados ao fluxo real.</p>
+        </div>
+      </div>
+      <div class="prototype-module-grid">
+        <a href="estoque.html"><strong>Estoque</strong><span id="module-stock">0 itens</span></a>
+        <a href="compras.html"><strong>Compras</strong><span id="module-purchases">R$ 0,00</span></a>
+        <a href="producao-etiquetas.html"><strong>Etiquetas</strong><span id="module-labels">0 emitidas</span></a>
+        <a href="whatsapp-ia.html"><strong>WhatsApp/IA</strong><span id="module-whatsapp">0 comandos</span></a>
+        <a href="inventario.html"><strong>Inventario</strong><span id="module-inventory">conferencia</span></a>
+        <a href="saas.html"><strong>SaaS</strong><span>escala</span></a>
+      </div>
+    </article>
+  </section>
+
+  <section class="prototype-bottom-dock">
+    <a href="operacao.html">Correria</a>
+    <a href="relatorio-diario.html">Relatorio</a>
+    <a href="alertas-reposicao.html">Alertas</a>
+    <a href="impressora.html">Impressora</a>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  formatCurrency,
+  getUnitCost,
+  requireAuth,
+  toNumber
+} from "./app.js";
+import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+
+bindLogoutButton();
+const { profile } = await requireAuth();
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+const state = {
+  estoque: [],
+  compras: [],
+  desperdicios: [],
+  producoes: [],
+  etiquetas: [],
+  comandos: []
+};
+
+const weekdayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+
+function getDateValue(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+
+  if (value.seconds) {
+    return new Date(value.seconds * 1000);
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getPeriodStart(period) {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  if (period === "week") {
+    start.setDate(start.getDate() - 6);
+  }
+
+  if (period === "month") {
+    start.setDate(start.getDate() - 29);
+  }
+
+  return start;
+}
+
+function matchesStore(item, store) {
+  if (store === "all") {
+    return true;
+  }
+
+  const lojaId = String(item.lojaId || item.loja || item.unidade || "").trim().toLowerCase();
+  return !lojaId || lojaId === store;
+}
+
+function filterByPeriod(items, period, dateFields = ["criadoEm", "data", "dataCompra"]) {
+  const start = getPeriodStart(period);
+  return items.filter((item) => {
+    const date = dateFields.map((field) => getDateValue(item[field])).find(Boolean);
+    return !date || date >= start;
+  });
+}
+
+function getFilteredData() {
+  const store = document.getElementById("store-filter").value;
+  const period = document.getElementById("period-filter").value;
+  return {
+    estoque: state.estoque.filter((item) => matchesStore(item, store)),
+    compras: filterByPeriod(state.compras.filter((item) => matchesStore(item, store)), period, ["criadoEm", "dataCompra", "data"]),
+    desperdicios: filterByPeriod(state.desperdicios.filter((item) => matchesStore(item, store)), period, ["criadoEm", "data"]),
+    producoes: filterByPeriod(state.producoes.filter((item) => matchesStore(item, store)), period, ["criadoEm", "data"]),
+    etiquetas: filterByPeriod(state.etiquetas.filter((item) => matchesStore(item, store)), period, ["criadoEm", "dataImpressao", "data"]),
+    comandos: filterByPeriod(state.comandos.filter((item) => matchesStore(item, store)), period, ["criadoEm", "data"])
+  };
+}
+
+function getAttentionItems(estoque) {
+  return estoque.filter((item) => {
+    const quantity = toNumber(item.quantidade ?? item.stock_boxes, 0);
+    const minimum = toNumber(item.minimo ?? item.minimoCaixas, 0);
+    return minimum > 0 && quantity <= Math.ceil(minimum * 1.5);
+  });
+}
+
+function getCriticalItems(estoque) {
+  return estoque.filter((item) => {
+    const quantity = toNumber(item.quantidade ?? item.stock_boxes, 0);
+    const minimum = toNumber(item.minimo ?? item.minimoCaixas, 0);
+    return minimum > 0 && quantity <= minimum;
+  });
+}
+
+function getStockValue(estoque) {
+  return estoque.reduce((total, item) => total + toNumber(item.quantidade, 0) * getUnitCost(item), 0);
+}
+
+function getPurchaseValue(compras) {
+  return compras.reduce((total, item) => total + toNumber(item.valorTotal, 0), 0);
+}
+
+function getWasteValue(desperdicios) {
+  return desperdicios.reduce((total, item) => total + toNumber(item.custoTotal ?? item.valorTotal, 0), 0);
+}
+
+function getLabelCount(etiquetas) {
+  return etiquetas.reduce((total, item) => total + Math.max(1, toNumber(item.quantidade, 1)), 0);
+}
+
+function renderChart(compras, desperdicios, producoes) {
+  const totals = Array.from({ length: 7 }, (_, index) => ({
+    label: weekdayLabels[index],
+    value: 0
+  }));
+
+  compras.forEach((item) => {
+    const date = getDateValue(item.criadoEm) || getDateValue(item.dataCompra) || new Date();
+    totals[date.getDay()].value += toNumber(item.valorTotal, 0);
+  });
+
+  desperdicios.forEach((item) => {
+    const date = getDateValue(item.criadoEm) || getDateValue(item.data) || new Date();
+    totals[date.getDay()].value += toNumber(item.custoTotal ?? item.valorTotal, 0);
+  });
+
+  producoes.forEach((item) => {
+    const date = getDateValue(item.criadoEm) || getDateValue(item.data) || new Date();
+    totals[date.getDay()].value += Math.max(1, toNumber(item.quantidadeProduzida, 1)) * 8;
+  });
+
+  const maxValue = Math.max(...totals.map((item) => item.value), 1);
+  document.getElementById("operations-chart").innerHTML = totals
+    .map((item) => {
+      const height = Math.max(12, Math.round((item.value / maxValue) * 100));
+      return `<div style="height: ${height}%"><span>${escapeHtml(item.label)}</span></div>`;
+    })
+    .join("");
+}
+
+function buildInsight({ estoque, compras, desperdicios, producoes, etiquetas }) {
+  const attention = getAttentionItems(estoque);
+  const critical = getCriticalItems(estoque);
+  const health = estoque.length ? Math.round(((estoque.length - critical.length) / estoque.length) * 100) : 100;
+  const topCritical = critical.slice(0, 3).map((item) => item.nome).filter(Boolean).join(", ");
+  const purchaseValue = getPurchaseValue(compras);
+  const wasteValue = getWasteValue(desperdicios);
+
+  return [
+    `Seu estoque esta ${health}% saudavel.`,
+    critical.length ? `${critical.length} item(ns) estao em risco de ruptura${topCritical ? `: ${topCritical}` : ""}.` : "Nenhum item em ruptura no periodo.",
+    attention.length ? `${attention.length} item(ns) precisam de atencao.` : "Nao ha itens proximos do minimo.",
+    purchaseValue > 0 ? `Compras do periodo somam ${formatCurrency(purchaseValue)}.` : "Sem compras registradas no periodo.",
+    wasteValue > 0 ? `Perdas registradas somam ${formatCurrency(wasteValue)}.` : "Sem perdas registradas no periodo.",
+    producoes.length || etiquetas.length ? `${producoes.length} producao(oes) e ${getLabelCount(etiquetas)} etiqueta(s) no periodo.` : ""
+  ].filter(Boolean).join(" ");
+}
+
+function renderCriticalList(estoque) {
+  const criticalList = document.getElementById("critical-list");
+  const attention = getAttentionItems(estoque)
+    .sort((left, right) => {
+      const leftRatio = toNumber(left.quantidade, 0) / Math.max(1, toNumber(left.minimo, 1));
+      const rightRatio = toNumber(right.quantidade, 0) / Math.max(1, toNumber(right.minimo, 1));
+      return leftRatio - rightRatio;
+    })
+    .slice(0, 8);
+
+  if (!attention.length) {
+    criticalList.innerHTML = '<div class="empty-state">Nenhum item critico agora. Operacao respirando bem.</div>';
+    return;
+  }
+
+  criticalList.innerHTML = "";
+  attention.forEach((item) => {
+    const quantity = toNumber(item.quantidade, 0);
+    const minimum = toNumber(item.minimo, 0);
+    const urgent = minimum > 0 && quantity <= minimum;
+    const button = document.createElement("button");
+    button.className = "prototype-critical-item";
+    button.type = "button";
+    button.dataset.insight = `${item.nome}: estoque atual ${quantity}, minimo ${minimum}. ${urgent ? "Prioridade de compra agora." : "Acompanhar antes do pico de venda."}`;
+    button.innerHTML = `
+      <span class="stock-badge ${urgent ? "stock-badge-urgent" : "stock-badge-low"}">${urgent ? "Urgente" : "Atencao"}</span>
+      <strong>${escapeHtml(item.nome || "Produto")}</strong>
+      <small>Atual ${quantity} | Minimo ${minimum} | ${escapeHtml(item.unidadeMedida || item.unidadeUso || "un")}</small>
+    `;
+    button.addEventListener("click", () => {
+      document.getElementById("ai-insight").textContent = button.dataset.insight;
+    });
+    criticalList.appendChild(button);
+  });
+}
+
+function renderDashboard() {
+  const filtered = getFilteredData();
+  const critical = getCriticalItems(filtered.estoque);
+  const attention = getAttentionItems(filtered.estoque);
+  const health = filtered.estoque.length ? Math.round(((filtered.estoque.length - critical.length) / filtered.estoque.length) * 100) : 100;
+  const stockValue = getStockValue(filtered.estoque);
+  const purchaseValue = getPurchaseValue(filtered.compras);
+  const wasteValue = getWasteValue(filtered.desperdicios);
+  const labelCount = getLabelCount(filtered.etiquetas);
+
+  document.getElementById("kpi-health").textContent = `${health}%`;
+  document.getElementById("kpi-health-note").textContent = `${filtered.estoque.length} produto(s) monitorados`;
+  document.getElementById("kpi-warning").textContent = String(attention.length);
+  document.getElementById("kpi-warning-note").textContent = `${Math.max(0, attention.length - critical.length)} perto do minimo`;
+  document.getElementById("kpi-risk").textContent = String(critical.length);
+  document.getElementById("kpi-risk-note").textContent = critical.length ? "acao recomendada hoje" : "sem ruptura imediata";
+  document.getElementById("kpi-stock-value").textContent = formatCurrency(stockValue);
+  document.getElementById("mini-purchases").textContent = formatCurrency(purchaseValue);
+  document.getElementById("mini-labels").textContent = String(labelCount);
+  document.getElementById("mini-waste").textContent = formatCurrency(wasteValue);
+  document.getElementById("module-stock").textContent = `${filtered.estoque.length} itens`;
+  document.getElementById("module-purchases").textContent = formatCurrency(purchaseValue);
+  document.getElementById("module-labels").textContent = `${labelCount} emitidas`;
+  document.getElementById("module-whatsapp").textContent = `${filtered.comandos.length} comandos`;
+  document.getElementById("ai-insight").textContent = buildInsight(filtered);
+  renderChart(filtered.compras, filtered.desperdicios, filtered.producoes);
+  renderCriticalList(filtered.estoque);
+}
+
+async function loadCollection(name) {
+  try {
+    const snapshot = await getDocs(collection(db, name));
+    return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+  } catch (error) {
+    console.warn(`Nao foi possivel carregar ${name}.`, error);
+    return [];
+  }
+}
+
+async function loadDashboard() {
+  const [estoque, compras, desperdicios, producoes, etiquetas, comandos] = await Promise.all([
+    loadCollection("estoque"),
+    loadCollection("comprasMensais"),
+    loadCollection("desperdicios"),
+    loadCollection(OPERATIONAL_COLLECTIONS.producoes),
+    loadCollection(OPERATIONAL_COLLECTIONS.etiquetas),
+    loadCollection(OPERATIONAL_COLLECTIONS.whatsapp)
+  ]);
+
+  state.estoque = estoque;
+  state.compras = compras;
+  state.desperdicios = desperdicios;
+  state.producoes = producoes;
+  state.etiquetas = etiquetas;
+  state.comandos = comandos;
+  renderDashboard();
+}
+
+document.querySelectorAll(".prototype-command").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".prototype-command").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    document.querySelector(`[data-prototype-panel="${button.dataset.panel}"]`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  });
+});
+
+document.getElementById("generate-report").addEventListener("click", () => {
+  document.getElementById("ai-insight").textContent = buildInsight(getFilteredData());
+});
+
+document.getElementById("prepare-whatsapp").addEventListener("click", () => {
+  const filtered = getFilteredData();
+  const criticalNames = getCriticalItems(filtered.estoque).slice(0, 5).map((item) => item.nome).filter(Boolean);
+  document.getElementById("ai-insight").textContent = criticalNames.length
+    ? `Mensagem pronta para o responsavel: Precisamos revisar estes itens agora: ${criticalNames.join(", ")}. Posso gerar sugestao de compra pelo WhatsApp.`
+    : "Mensagem pronta para o responsavel: Estoque sem ruptura imediata. Recomendo apenas manter acompanhamento no fechamento.";
+});
+
+document.getElementById("store-filter").addEventListener("change", renderDashboard);
+document.getElementById("period-filter").addEventListener("change", renderDashboard);
+
+await loadDashboard();
+</script>
+</body>
+</html>

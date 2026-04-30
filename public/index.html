@@ -30,6 +30,11 @@
   </header>
 
   <section class="menu-grid">
+    <a id="menu-operacao" class="card menu-card-priority" href="operacao.html" hidden>
+      <h3>Modo operacao correria</h3>
+      <p class="muted">Acoes grandes para entrada, saida, producao, etiquetas, perdas e relatorio.</p>
+    </a>
+
     <a id="menu-estoque" class="card" href="estoque.html" hidden>
       <h3>Estoque</h3>
       <p class="muted">Cadastre produtos, limites, custos e fornecedores.</p>
@@ -40,6 +45,16 @@
       <p class="muted">Separe insumos do estoque central para a producao do dia com baixa automatica.</p>
     </a>
 
+    <a id="menu-producao-etiquetas" class="card" href="producao-etiquetas.html" hidden>
+      <h3>Padronizacao & Etiquetagem</h3>
+      <p class="muted">Producao, porcionamento, lotes, validade e etiquetas prontas para imprimir.</p>
+    </a>
+
+    <a id="menu-impressora" class="card" href="impressora.html" hidden>
+      <h3>Configurar impressora</h3>
+      <p class="muted">Prepare etiquetas HTML/PDF agora e integracoes termicas no futuro.</p>
+    </a>
+
     <a id="menu-desperdicio" class="card" href="desperdicio.html" hidden>
       <h3>Desperdicio</h3>
       <p class="muted">Registre descartes rapidamente por item e acompanhe o custo perdido no dia.</p>
@@ -48,6 +63,21 @@
     <a id="menu-compras" class="card" href="compras.html" hidden>
       <h3>Compras</h3>
       <p class="muted">Veja reposicoes necessarias e envie pedidos rapido.</p>
+    </a>
+
+    <a id="menu-relatorio" class="card" href="relatorio-diario.html" hidden>
+      <h3>Relatorio diario</h3>
+      <p class="muted">Resumo operacional com estoque, compras, saidas, perdas, etiquetas e sugestoes.</p>
+    </a>
+
+    <a id="menu-whatsapp-ia" class="card" href="whatsapp-ia.html" hidden>
+      <h3>WhatsApp & IA</h3>
+      <p class="muted">Central de comandos, interpretacao, confirmacoes e logs de automacao.</p>
+    </a>
+
+    <a id="menu-inventario" class="card" href="inventario.html" hidden>
+      <h3>Inventario</h3>
+      <p class="muted">Contagem fisica, divergencias, ajustes e auditoria operacional.</p>
     </a>
 
     <a id="menu-dashboard-compras" class="card" href="dashboard-compras.html" hidden>
@@ -70,9 +100,19 @@
       <p class="muted">Resumo da operacao com alertas de estoque.</p>
     </a>
 
+    <a id="menu-dashboard-saas" class="card menu-card-priority" href="dashboard-saas.html" hidden>
+      <h3>Dashboard SaaS</h3>
+      <p class="muted">Visao premium do copiloto com estoque, compras, perdas, etiquetas e IA.</p>
+    </a>
+
     <a id="employees-link" class="card" href="funcionarios.html" hidden>
       <h3>Funcionarios</h3>
       <p class="muted">Crie acessos e acompanhe o quadro da equipe.</p>
+    </a>
+
+    <a id="menu-saas" class="card" href="saas.html" hidden>
+      <h3>SaaS & Escala</h3>
+      <p class="muted">Empresas, lojas, planos, limites e recursos premium preparados para crescimento.</p>
     </a>
   </section>
 </main>
@@ -93,13 +133,21 @@ async function init() {
   const userInfo = document.getElementById("user-info");
   const employeesLink = document.getElementById("employees-link");
   const alertsLink = document.getElementById("alerts-link");
+  const menuOperacao = document.getElementById("menu-operacao");
   const menuEstoque = document.getElementById("menu-estoque");
   const menuReposicao = document.getElementById("menu-reposicao");
+  const menuProducaoEtiquetas = document.getElementById("menu-producao-etiquetas");
+  const menuImpressora = document.getElementById("menu-impressora");
   const menuDesperdicio = document.getElementById("menu-desperdicio");
   const menuCompras = document.getElementById("menu-compras");
+  const menuRelatorio = document.getElementById("menu-relatorio");
+  const menuWhatsappIa = document.getElementById("menu-whatsapp-ia");
+  const menuInventario = document.getElementById("menu-inventario");
   const menuDashboardCompras = document.getElementById("menu-dashboard-compras");
   const menuFornecedores = document.getElementById("menu-fornecedores");
   const menuDashboard = document.getElementById("menu-dashboard");
+  const menuDashboardSaas = document.getElementById("menu-dashboard-saas");
+  const menuSaas = document.getElementById("menu-saas");
 
   registerServiceWorker();
   bindLogoutButton();
@@ -108,22 +156,34 @@ async function init() {
   userInfo.textContent = describeProfile(profile);
   
   if (profile.tipo === "admin") {
+    menuOperacao.hidden = false;
     menuEstoque.hidden = false;
     menuReposicao.hidden = false;
+    menuProducaoEtiquetas.hidden = false;
+    menuImpressora.hidden = false;
     menuDesperdicio.hidden = false;
     menuCompras.hidden = false;
+    menuRelatorio.hidden = false;
+    menuWhatsappIa.hidden = false;
+    menuInventario.hidden = false;
     menuDashboardCompras.hidden = false;
     menuFornecedores.hidden = false;
     menuDashboard.hidden = false;
+    menuDashboardSaas.hidden = false;
     alertsLink.hidden = false;
     employeesLink.hidden = false;
+    menuSaas.hidden = false;
     return;
   }
 
   if (profile.tipo === "estoque") {
+    menuOperacao.hidden = false;
     menuReposicao.hidden = false;
+    menuProducaoEtiquetas.hidden = false;
     menuDesperdicio.hidden = false;
     menuCompras.hidden = false;
+    menuRelatorio.hidden = false;
+    menuInventario.hidden = false;
   }
 }
 

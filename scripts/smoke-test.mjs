@@ -9,10 +9,17 @@ const pathsToCheck = [
   "/index.html",
   "/estoque.html",
   "/fornecedores.html",
-  "/receitas.html",
+  "/operacao.html",
+  "/producao-etiquetas.html",
+  "/impressora.html",
+  "/relatorio-diario.html",
+  "/whatsapp-ia.html",
+  "/inventario.html",
+  "/saas.html",
   "/compras.html",
   "/alertas-reposicao.html",
   "/dashboard.html",
+  "/dashboard-saas.html",
   "/funcionarios.html"
 ];
 

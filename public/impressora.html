@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Configurar Impressora | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Etiquetas termicas</p>
+      <h1>Configurar impressora</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="layout-grid">
+    <article class="panel">
+      <h3>Impressora padrao</h3>
+      <form id="printer-form" class="form-grid" style="margin-top: 16px;">
+        <div class="field-group">
+          <label for="printer-name">Nome da impressora</label>
+          <input id="printer-name" placeholder="Zebra cozinha">
+        </div>
+        <div class="field-group">
+          <label for="printer-size">Tipo de etiqueta</label>
+          <select id="printer-size">
+            <option value="40x30">Etiqueta 40x30</option>
+            <option value="50x30">Etiqueta 50x30</option>
+            <option value="60x40">Etiqueta 60x40</option>
+            <option value="80mm">Bobina 80mm</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="printer-connection">Conexao</label>
+          <select id="printer-connection">
+            <option value="browser">Navegador/PDF</option>
+            <option value="usb">USB</option>
+            <option value="bluetooth">Bluetooth</option>
+            <option value="network">Rede/IP</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="printer-language">Linguagem</label>
+          <select id="printer-language">
+            <option value="html">Impressao padrao</option>
+            <option value="escpos">ESC/POS</option>
+            <option value="zpl">ZPL</option>
+            <option value="tspl">TSPL</option>
+          </select>
+        </div>
+        <label class="inline-choice" style="grid-column: 1 / -1;">
+          <input id="printer-default" type="checkbox" checked>
+          <span>Usar como impressora padrao da loja</span>
+        </label>
+        <button type="submit">Salvar configuracao</button>
+        <button id="test-print-button" class="secondary" type="button">Imprimir etiqueta teste</button>
+      </form>
+      <div id="status" class="status info" hidden></div>
+    </article>
+
+    <article class="panel">
+      <h3>Teste de etiqueta</h3>
+      <div id="test-label" class="thermal-label-preview" style="margin-top: 16px;">
+        <div class="thermal-label">
+          <strong>Sistema Carioca's</strong>
+          <h3>Molho da casa</h3>
+          <p>Produzido em: hoje 14:30</p>
+          <p>Validade: +72h</p>
+          <p>Responsavel: Operador</p>
+          <p>Lote: MOL-TESTE-001</p>
+          <p>Armazenamento: Refrigerado</p>
+        </div>
+      </div>
+      <p class="muted">A estrutura ja separa conexao e linguagem para evoluir para QZ Tray, WebUSB, Bluetooth, ESC/POS, ZPL e TSPL.</p>
+    </article>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { addDoc, collection, getDocs, limit, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { bindLogoutButton, describeProfile, requireAuth, setStatus } from "./app.js";
+import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+
+bindLogoutButton();
+const { profile } = await requireAuth({ adminOnly: true });
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+const existing = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.impressoras), limit(1)));
+if (!existing.empty) {
+  const data = existing.docs[0].data();
+  document.getElementById("printer-name").value = data.nome || "";
+  document.getElementById("printer-size").value = data.tipo || "40x30";
+  document.getElementById("printer-connection").value = data.conexao || "browser";
+  document.getElementById("printer-language").value = data.linguagem || "html";
+  document.getElementById("printer-default").checked = data.padrao !== false;
+}
+
+document.getElementById("printer-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await addDoc(collection(db, OPERATIONAL_COLLECTIONS.impressoras), {
+    nome: document.getElementById("printer-name").value.trim() || "Impressora navegador",
+    tipo: document.getElementById("printer-size").value,
+    conexao: document.getElementById("printer-connection").value,
+    linguagem: document.getElementById("printer-language").value,
+    padrao: document.getElementById("printer-default").checked,
+    responsavel: profile.email,
+    criadoEm: serverTimestamp()
+  });
+  setStatus("status", "Configuracao salva.", "success");
+});
+
+document.getElementById("test-print-button").addEventListener("click", () => {
+  const label = document.getElementById("test-label").innerHTML;
+  const printWindow = window.open("", "_blank", "width=420,height=520");
+  printWindow.document.write(`<html><head><title>Etiqueta teste</title><link rel="stylesheet" href="style.css"></head><body>${label}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+});
+</script>
+</body>
+</html>

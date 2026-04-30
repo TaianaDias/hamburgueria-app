@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>SaaS & Escala | Hamburgueria</title>
+</head>
+<body>
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Arquitetura SaaS</p>
+      <h1>SaaS & Escala</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+    <div class="actions">
+      <a class="button secondary" href="index.html">Voltar</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h3>Plano e limites do cliente</h3>
+    <form id="saas-form" class="form-grid" style="margin-top: 16px;">
+      <div class="field-group">
+        <label for="company">Empresa</label>
+        <input id="company" placeholder="Carioca's Burger">
+      </div>
+      <div class="field-group">
+        <label for="store">Loja principal</label>
+        <input id="store" placeholder="Matriz">
+      </div>
+      <div class="field-group">
+        <label for="plan">Plano</label>
+        <select id="plan">
+          <option value="starter">Starter</option>
+          <option value="pro">Pro</option>
+          <option value="premium">Premium IA + WhatsApp</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label for="users">Limite de usuarios</label>
+        <input id="users" type="number" min="1" step="1" value="5">
+      </div>
+      <div class="field-group">
+        <label for="products">Limite de produtos</label>
+        <input id="products" type="number" min="1" step="1" value="300">
+      </div>
+      <div class="field-group">
+        <label for="stores">Limite de lojas</label>
+        <input id="stores" type="number" min="1" step="1" value="1">
+      </div>
+      <label class="inline-choice" style="grid-column: 1 / -1;">
+        <input id="ai-enabled" type="checkbox" checked>
+        <span>Recursos premium de IA/WhatsApp habilitados</span>
+      </label>
+      <button type="submit">Salvar configuracao SaaS</button>
+    </form>
+    <div id="status" class="status info" hidden></div>
+  </section>
+
+  <section class="stats-grid" style="margin-top: 20px;">
+    <article class="card"><span class="muted">Multiempresa</span><strong class="metric-value">empresaId</strong></article>
+    <article class="card"><span class="muted">Multiloja</span><strong class="metric-value">lojaId</strong></article>
+    <article class="card"><span class="muted">Auditoria</span><strong class="metric-value">100%</strong></article>
+  </section>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { bindLogoutButton, describeProfile, requireAuth, setStatus, toNumber } from "./app.js";
+import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+
+bindLogoutButton();
+const { profile } = await requireAuth({ adminOnly: true });
+document.getElementById("user-info").textContent = describeProfile(profile);
+
+document.getElementById("saas-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await addDoc(collection(db, OPERATIONAL_COLLECTIONS.saas), {
+    empresaNome: document.getElementById("company").value.trim(),
+    lojaNome: document.getElementById("store").value.trim(),
+    plano: document.getElementById("plan").value,
+    limiteUsuarios: Math.max(1, toNumber(document.getElementById("users").value, 5)),
+    limiteProdutos: Math.max(1, toNumber(document.getElementById("products").value, 300)),
+    limiteLojas: Math.max(1, toNumber(document.getElementById("stores").value, 1)),
+    iaWhatsappAtivo: document.getElementById("ai-enabled").checked,
+    responsavel: profile.email,
+    criadoEm: serverTimestamp()
+  });
+  setStatus("status", "Configuracao SaaS registrada.", "success");
+});
+</script>
+</body>
+</html>

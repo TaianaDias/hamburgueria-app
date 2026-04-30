@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Interactive SaaS Dashboard Prototype | BurgerOps</title>
+</head>
+<body>
+<main class="page dashboard-prototype-page">
+  <header class="dashboard-prototype-hero">
+    <div>
+      <p class="eyebrow">Copiloto Operacional Inteligente</p>
+      <h1>BurgerOps SaaS</h1>
+      <p class="muted">Painel premium para estoque, producao, compras, etiquetas, WhatsApp e IA operacional.</p>
+    </div>
+    <div class="dashboard-prototype-controls">
+      <select id="store-filter" aria-label="Selecionar loja">
+        <option value="matriz">Matriz</option>
+        <option value="dark">Dark Kitchen</option>
+        <option value="delivery">Unidade Delivery</option>
+      </select>
+      <select id="period-filter" aria-label="Selecionar periodo">
+        <option value="today">Hoje</option>
+        <option value="week">7 dias</option>
+        <option value="month">30 dias</option>
+      </select>
+      <a class="button secondary" href="index.html">Voltar</a>
+    </div>
+  </header>
+
+  <section class="prototype-command-bar">
+    <button class="prototype-command active" data-panel="overview" type="button">Visao geral</button>
+    <button class="prototype-command" data-panel="critical" type="button">Criticos</button>
+    <button class="prototype-command" data-panel="ai" type="button">IA</button>
+    <button class="prototype-command" data-panel="modules" type="button">Modulos</button>
+  </section>
+
+  <section class="prototype-kpi-grid">
+    <article class="prototype-kpi-card healthy">
+      <span>Saude do estoque</span>
+      <strong id="kpi-health">82%</strong>
+      <small>+6% vs ontem</small>
+    </article>
+    <article class="prototype-kpi-card warning">
+      <span>Itens em atencao</span>
+      <strong id="kpi-warning">14</strong>
+      <small>5 abaixo do minimo</small>
+    </article>
+    <article class="prototype-kpi-card urgent">
+      <span>Risco de ruptura</span>
+      <strong id="kpi-risk">3</strong>
+      <small>pao, cheddar, batata</small>
+    </article>
+    <article class="prototype-kpi-card">
+      <span>Custo em estoque</span>
+      <strong id="kpi-stock-value">R$ 18.420</strong>
+      <small>CMV sob controle</small>
+    </article>
+  </section>
+
+  <section class="prototype-main-grid">
+    <article class="panel prototype-panel" data-prototype-panel="overview">
+      <div class="section-heading">
+        <div>
+          <h3>Operacao em tempo real</h3>
+          <p class="muted">Consumo, compras, producao e perdas no periodo selecionado.</p>
+        </div>
+      </div>
+      <div class="prototype-chart" aria-label="Grafico de consumo">
+        <div style="height: 44%"><span>Seg</span></div>
+        <div style="height: 58%"><span>Ter</span></div>
+        <div style="height: 50%"><span>Qua</span></div>
+        <div style="height: 72%"><span>Qui</span></div>
+        <div style="height: 86%"><span>Sex</span></div>
+        <div style="height: 94%"><span>Sab</span></div>
+        <div style="height: 61%"><span>Dom</span></div>
+      </div>
+      <div class="prototype-mini-stats">
+        <span><strong>R$ 4.890</strong> compras</span>
+        <span><strong>126</strong> etiquetas</span>
+        <span><strong>R$ 218</strong> perdas</span>
+      </div>
+    </article>
+
+    <article class="panel prototype-panel" data-prototype-panel="critical">
+      <div class="section-heading">
+        <div>
+          <h3>Itens criticos</h3>
+          <p class="muted">Prioridade operacional para evitar ruptura.</p>
+        </div>
+      </div>
+      <div class="prototype-critical-list">
+        <button class="prototype-critical-item" type="button" data-insight="Seu pao brioche dura apenas ate amanha no ritmo atual. Sugestao: comprar 4 caixas.">
+          <span class="stock-badge stock-badge-urgent">Urgente</span>
+          <strong>Pao brioche</strong>
+          <small>1,2 CX em estoque | entrega Seg - Sab</small>
+        </button>
+        <button class="prototype-critical-item" type="button" data-insight="O cheddar subiu 14% em relacao a ultima compra. Compare fornecedor alternativo.">
+          <span class="stock-badge stock-badge-low">Atencao</span>
+          <strong>Cheddar fatiado</strong>
+          <small>custo atual R$ 96,90 | 3 fornecedores</small>
+        </button>
+        <button class="prototype-critical-item" type="button" data-insight="Batata com consumo acima da media do periodo. Sugestao: produzir porcoes antes do pico.">
+          <span class="stock-badge stock-badge-low">Atencao</span>
+          <strong>Batata congelada</strong>
+          <small>previsao de ruptura em 2 dias</small>
+        </button>
+      </div>
+    </article>
+
+    <article class="panel prototype-panel prototype-ai-panel" data-prototype-panel="ai">
+      <div class="section-heading">
+        <div>
+          <h3>IA operacional</h3>
+          <p class="muted">Resumo simples para tomada de decisao.</p>
+        </div>
+      </div>
+      <div id="ai-insight" class="prototype-ai-bubble">
+        Seu estoque esta 82% saudavel. Existem 3 riscos de ruptura e 6 produtos proximos do minimo. Recomendo pedir pao brioche hoje.
+      </div>
+      <div class="actions compact-actions">
+        <button id="generate-report" type="button">Gerar resumo</button>
+        <button id="send-whatsapp" class="secondary" type="button">Enviar WhatsApp</button>
+      </div>
+    </article>
+
+    <article class="panel prototype-panel" data-prototype-panel="modules">
+      <div class="section-heading">
+        <div>
+          <h3>Modulos SaaS</h3>
+          <p class="muted">Status dos pilares do produto.</p>
+        </div>
+      </div>
+      <div class="prototype-module-grid">
+        <a href="estoque.html"><strong>Estoque</strong><span>Ativo</span></a>
+        <a href="compras.html"><strong>Compras</strong><span>Ativo</span></a>
+        <a href="producao-etiquetas.html"><strong>Etiquetas</strong><span>Base pronta</span></a>
+        <a href="whatsapp-ia.html"><strong>WhatsApp/IA</strong><span>Contrato pronto</span></a>
+        <a href="inventario.html"><strong>Inventario</strong><span>Base pronta</span></a>
+        <a href="saas.html"><strong>SaaS</strong><span>Escala</span></a>
+      </div>
+    </article>
+  </section>
+
+  <section class="prototype-bottom-dock">
+    <a href="operacao.html">Correria</a>
+    <a href="relatorio-diario.html">Relatorio</a>
+    <a href="alertas-reposicao.html">Alertas</a>
+    <a href="impressora.html">Impressora</a>
+  </section>
+</main>
+
+<script>
+const storeData = {
+  matriz: { health: 82, warning: 14, risk: 3, value: "R$ 18.420" },
+  dark: { health: 74, warning: 21, risk: 6, value: "R$ 12.880" },
+  delivery: { health: 91, warning: 7, risk: 1, value: "R$ 9.640" }
+};
+
+function updateKpis() {
+  const store = document.getElementById("store-filter").value;
+  const period = document.getElementById("period-filter").value;
+  const data = storeData[store];
+  const periodBoost = period === "month" ? 2 : period === "week" ? 1 : 0;
+  document.getElementById("kpi-health").textContent = `${Math.max(0, data.health - periodBoost)}%`;
+  document.getElementById("kpi-warning").textContent = String(data.warning + periodBoost);
+  document.getElementById("kpi-risk").textContent = String(data.risk + periodBoost);
+  document.getElementById("kpi-stock-value").textContent = data.value;
+}
+
+document.querySelectorAll(".prototype-command").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".prototype-command").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    const panel = button.dataset.panel;
+    document.querySelector(`[data-prototype-panel="${panel}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+});
+
+document.querySelectorAll(".prototype-critical-item").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.getElementById("ai-insight").textContent = button.dataset.insight;
+  });
+});
+
+document.getElementById("generate-report").addEventListener("click", () => {
+  document.getElementById("ai-insight").textContent = "Resumo de hoje: estoque saudavel, mas 3 itens precisam de acao. Prioridade: pao brioche, cheddar e batata. Sugestao: comprar para 5 dias de operacao.";
+});
+
+document.getElementById("send-whatsapp").addEventListener("click", () => {
+  document.getElementById("ai-insight").textContent = "Mensagem pronta para WhatsApp: Oi, preciso repor pao brioche, cheddar e batata para entrega na proxima janela.";
+});
+
+document.getElementById("store-filter").addEventListener("change", updateKpis);
+document.getElementById("period-filter").addEventListener("change", updateKpis);
+</script>
+</body>
+</html>
