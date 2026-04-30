@@ -7,3 +7,5 @@ _github-upload-*/
 pdf-images/
 reposicao-producao/node_modules/
 reposicao-producao/dist/
+reposicao-producao/
+android/.idea/
