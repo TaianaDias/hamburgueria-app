@@ -14,124 +14,174 @@
 <link rel="stylesheet" href="style.css">
 <title>Dashboard SaaS | BurgerOps</title>
 </head>
-<body>
-<main class="page dashboard-prototype-page">
-  <header class="dashboard-prototype-hero">
-    <div>
-      <p class="eyebrow">Copiloto Operacional Inteligente</p>
-      <h1>Dashboard SaaS</h1>
-      <p id="user-info" class="muted">Carregando operacao...</p>
+<body class="premium-app-body">
+<main class="premium-app-shell">
+  <aside class="premium-sidebar">
+    <a class="premium-brand" href="dashboard-saas.html" aria-label="Copiloto Operacional">
+      <span class="premium-brand-mark">C</span>
+      <span>
+        <strong>Copiloto</strong>
+        <small>Operacional Inteligente</small>
+      </span>
+    </a>
+
+    <div class="premium-store-card">
+      <span>CARIOCAS BURGER</span>
+      <strong>Loja Centro</strong>
+      <small>Aberto</small>
     </div>
-    <div class="dashboard-prototype-controls">
-      <select id="store-filter" aria-label="Selecionar loja">
-        <option value="all">Todas as lojas</option>
-        <option value="matriz">Matriz</option>
-        <option value="dark">Dark Kitchen</option>
-        <option value="delivery">Unidade Delivery</option>
-      </select>
-      <select id="period-filter" aria-label="Selecionar periodo">
-        <option value="today">Hoje</option>
-        <option value="week" selected>7 dias</option>
-        <option value="month">30 dias</option>
-      </select>
-      <a class="button secondary" href="index.html">Voltar</a>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
+
+    <nav class="premium-nav" aria-label="Menu principal">
+      <a class="active" href="dashboard-saas.html"><span>D</span> Dashboard</a>
+      <a href="estoque.html"><span>E</span> Estoque</a>
+      <a href="producao-etiquetas.html"><span>P</span> Producao</a>
+      <a href="compras.html"><span>C</span> Compras</a>
+      <a href="fornecedores.html"><span>F</span> Fornecedores</a>
+      <a href="desperdicio.html"><span>!</span> Desperdicio</a>
+      <a href="relatorio-diario.html"><span>R</span> Relatorios</a>
+      <a href="impressora.html"><span>T</span> Etiquetas</a>
+      <a href="funcionarios.html"><span>U</span> Funcionarios</a>
+      <a href="saas.html"><span>S</span> Configuracoes</a>
+    </nav>
+
+    <div class="premium-user-card">
+      <span class="premium-avatar">JP</span>
+      <span>
+        <strong id="user-info">Carregando...</strong>
+        <small>Administrador</small>
+      </span>
     </div>
-  </header>
+  </aside>
 
-  <section class="prototype-command-bar">
-    <button class="prototype-command active" data-panel="overview" type="button">Visao geral</button>
-    <button class="prototype-command" data-panel="critical" type="button">Criticos</button>
-    <button class="prototype-command" data-panel="ai" type="button">IA</button>
-    <button class="prototype-command" data-panel="modules" type="button">Modulos</button>
-  </section>
+  <section class="premium-dashboard">
+    <header class="premium-topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="muted">Controle operacional, alertas e inteligencia em tempo real.</p>
+      </div>
+      <div class="premium-topbar-actions">
+        <select id="store-filter" aria-label="Selecionar loja">
+          <option value="all">Todas as lojas</option>
+          <option value="matriz">Matriz</option>
+          <option value="dark">Dark Kitchen</option>
+          <option value="delivery">Unidade Delivery</option>
+        </select>
+        <select id="period-filter" aria-label="Selecionar periodo">
+          <option value="today">Hoje</option>
+          <option value="week" selected>7 dias</option>
+          <option value="month">30 dias</option>
+        </select>
+        <button class="premium-icon-button" type="button" aria-label="Notificacoes">!</button>
+        <button id="logout-button" class="secondary premium-logout" type="button">Sair</button>
+      </div>
+    </header>
 
-  <section class="prototype-kpi-grid">
-    <article class="prototype-kpi-card healthy">
-      <span>Saude do estoque</span>
-      <strong id="kpi-health">0%</strong>
-      <small id="kpi-health-note">Calculando...</small>
-    </article>
-    <article class="prototype-kpi-card warning">
-      <span>Itens em atencao</span>
-      <strong id="kpi-warning">0</strong>
-      <small id="kpi-warning-note">Produtos abaixo ou perto do minimo</small>
-    </article>
-    <article class="prototype-kpi-card urgent">
-      <span>Risco de ruptura</span>
-      <strong id="kpi-risk">0</strong>
-      <small id="kpi-risk-note">Itens no minimo ou abaixo</small>
-    </article>
-    <article class="prototype-kpi-card">
-      <span>Custo em estoque</span>
-      <strong id="kpi-stock-value">R$ 0,00</strong>
-      <small id="kpi-stock-note">Baseado no custo unitario atual</small>
-    </article>
-  </section>
-
-  <section class="prototype-main-grid">
-    <article class="panel prototype-panel" data-prototype-panel="overview">
-      <div class="section-heading">
-        <div>
-          <h3>Operacao em tempo real</h3>
-          <p class="muted">Compras, producao, etiquetas e perdas do periodo selecionado.</p>
+    <section class="premium-kpi-grid">
+      <article class="premium-kpi-card green">
+        <span>Saude do Estoque</span>
+        <div class="premium-health-row">
+          <strong id="kpi-health">0%</strong>
+          <span>
+            <b>Muito bom</b>
+            <small id="kpi-health-note">Calculando...</small>
+          </span>
         </div>
-      </div>
-      <div id="operations-chart" class="prototype-chart" aria-label="Grafico de operacao"></div>
-      <div class="prototype-mini-stats">
-        <span><strong id="mini-purchases">R$ 0,00</strong> compras</span>
-        <span><strong id="mini-labels">0</strong> etiquetas</span>
-        <span><strong id="mini-waste">R$ 0,00</strong> perdas</span>
-      </div>
-    </article>
+      </article>
+      <article class="premium-kpi-card amber">
+        <span>Itens Criticos</span>
+        <strong id="kpi-risk">0</strong>
+        <small id="kpi-risk-note">Precisam de atencao</small>
+      </article>
+      <article class="premium-kpi-card red">
+        <span>Produtos Vencendo</span>
+        <strong id="kpi-warning">0</strong>
+        <small id="kpi-warning-note">Produtos abaixo ou perto do minimo</small>
+      </article>
+      <article class="premium-kpi-card violet">
+        <span>Custo Total em Estoque</span>
+        <strong id="kpi-stock-value">R$ 0,00</strong>
+        <small id="kpi-stock-note">Valor atualizado</small>
+      </article>
+    </section>
 
-    <article class="panel prototype-panel" data-prototype-panel="critical">
-      <div class="section-heading">
-        <div>
-          <h3>Itens criticos</h3>
-          <p class="muted">Clique em um item para gerar uma leitura operacional.</p>
+    <section class="premium-dashboard-grid">
+      <article class="premium-panel">
+        <div class="premium-panel-header">
+          <h3>Movimentacoes de Hoje</h3>
+          <a href="relatorio-diario.html">Ver todas</a>
         </div>
-      </div>
-      <div id="critical-list" class="prototype-critical-list"></div>
-    </article>
+        <div id="movement-list" class="premium-movement-list"></div>
+      </article>
 
-    <article class="panel prototype-panel prototype-ai-panel" data-prototype-panel="ai">
-      <div class="section-heading">
-        <div>
+      <article class="premium-panel">
+        <div class="premium-panel-header">
+          <h3>Grafico de Consumo (7 dias)</h3>
+          <span class="premium-chart-legend"><i></i> Insumos <b></b> Producao</span>
+        </div>
+        <div id="operations-chart" class="premium-line-chart" aria-label="Grafico de operacao"></div>
+        <div class="prototype-mini-stats premium-mini-stats">
+          <span><strong id="mini-purchases">R$ 0,00</strong> compras</span>
+          <span><strong id="mini-labels">0</strong> etiquetas</span>
+          <span><strong id="mini-waste">R$ 0,00</strong> perdas</span>
+        </div>
+      </article>
+
+      <article class="premium-panel">
+        <div class="premium-panel-header">
+          <h3>Alertas Inteligentes</h3>
+          <a href="alertas-reposicao.html">Ver todos</a>
+        </div>
+        <div id="critical-list" class="premium-alert-list"></div>
+      </article>
+    </section>
+
+    <section class="premium-lower-grid">
+      <article class="premium-phone-card">
+        <div class="premium-phone-frame">
+          <header>
+            <strong>Modo Operacao Correria</strong>
+            <span>x</span>
+          </header>
+          <div class="premium-phone-actions">
+            <a class="green" href="estoque.html"><span>+</span> Entrou compra</a>
+            <a class="orange" href="reposicao-producao.html"><span>-</span> Saiu producao</a>
+            <a class="blue" href="producao-etiquetas.html"><span>*</span> Produzir porcoes</a>
+            <a class="purple" href="impressora.html"><span>#</span> Imprimir etiqueta</a>
+            <a class="red" href="desperdicio.html"><span>x</span> Registrar desperdicio</a>
+            <a class="amber" href="alertas-reposicao.html"><span>!</span> Itens criticos</a>
+            <a class="cyan" href="relatorio-diario.html"><span>R</span> Gerar relatorio</a>
+            <a class="green" href="compras.html"><span>W</span> Fazer pedido</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="premium-panel premium-ai-panel">
+        <div class="premium-panel-header">
           <h3>IA operacional</h3>
-          <p class="muted">Resumo simples para tomada de decisao.</p>
+          <a href="whatsapp-ia.html">Abrir central</a>
         </div>
-      </div>
-      <div id="ai-insight" class="prototype-ai-bubble">Carregando resumo inteligente...</div>
-      <div class="actions compact-actions">
-        <button id="generate-report" type="button">Gerar resumo</button>
-        <button id="prepare-whatsapp" class="secondary" type="button">Preparar WhatsApp</button>
-      </div>
-    </article>
+        <div id="ai-insight" class="prototype-ai-bubble">Carregando resumo inteligente...</div>
+        <div class="actions compact-actions">
+          <button id="generate-report" type="button">Gerar resumo</button>
+          <button id="prepare-whatsapp" class="secondary" type="button">Preparar WhatsApp</button>
+        </div>
+      </article>
 
-    <article class="panel prototype-panel" data-prototype-panel="modules">
-      <div class="section-heading">
-        <div>
+      <article class="premium-panel">
+        <div class="premium-panel-header">
           <h3>Modulos SaaS</h3>
-          <p class="muted">Pilares do produto conectados ao fluxo real.</p>
+          <a href="saas.html">Escalar</a>
         </div>
-      </div>
-      <div class="prototype-module-grid">
-        <a href="estoque.html"><strong>Estoque</strong><span id="module-stock">0 itens</span></a>
-        <a href="compras.html"><strong>Compras</strong><span id="module-purchases">R$ 0,00</span></a>
-        <a href="producao-etiquetas.html"><strong>Etiquetas</strong><span id="module-labels">0 emitidas</span></a>
-        <a href="whatsapp-ia.html"><strong>WhatsApp/IA</strong><span id="module-whatsapp">0 comandos</span></a>
-        <a href="inventario.html"><strong>Inventario</strong><span id="module-inventory">conferencia</span></a>
-        <a href="saas.html"><strong>SaaS</strong><span>escala</span></a>
-      </div>
-    </article>
-  </section>
-
-  <section class="prototype-bottom-dock">
-    <a href="operacao.html">Correria</a>
-    <a href="relatorio-diario.html">Relatorio</a>
-    <a href="alertas-reposicao.html">Alertas</a>
-    <a href="impressora.html">Impressora</a>
+        <div class="prototype-module-grid">
+          <a href="estoque.html"><strong>Estoque</strong><span id="module-stock">0 itens</span></a>
+          <a href="compras.html"><strong>Compras</strong><span id="module-purchases">R$ 0,00</span></a>
+          <a href="producao-etiquetas.html"><strong>Etiquetas</strong><span id="module-labels">0 emitidas</span></a>
+          <a href="whatsapp-ia.html"><strong>WhatsApp/IA</strong><span id="module-whatsapp">0 comandos</span></a>
+          <a href="inventario.html"><strong>Inventario</strong><span id="module-inventory">conferencia</span></a>
+          <a href="saas.html"><strong>SaaS</strong><span>escala</span></a>
+        </div>
+      </article>
+    </section>
   </section>
 </main>
 
@@ -151,7 +201,7 @@ import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
 const { profile } = await requireAuth();
-document.getElementById("user-info").textContent = describeProfile(profile);
+document.getElementById("user-info").textContent = profile.nome || profile.email || describeProfile(profile);
 
 const state = {
   estoque: [],
@@ -281,12 +331,30 @@ function renderChart(compras, desperdicios, producoes) {
   });
 
   const maxValue = Math.max(...totals.map((item) => item.value), 1);
-  document.getElementById("operations-chart").innerHTML = totals
-    .map((item) => {
-      const height = Math.max(12, Math.round((item.value / maxValue) * 100));
-      return `<div style="height: ${height}%"><span>${escapeHtml(item.label)}</span></div>`;
-    })
-    .join("");
+  const points = totals.map((item, index) => {
+    const x = 38 + index * 75;
+    const y = 178 - Math.max(8, (item.value / maxValue) * 138);
+    return { ...item, x, y };
+  });
+  const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const productionLine = points
+    .map((point, index) => `${point.x},${Math.max(30, point.y + (index % 2 === 0 ? 28 : -10))}`)
+    .join(" ");
+
+  document.getElementById("operations-chart").innerHTML = `
+    <svg viewBox="0 0 520 220" role="img" aria-label="Consumo dos ultimos 7 dias">
+      <g class="premium-chart-grid-lines">
+        <line x1="28" y1="42" x2="500" y2="42"></line>
+        <line x1="28" y1="86" x2="500" y2="86"></line>
+        <line x1="28" y1="130" x2="500" y2="130"></line>
+        <line x1="28" y1="174" x2="500" y2="174"></line>
+      </g>
+      <polyline class="premium-chart-line green" points="${line}"></polyline>
+      <polyline class="premium-chart-line blue" points="${productionLine}"></polyline>
+      ${points.map((point) => `<circle class="premium-chart-point" cx="${point.x}" cy="${point.y}" r="4"></circle>`).join("")}
+      ${points.map((point) => `<text x="${point.x}" y="206">${escapeHtml(point.label)}</text>`).join("")}
+    </svg>
+  `;
 }
 
 function buildInsight({ estoque, compras, desperdicios, producoes, etiquetas }) {
@@ -328,19 +396,79 @@ function renderCriticalList(estoque) {
     const minimum = toNumber(item.minimo, 0);
     const urgent = minimum > 0 && quantity <= minimum;
     const button = document.createElement("button");
-    button.className = "prototype-critical-item";
+    button.className = "premium-alert-item";
     button.type = "button";
     button.dataset.insight = `${item.nome}: estoque atual ${quantity}, minimo ${minimum}. ${urgent ? "Prioridade de compra agora." : "Acompanhar antes do pico de venda."}`;
     button.innerHTML = `
-      <span class="stock-badge ${urgent ? "stock-badge-urgent" : "stock-badge-low"}">${urgent ? "Urgente" : "Atencao"}</span>
-      <strong>${escapeHtml(item.nome || "Produto")}</strong>
-      <small>Atual ${quantity} | Minimo ${minimum} | ${escapeHtml(item.unidadeMedida || item.unidadeUso || "un")}</small>
+      <span class="premium-alert-icon ${urgent ? "red" : "amber"}">${urgent ? "!" : "A"}</span>
+      <span>
+        <strong>${escapeHtml(item.nome || "Produto")}</strong>
+        <small>Atual ${quantity} | Minimo ${minimum} | ${escapeHtml(item.unidadeMedida || item.unidadeUso || "un")}</small>
+      </span>
+      <em>${urgent ? "Critico" : "Atencao"}</em>
     `;
     button.addEventListener("click", () => {
       document.getElementById("ai-insight").textContent = button.dataset.insight;
     });
     criticalList.appendChild(button);
   });
+}
+
+function renderMovements({ compras, desperdicios, producoes, etiquetas }) {
+  const movementList = document.getElementById("movement-list");
+  const movements = [
+    ...compras.slice(0, 2).map((item) => ({
+      icon: "+",
+      tone: "green",
+      title: "Entrada de estoque",
+      detail: `${item.produtoNome || "Compra registrada"} - ${formatCurrency(toNumber(item.valorTotal, 0))}`,
+      date: getDateValue(item.criadoEm) || getDateValue(item.dataCompra)
+    })),
+    ...producoes.slice(0, 2).map((item) => ({
+      icon: "P",
+      tone: "blue",
+      title: "Producao realizada",
+      detail: `${item.produtoNome || "Produto"} - ${toNumber(item.quantidadeProduzida, 0)} ${item.unidade || ""}`,
+      date: getDateValue(item.criadoEm)
+    })),
+    ...etiquetas.slice(0, 2).map((item) => ({
+      icon: "T",
+      tone: "purple",
+      title: "Etiqueta impressa",
+      detail: `${item.produtoNome || "Produto"} - lote ${item.lote || "-"}`,
+      date: getDateValue(item.criadoEm) || getDateValue(item.dataImpressao)
+    })),
+    ...desperdicios.slice(0, 2).map((item) => ({
+      icon: "!",
+      tone: "red",
+      title: "Desperdicio registrado",
+      detail: `${item.productName || item.produtoNome || "Produto"} - ${formatCurrency(toNumber(item.estimatedCost ?? item.custoTotal, 0))}`,
+      date: getDateValue(item.criadoEm) || getDateValue(item.data)
+    }))
+  ]
+    .sort((left, right) => (right.date?.getTime?.() || 0) - (left.date?.getTime?.() || 0))
+    .slice(0, 5);
+
+  if (!movements.length) {
+    movementList.innerHTML = '<div class="empty-state">Sem movimentacoes recentes para exibir.</div>';
+    return;
+  }
+
+  movementList.innerHTML = movements.map((movement) => {
+    const time = movement.date
+      ? movement.date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : "--:--";
+    return `
+      <article class="premium-movement-item">
+        <span class="premium-movement-icon ${escapeHtml(movement.tone)}">${escapeHtml(movement.icon)}</span>
+        <span>
+          <strong>${escapeHtml(movement.title)}</strong>
+          <small>${escapeHtml(movement.detail)}</small>
+        </span>
+        <time>${escapeHtml(time)}</time>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderDashboard() {
@@ -370,6 +498,7 @@ function renderDashboard() {
   document.getElementById("ai-insight").textContent = buildInsight(filtered);
   renderChart(filtered.compras, filtered.desperdicios, filtered.producoes);
   renderCriticalList(filtered.estoque);
+  renderMovements(filtered);
 }
 
 async function loadCollection(name) {
