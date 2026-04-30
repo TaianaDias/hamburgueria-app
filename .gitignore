@@ -3,3 +3,7 @@ server/serviceAccountKey.json
 serviceAccountKey.json
 .env
 server-local*.log
+_github-upload-*/
+pdf-images/
+reposicao-producao/node_modules/
+reposicao-producao/dist/

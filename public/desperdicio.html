@@ -37,7 +37,7 @@
     </article>
 
     <article class="card">
-      <span class="muted">Unidades descartadas</span>
+      <span class="muted">Qtd. desperdicada</span>
       <strong id="metric-waste-units" class="metric-value">0</strong>
     </article>
 
@@ -76,6 +76,17 @@
         <input id="waste-quantity" type="number" min="1" step="1" value="1" inputmode="numeric">
         <button id="waste-plus" class="secondary" type="button">+</button>
       </div>
+
+      <div class="field-group">
+        <label for="waste-unit">Medida desperdicada</label>
+        <select id="waste-unit">
+          <option value="unidade">Unidade</option>
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="l">L</option>
+        </select>
+      </div>
+
       <p id="waste-conversion-preview" class="muted waste-conversion-preview">Informe quantas unidades foram desperdicadas.</p>
 
       <div class="waste-reason-grid" role="group" aria-label="Motivo do desperdicio">
@@ -158,6 +169,7 @@ const formCard = document.getElementById("waste-form-card");
 const selectedName = document.getElementById("waste-selected-name");
 const selectedMeta = document.getElementById("waste-selected-meta");
 const quantityInput = document.getElementById("waste-quantity");
+const wasteUnitSelect = document.getElementById("waste-unit");
 const conversionPreview = document.getElementById("waste-conversion-preview");
 const minusButton = document.getElementById("waste-minus");
 const plusButton = document.getElementById("waste-plus");
@@ -190,6 +202,36 @@ let wasteEmployees = [];
 let selectedProduct = null;
 let selectedReason = "Sobra final";
 const isAdmin = profile.tipo === "admin";
+const WASTE_UNITS = Object.freeze({
+  unidade: {
+    label: "unidade",
+    shortLabel: "un",
+    baseUnit: "unidade",
+    baseLabel: "un",
+    factorToBase: 1
+  },
+  g: {
+    label: "g",
+    shortLabel: "g",
+    baseUnit: "g",
+    baseLabel: "g",
+    factorToBase: 1
+  },
+  kg: {
+    label: "kg",
+    shortLabel: "kg",
+    baseUnit: "g",
+    baseLabel: "g",
+    factorToBase: 1000
+  },
+  l: {
+    label: "L",
+    shortLabel: "L",
+    baseUnit: "l",
+    baseLabel: "L",
+    factorToBase: 1
+  }
+});
 
 function normalizeBarcode(value) {
   return String(value ?? "").replace(/\D/g, "").slice(0, 24);
@@ -231,6 +273,101 @@ function getUnitsPerBox(product) {
 
 function getUnitCost(product) {
   return Math.max(0, toNumber(product?.unit_cost ?? product?.custoUnitario ?? product?.custo, 0));
+}
+
+function getPackageCost(product = {}) {
+  return Math.max(0, toNumber(
+    product.last_box_price ?? product.custoCompra ?? product.valorCaixa ?? product.precoCaixa,
+    getUnitCost(product)
+  ));
+}
+
+function getWasteUnitConfig(unit) {
+  return WASTE_UNITS[unit] || WASTE_UNITS.unidade;
+}
+
+function getProductDefaultWasteUnit(product = {}) {
+  const rawUnit = normalizeText(product.unidadeUso || product.unidadeMedida || product.unitLabel || "");
+
+  if (["g", "grama", "gramas"].includes(rawUnit)) {
+    return "g";
+  }
+
+  if (["kg", "quilo", "quilos", "kilograma", "kilogramas"].includes(rawUnit)) {
+    return "kg";
+  }
+
+  if (["l", "lt", "litro", "litros"].includes(rawUnit)) {
+    return "l";
+  }
+
+  return "unidade";
+}
+
+function getProductCostUnit(product = {}) {
+  return getProductDefaultWasteUnit(product);
+}
+
+function formatQuantity(value, maximumFractionDigits = 3) {
+  return toNumber(value, 0).toLocaleString("pt-BR", {
+    maximumFractionDigits
+  });
+}
+
+function inferPackageMeasure(product = {}) {
+  const text = normalizeText([
+    product.nome,
+    product.name,
+    product.categoria,
+    product.unidadeMedida,
+    product.unidadeUso
+  ].join(" "));
+  const match = text.match(/(\d+(?:[,.]\d+)?)\s*(kg|quilo|quilos|g|grama|gramas|l|lt|litro|litros)\b/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const amount = toNumber(String(match[1]).replace(",", "."), 0);
+  const unit = normalizeText(match[2]);
+
+  if (amount <= 0) {
+    return null;
+  }
+
+  if (["kg", "quilo", "quilos"].includes(unit)) {
+    return {
+      baseUnit: "g",
+      baseLabel: "g",
+      baseQuantity: amount * 1000
+    };
+  }
+
+  if (["g", "grama", "gramas"].includes(unit)) {
+    return {
+      baseUnit: "g",
+      baseLabel: "g",
+      baseQuantity: amount
+    };
+  }
+
+  if (["l", "lt", "litro", "litros"].includes(unit)) {
+    return {
+      baseUnit: "l",
+      baseLabel: "L",
+      baseQuantity: amount
+    };
+  }
+
+  return null;
+}
+
+function getWasteEventDisplayQuantity(event = {}) {
+  const inputQuantity = event.inputQuantity ?? event.quantity;
+  const inputUnit = event.inputUnit || event.operationUnit || event.unitLabel || "unidade";
+  const unitConfig = getWasteUnitConfig(inputUnit);
+
+  return `${formatQuantity(inputQuantity)} ${unitConfig.shortLabel}`;
 }
 
 function getEmployeeDisplayName(employee = {}) {
@@ -343,17 +480,66 @@ async function getSelectedWasteEmployee() {
 }
 
 function getWasteEventQuantity(event = {}) {
-  return Math.max(0, Math.floor(toNumber(event.quantityUnits ?? event.quantity, 0)));
+  return Math.max(0, toNumber(event.convertedQuantity ?? event.quantityUnits ?? event.quantity, 0));
 }
 
-function getWasteConversion(product = selectedProduct, quantityValue = quantityInput.value) {
-  const quantityUnits = Math.max(1, Math.floor(toNumber(quantityValue, 1)));
+function areCompatibleUnits(leftUnit, rightUnit) {
+  const left = getWasteUnitConfig(leftUnit).baseUnit;
+  const right = getWasteUnitConfig(rightUnit).baseUnit;
+  return left === right;
+}
+
+function convertWasteQuantity(quantity, fromUnit, toUnit) {
+  const from = getWasteUnitConfig(fromUnit);
+  const to = getWasteUnitConfig(toUnit);
+
+  if (fromUnit === toUnit) {
+    return quantity;
+  }
+
+  if (from.baseUnit !== to.baseUnit) {
+    return quantity;
+  }
+
+  const baseQuantity = quantity * from.factorToBase;
+  return baseQuantity / to.factorToBase;
+}
+
+function getWasteConversion(product = selectedProduct, quantityValue = quantityInput.value, unitValue = wasteUnitSelect.value) {
+  const unitConfig = getWasteUnitConfig(unitValue);
+  const productCostUnit = getProductCostUnit(product);
+  const rawQuantity = Math.max(0, toNumber(quantityValue, 0));
+  const inputQuantity = unitConfig.baseUnit === "unidade"
+    ? Math.max(1, Math.floor(rawQuantity || 1))
+    : Math.max(0.001, rawQuantity || 0.001);
+  const convertedQuantity = inputQuantity * unitConfig.factorToBase;
+  const packageMeasure = inferPackageMeasure(product);
+  const costQuantity = areCompatibleUnits(unitValue, productCostUnit)
+    ? convertWasteQuantity(inputQuantity, unitValue, productCostUnit)
+    : packageMeasure?.baseUnit === unitConfig.baseUnit
+      ? convertedQuantity / packageMeasure.baseQuantity
+      : convertedQuantity;
   const unitsPerBox = getUnitsPerBox(product);
-  const equivalentBoxes = quantityUnits / unitsPerBox;
-  const estimatedCost = quantityUnits * getUnitCost(product);
+  const equivalentBoxes = convertedQuantity / unitsPerBox;
+  const costUnit = areCompatibleUnits(unitValue, productCostUnit)
+    ? productCostUnit
+    : packageMeasure?.baseUnit === unitConfig.baseUnit
+      ? "pacote"
+      : productCostUnit;
+  const estimatedCost = costQuantity * (costUnit === "pacote" ? getPackageCost(product) : getUnitCost(product));
 
   return {
-    quantityUnits,
+    inputQuantity,
+    inputUnit: unitValue,
+    inputUnitLabel: unitConfig.shortLabel,
+    convertedQuantity,
+    convertedUnit: unitConfig.baseUnit,
+    convertedUnitLabel: unitConfig.baseLabel,
+    costQuantity,
+    costUnit,
+    packageMeasureQuantity: packageMeasure?.baseQuantity || null,
+    packageMeasureUnit: packageMeasure?.baseUnit || "",
+    quantityUnits: convertedQuantity,
     unitsPerBox,
     equivalentBoxes,
     estimatedCost
@@ -367,7 +553,10 @@ function updateWasteConversionPreview() {
   }
 
   const conversion = getWasteConversion();
-  conversionPreview.textContent = `${conversion.quantityUnits} unidade(s) desperdicada(s) | Custo estimado ${formatCurrency(conversion.estimatedCost)}`;
+  const conversionText = conversion.inputUnit === conversion.convertedUnit
+    ? `${formatQuantity(conversion.inputQuantity)} ${conversion.inputUnitLabel}`
+    : `${formatQuantity(conversion.inputQuantity)} ${conversion.inputUnitLabel} = ${formatQuantity(conversion.convertedQuantity)} ${conversion.convertedUnitLabel}`;
+  conversionPreview.textContent = `${conversionText} desperdicado(s) | Custo estimado ${formatCurrency(conversion.estimatedCost)}`;
 }
 
 function renderProducts() {
@@ -416,13 +605,14 @@ function renderSelectedProduct() {
   }
 
   selectedName.textContent = selectedProduct.nome || "Produto";
-  selectedMeta.textContent = `${getProductStockLabel(selectedProduct)} | registrar por unidade`;
+  selectedMeta.textContent = `${getProductStockLabel(selectedProduct)} | registrar por medida`;
   selectedSummary.textContent = selectedProduct.nome || "Produto selecionado";
   quantityInput.value = "1";
+  wasteUnitSelect.value = getProductDefaultWasteUnit(selectedProduct);
   noteInput.value = "";
   formCard.hidden = false;
   syncNewEmployeeFields();
-  updateWasteConversionPreview();
+  syncWasteUnitInputState();
 }
 
 function renderWasteHistory() {
@@ -430,11 +620,21 @@ function renderWasteHistory() {
   const todayEvents = wasteEvents
     .filter((event) => event.dateKey === todayKey)
     .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
-  const totalUnits = todayEvents.reduce((sum, event) => sum + getWasteEventQuantity(event), 0);
+  const totalsByUnit = todayEvents.reduce((totals, event) => {
+    const unitConfig = getWasteUnitConfig(event.convertedUnit || event.inputUnit || event.operationUnit || "unidade");
+    const key = unitConfig.baseUnit;
+    totals[key] = (totals[key] || 0) + getWasteEventQuantity(event);
+    return totals;
+  }, {});
   const totalCost = todayEvents.reduce((sum, event) => sum + toNumber(event.estimatedCost, 0), 0);
+  const totalQuantityLabel = [
+    totalsByUnit.unidade ? `${formatQuantity(totalsByUnit.unidade)} un` : "",
+    totalsByUnit.g ? `${formatQuantity(totalsByUnit.g)} g` : "",
+    totalsByUnit.l ? `${formatQuantity(totalsByUnit.l)} L` : ""
+  ].filter(Boolean).join(" | ");
 
   metricWasteCount.textContent = String(todayEvents.length);
-  metricWasteUnits.textContent = totalUnits.toLocaleString("pt-BR");
+  metricWasteUnits.textContent = totalQuantityLabel || "0";
   metricWasteCost.textContent = formatCurrency(totalCost);
 
   historyList.innerHTML = "";
@@ -448,15 +648,19 @@ function renderWasteHistory() {
     const article = document.createElement("article");
     article.className = "card waste-history-card";
     const quantity = getWasteEventQuantity(event);
+    const inputUnit = event.inputUnit || event.operationUnit || "unidade";
     article.innerHTML = `
       <div class="summary-line">
         <span>${escapeHtml(event.productName || "Produto")}</span>
-        <strong>${quantity} un</strong>
+        <strong>${escapeHtml(getWasteEventDisplayQuantity(event))}</strong>
       </div>
       <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | Responsavel: ${escapeHtml(event.responsibleEmployeeName || event.employeeName || event.responsible || "nao informado")} | Lancado por: ${escapeHtml(event.registeredBy || event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
       ${event.note ? `<p class="muted compact-meta">${escapeHtml(event.note)}</p>` : ""}
       <div class="waste-history-actions">
-        <input type="number" min="1" step="1" value="${quantity}" aria-label="Quantidade desperdicada" data-waste-quantity="${escapeHtml(event.id)}">
+        <input type="number" min="0.001" step="0.001" value="${formatQuantity(event.inputQuantity ?? event.quantity, 3).replace(/\./g, "").replace(",", ".")}" aria-label="Quantidade desperdicada" data-waste-quantity="${escapeHtml(event.id)}">
+        <select aria-label="Medida desperdicada" data-waste-unit="${escapeHtml(event.id)}">
+          ${Object.entries(WASTE_UNITS).map(([key, unit]) => `<option value="${key}" ${key === inputUnit ? "selected" : ""}>${unit.label}</option>`).join("")}
+        </select>
         <button type="button" class="secondary" data-action="update-waste" data-waste-id="${escapeHtml(event.id)}">Atualizar</button>
         ${isAdmin ? `<button type="button" class="ghost" data-action="delete-waste" data-waste-id="${escapeHtml(event.id)}">Excluir</button>` : ""}
       </div>
@@ -479,7 +683,7 @@ async function adjustProductWasteTotals(event, quantityDelta, costDelta) {
   });
 }
 
-async function updateWasteQuantity(wasteId, nextQuantityValue) {
+async function updateWasteQuantity(wasteId, nextQuantityValue, nextUnitValue) {
   const event = wasteEvents.find((item) => item.id === wasteId);
 
   if (!event) {
@@ -487,23 +691,37 @@ async function updateWasteQuantity(wasteId, nextQuantityValue) {
     return;
   }
 
-  const nextQuantity = Math.max(1, Math.floor(toNumber(nextQuantityValue, 1)));
+  const product = products.find((item) => item.id === event.productId) || selectedProduct || {};
+  const nextConversion = getWasteConversion(product, nextQuantityValue, nextUnitValue || event.inputUnit || "unidade");
   const previousQuantity = getWasteEventQuantity(event);
   const unitCost = Math.max(0, toNumber(event.unitCost, 0));
-  const unitsPerBox = Math.max(1, toNumber(event.unitsPerBox, 1));
-  const nextEstimatedCost = nextQuantity * unitCost;
+  const nextEstimatedCost = nextConversion.estimatedCost || (nextConversion.costQuantity * unitCost);
   const previousEstimatedCost = Math.max(0, toNumber(event.estimatedCost, previousQuantity * unitCost));
 
-  if (nextQuantity === previousQuantity) {
+  if (
+    nextConversion.convertedQuantity === previousQuantity
+    && nextConversion.inputUnit === (event.inputUnit || event.operationUnit || "unidade")
+  ) {
     setStatus("waste-status", "Quantidade mantida sem alteracao.", "info");
     return;
   }
 
   await updateDoc(doc(db, "desperdicios", wasteId), {
-    quantity: nextQuantity,
-    quantityUnits: nextQuantity,
-    operationUnit: "unidade",
-    equivalentBoxes: nextQuantity / unitsPerBox,
+    quantity: nextConversion.convertedQuantity,
+    quantityUnits: nextConversion.convertedQuantity,
+    inputQuantity: nextConversion.inputQuantity,
+    inputUnit: nextConversion.inputUnit,
+    inputUnitLabel: nextConversion.inputUnitLabel,
+    operationUnit: nextConversion.inputUnit,
+    convertedQuantity: nextConversion.convertedQuantity,
+    convertedUnit: nextConversion.convertedUnit,
+    convertedUnitLabel: nextConversion.convertedUnitLabel,
+    costQuantity: nextConversion.costQuantity,
+    costUnit: nextConversion.costUnit,
+    packageMeasureQuantity: nextConversion.packageMeasureQuantity,
+    packageMeasureUnit: nextConversion.packageMeasureUnit,
+    unitsPerBox: nextConversion.unitsPerBox,
+    equivalentBoxes: nextConversion.equivalentBoxes,
     estimatedCost: nextEstimatedCost,
     updatedAt: serverTimestamp(),
     updatedBy: profile.email
@@ -511,7 +729,7 @@ async function updateWasteQuantity(wasteId, nextQuantityValue) {
 
   await adjustProductWasteTotals(
     event,
-    nextQuantity - previousQuantity,
+    nextConversion.convertedQuantity - previousQuantity,
     nextEstimatedCost - previousEstimatedCost
   );
 
@@ -587,8 +805,19 @@ function selectProduct(productId) {
 }
 
 function setQuantity(nextValue) {
-  quantityInput.value = String(Math.max(1, Math.floor(toNumber(nextValue, 1))));
+  const unitConfig = getWasteUnitConfig(wasteUnitSelect.value);
+  const nextQuantity = unitConfig.baseUnit === "unidade"
+    ? Math.max(1, Math.floor(toNumber(nextValue, 1)))
+    : Math.max(0.001, toNumber(nextValue, 0.001));
+  quantityInput.value = String(nextQuantity);
   updateWasteConversionPreview();
+}
+
+function syncWasteUnitInputState() {
+  const unitConfig = getWasteUnitConfig(wasteUnitSelect.value);
+  quantityInput.min = unitConfig.baseUnit === "unidade" ? "1" : "0.001";
+  quantityInput.step = unitConfig.baseUnit === "unidade" || wasteUnitSelect.value === "g" ? "1" : "0.001";
+  setQuantity(quantityInput.value);
 }
 
 async function saveWaste() {
@@ -597,10 +826,9 @@ async function saveWaste() {
     return;
   }
 
-  const quantity = Math.max(1, Math.floor(toNumber(quantityInput.value, 1)));
-  const conversion = getWasteConversion(selectedProduct, quantity);
+  const conversion = getWasteConversion(selectedProduct, quantityInput.value, wasteUnitSelect.value);
   const unitCost = getUnitCost(selectedProduct);
-  const unitLabel = selectedProduct.unidadeUso || "un";
+  const unitLabel = conversion.convertedUnitLabel;
   const wasteEmployee = await getSelectedWasteEmployee();
 
   if (!wasteEmployee) {
@@ -614,14 +842,24 @@ async function saveWaste() {
     barcode: normalizeBarcode(selectedProduct.codigoBarras || selectedProduct.barcode),
     brand: selectedProduct.marca || selectedProduct.brand || "",
     category: selectedProduct.categoria || selectedProduct.category || "",
-    quantity,
+    quantity: conversion.convertedQuantity,
     quantityUnits: conversion.quantityUnits,
+    inputQuantity: conversion.inputQuantity,
+    inputUnit: conversion.inputUnit,
+    inputUnitLabel: conversion.inputUnitLabel,
     unitLabel,
-    operationUnit: "unidade",
+    operationUnit: conversion.inputUnit,
     reason: selectedReason,
     note: noteInput.value.trim(),
     unitsPerBox: conversion.unitsPerBox,
     equivalentBoxes: conversion.equivalentBoxes,
+    convertedQuantity: conversion.convertedQuantity,
+    convertedUnit: conversion.convertedUnit,
+    convertedUnitLabel: conversion.convertedUnitLabel,
+    costQuantity: conversion.costQuantity,
+    costUnit: conversion.costUnit,
+    packageMeasureQuantity: conversion.packageMeasureQuantity,
+    packageMeasureUnit: conversion.packageMeasureUnit,
     unitCost,
     estimatedCost: conversion.estimatedCost,
     responsible: employeeName,
@@ -640,7 +878,7 @@ async function saveWaste() {
   try {
     await addDoc(collection(db, "desperdicios"), payload);
     await updateDoc(doc(db, "estoque", selectedProduct.id), {
-      desperdicioTotalUnidades: increment(quantity),
+      desperdicioTotalUnidades: increment(conversion.convertedQuantity),
       desperdicioTotalCusto: increment(payload.estimatedCost),
       ultimoDesperdicioEm: serverTimestamp()
     }).catch((error) => {
@@ -680,7 +918,8 @@ historyList.addEventListener("click", async (event) => {
 
     if (button.dataset.action === "update-waste") {
       const quantityField = historyList.querySelector(`[data-waste-quantity="${CSS.escape(wasteId)}"]`);
-      await updateWasteQuantity(wasteId, quantityField?.value);
+      const unitField = historyList.querySelector(`[data-waste-unit="${CSS.escape(wasteId)}"]`);
+      await updateWasteQuantity(wasteId, quantityField?.value, unitField?.value);
       return;
     }
 
@@ -697,6 +936,7 @@ historyList.addEventListener("click", async (event) => {
 minusButton.addEventListener("click", () => setQuantity(toNumber(quantityInput.value, 1) - 1));
 plusButton.addEventListener("click", () => setQuantity(toNumber(quantityInput.value, 1) + 1));
 quantityInput.addEventListener("input", () => setQuantity(quantityInput.value));
+wasteUnitSelect.addEventListener("change", syncWasteUnitInputState);
 employeeSelect.addEventListener("change", syncNewEmployeeFields);
 newEmployeeNameInput.addEventListener("keydown", async (event) => {
   if (event.key === "Enter") {
