@@ -247,7 +247,7 @@ async function init() {
     }
 
     if (context?.profile) {
-      window.location.href = "index.html";
+      window.location.href = "dashboard-saas.html";
     }
   }
 
@@ -282,7 +282,7 @@ async function init() {
     try {
       await signInWithEmailAndPassword(auth, email, senha);
       setStatus("status", "Login realizado. Redirecionando...", "success");
-      window.location.href = "index.html";
+      window.location.href = "dashboard-saas.html";
     } catch (error) {
       console.error(error);
       setStatus("status", "Login invalido. Confira email e senha.", "error");
@@ -334,7 +334,7 @@ async function init() {
 
       await signInWithEmailAndPassword(auth, email, senha);
       setStatus("status", "Conta criada com sucesso. Redirecionando...", "success");
-      window.location.href = "index.html";
+      window.location.href = "dashboard-saas.html";
     } catch (error) {
       console.error(error);
       setStatus("status", error.message || "Nao foi possivel criar a conta inicial.", "error");
