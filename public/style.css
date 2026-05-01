@@ -210,6 +210,14 @@ textarea:focus {
   box-shadow: 0 16px 38px rgba(249, 115, 22, 0.34);
 }
 
+.login-brand-mark img,
+.login-burger-icon img {
+  display: block;
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+}
+
 .login-brand-mark {
   border: 1px solid rgba(249, 115, 22, 0.8);
   background: rgba(249, 115, 22, 0.08);
@@ -222,7 +230,7 @@ textarea:focus {
   border: 2px solid rgba(249, 115, 22, 0.78);
   border-radius: 30px;
   background: rgba(249, 115, 22, 0.08);
-  font-size: 3.35rem;
+  padding: 10px;
 }
 
 .login-brand strong,
