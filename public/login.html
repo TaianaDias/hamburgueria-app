@@ -14,12 +14,69 @@
 <link rel="stylesheet" href="style.css">
 <title>Login | Hamburgueria</title>
 </head>
-<body>
-<main class="page page-login">
-  <section class="panel login-card">
-    <p class="eyebrow">Operacao de controle</p>
-    <h1>Painel Carioca's</h1>
-    <p class="muted">Entre no sistema ou crie a primeira conta administrativa para inicializar o app.</p>
+<body class="login-premium-body">
+<main class="page page-login login-premium-shell">
+  <section class="login-marketing-panel">
+    <a class="login-brand" href="login.html" aria-label="Carioca's Operacao de Controle">
+      <span class="login-brand-mark">C</span>
+      <span>
+        <strong>Carioca's</strong>
+        <small>Operacao de Controle</small>
+      </span>
+    </a>
+
+    <div class="login-hero-copy">
+      <p class="eyebrow">SaaS operacional food service</p>
+      <h1>Gestao inteligente</h1>
+      <p>Controle estoque, producao, compras, custos e muito mais em um so lugar.</p>
+    </div>
+
+    <div class="login-feature-grid" aria-label="Destaques do sistema">
+      <article>
+        <span>E</span>
+        <strong>Estoque Inteligente</strong>
+        <small>Controle em tempo real e alertas automaticos.</small>
+      </article>
+      <article>
+        <span>P</span>
+        <strong>Producao e Etiquetas</strong>
+        <small>Pre-preparo, validade e etiquetas termicas.</small>
+      </article>
+      <article>
+        <span>C</span>
+        <strong>Compras e Fornecedores</strong>
+        <small>Pedidos inteligentes e comparacao de precos.</small>
+      </article>
+      <article>
+        <span>D</span>
+        <strong>Dashboard & Relatorios</strong>
+        <small>Indicadores completos para melhores decisoes.</small>
+      </article>
+    </div>
+
+    <blockquote class="login-testimonial">
+      <p>"O sistema que simplifica, organiza e impulsiona o seu negocio."</p>
+      <strong>+250 operacoes confiam na gente</strong>
+    </blockquote>
+
+    <div class="login-trust-row">
+      <span>Seguro e Confiavel</span>
+      <span>Acesso de Qualquer Lugar</span>
+      <span>Decisoes Baseadas em Dados</span>
+    </div>
+  </section>
+
+  <section class="panel login-card login-premium-card">
+    <div class="login-lang-row">
+      <button class="login-lang-button" type="button" aria-label="Idioma atual">PT-BR</button>
+    </div>
+
+    <div class="login-card-head">
+      <span class="login-burger-icon" aria-hidden="true">🍔</span>
+      <p class="eyebrow">Acesso administrativo</p>
+      <h2>Bem-vindo de volta! 👋</h2>
+      <p class="muted">Faca login para acessar sua conta administrativa.</p>
+    </div>
 
     <div class="auth-switcher" role="tablist" aria-label="Acesso ao sistema">
       <button id="login-tab" class="auth-tab active" type="button" role="tab" aria-selected="true">Entrar</button>
@@ -33,13 +90,30 @@
           <input id="login-email" type="email" placeholder="voce@empresa.com">
         </div>
 
-        <div class="field-group" style="grid-column: 1 / -1;">
+        <div class="field-group password-field" style="grid-column: 1 / -1;">
           <label for="login-senha">Senha</label>
           <input id="login-senha" type="password" placeholder="Sua senha">
+          <button class="password-toggle" type="button" data-target="login-senha" aria-label="Mostrar senha">Ver</button>
         </div>
 
-        <button id="submit-button" type="submit" style="grid-column: 1 / -1;">Entrar</button>
+        <div class="login-form-options">
+          <label class="inline-choice login-remember">
+            <input id="remember-me" type="checkbox">
+            <span>Lembrar-me</span>
+          </label>
+          <a href="mailto:suporte@cariocasoperacao.com?subject=Recuperar%20senha">Esqueci minha senha</a>
+        </div>
+
+        <button id="submit-button" type="submit" style="grid-column: 1 / -1;">Entrar <span aria-hidden="true">→</span></button>
       </form>
+
+      <div class="login-social-block">
+        <span>ou continue com</span>
+        <div class="login-social-actions">
+          <button class="secondary" type="button">Google</button>
+          <button class="secondary" type="button">Microsoft</button>
+        </div>
+      </div>
     </section>
 
     <section id="register-panel" class="auth-panel" role="tabpanel" hidden>
@@ -54,14 +128,16 @@
           <input id="register-email" type="email" placeholder="admin@empresa.com">
         </div>
 
-        <div class="field-group">
+        <div class="field-group password-field">
           <label for="register-senha">Senha</label>
           <input id="register-senha" type="password" placeholder="Minimo de 6 caracteres">
+          <button class="password-toggle" type="button" data-target="register-senha" aria-label="Mostrar senha">Ver</button>
         </div>
 
-        <div class="field-group">
+        <div class="field-group password-field">
           <label for="register-confirmar-senha">Confirmar senha</label>
           <input id="register-confirmar-senha" type="password" placeholder="Repita a senha">
+          <button class="password-toggle" type="button" data-target="register-confirmar-senha" aria-label="Mostrar senha">Ver</button>
         </div>
 
         <button id="register-button" type="submit" style="grid-column: 1 / -1;">Criar conta inicial</button>
@@ -71,12 +147,10 @@
     </section>
 
     <div id="status" class="status info" hidden></div>
+
+    <p class="login-security-note">Ambiente 100% seguro e criptografado</p>
   </section>
 </main>
-
-<footer class="footer">
-  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
-</footer>
 
 <script type="module">
 import { auth } from "./firebase.js";
@@ -179,6 +253,16 @@ async function init() {
 
   loginTab.addEventListener("click", () => setActiveTab("login"));
   registerTab.addEventListener("click", () => setActiveTab("register"));
+
+  document.querySelectorAll(".password-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.target);
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "Ver" : "Ocultar";
+      button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
+    });
+  });
 
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
