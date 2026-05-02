@@ -530,17 +530,6 @@ async function loadDashboard() {
   renderDashboard();
 }
 
-document.querySelectorAll(".prototype-command").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".prototype-command").forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-    document.querySelector(`[data-prototype-panel="${button.dataset.panel}"]`)?.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-  });
-});
-
 document.getElementById("generate-report").addEventListener("click", () => {
   document.getElementById("ai-insight").textContent = buildInsight(getFilteredData());
 });
