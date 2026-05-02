@@ -31,21 +31,23 @@
     </div>
   </header>
 
-  <section class="panel quick-box-panel">
+  <section class="panel quick-box-panel stock-daily-entry-panel">
     <div class="page-header compact-header">
       <div>
-        <h3>Operacao por caixa</h3>
-        <p class="muted">Bipe o codigo, confira o produto e movimente somente caixas.</p>
+        <p class="eyebrow">Entrada rapida</p>
+        <h3>Registro de mercadorias por codigo de barras</h3>
+        <p class="muted">Bipe o produto e o sistema consulta Cosmos/Open Food Facts automaticamente. Depois confirme caixa, custo e entrada.</p>
       </div>
+      <span id="quick-lookup-source" class="stock-lookup-chip">Aguardando bipagem</span>
     </div>
 
     <div class="quick-box-scan">
       <div class="field-group">
-        <label for="quick_barcode">Codigo de barras</label>
-        <input id="quick_barcode" inputmode="numeric" placeholder="Bipe ou digite o codigo" autocomplete="off">
+        <label for="quick_barcode">Bipar ou digitar codigo de barras</label>
+        <input id="quick_barcode" inputmode="numeric" placeholder="789..." autocomplete="off" autofocus>
       </div>
-      <button id="quick-focus-barcode" class="secondary" type="button">Bipar codigo</button>
-      <button id="quick-lookup-barcode" type="button">Buscar produto</button>
+      <button id="quick-focus-barcode" class="secondary" type="button">Pronto para bipar</button>
+      <button id="quick-lookup-barcode" type="button">Buscar agora</button>
     </div>
 
     <div id="quick-box-product" class="quick-box-product" hidden>
@@ -89,8 +91,8 @@
       <p id="quick-unit-cost-preview" class="muted quick-cost-preview">Custo unitario calculado: R$ 0,00</p>
 
       <div class="quick-box-actions">
-        <button id="quick-entry-box" type="button">Entrada de caixa</button>
-        <button id="quick-exit-box" class="secondary" type="button">Saida de caixa</button>
+        <button id="quick-entry-box" type="button">Registrar entrada de 1 caixa</button>
+        <button id="quick-exit-box" class="secondary" type="button">Registrar saida de 1 caixa</button>
       </div>
     </div>
 
@@ -465,6 +467,7 @@ const userInfo = document.getElementById("user-info");
 const quickBarcodeInput = document.getElementById("quick_barcode");
 const quickFocusBarcodeButton = document.getElementById("quick-focus-barcode");
 const quickLookupBarcodeButton = document.getElementById("quick-lookup-barcode");
+const quickLookupSource = document.getElementById("quick-lookup-source");
 const quickBoxProduct = document.getElementById("quick-box-product");
 const quickProductState = document.getElementById("quick-product-state");
 const quickProductStock = document.getElementById("quick-product-stock");
@@ -498,6 +501,9 @@ let produtos = [];
 let xmlImports = [];
 let barcodeScanner = null;
 let barcodeScannerLoaded = false;
+let quickBarcodeLookupTimer = null;
+let quickLookupInFlight = null;
+let lastQuickLookupBarcode = "";
 let quickBoxState = {
   barcode: "",
   product: null,
@@ -510,6 +516,37 @@ function normalizeBarcode(value) {
 
 function normalizeLookupField(value) {
   return String(value ?? "").trim();
+}
+
+function formatLookupSource(source) {
+  const normalizedSource = String(source || "").toLowerCase();
+
+  if (normalizedSource === "cosmos") {
+    return "Cosmos";
+  }
+
+  if (normalizedSource === "open-food-facts") {
+    return "Open Food Facts";
+  }
+
+  if (normalizedSource === "cache") {
+    return "Cache local";
+  }
+
+  if (normalizedSource === "estoque") {
+    return "Estoque cadastrado";
+  }
+
+  return "Cadastro manual";
+}
+
+function setQuickLookupSource(source, type = "info") {
+  if (!quickLookupSource) {
+    return;
+  }
+
+  quickLookupSource.textContent = source;
+  quickLookupSource.className = `stock-lookup-chip ${type}`;
 }
 
 function getBoxOperationBarcode(product = {}) {
@@ -586,7 +623,7 @@ function syncQuickBoxProductView(product = null, externalProduct = null) {
   const stockBoxes = product ? getBoxOperationStock(product) : 0;
 
   quickBoxProduct.hidden = false;
-  quickProductState.textContent = product ? "Produto encontrado" : "Produto novo";
+  quickProductState.textContent = product ? "Produto encontrado no estoque" : "Produto novo para cadastro";
   quickProductStock.textContent = `${stockBoxes} caixa(s)`;
   quickNameInput.value = product?.nome || externalProduct?.nome || "";
   quickBrandInput.value = product?.marca || externalProduct?.marca || "";
@@ -598,6 +635,10 @@ function syncQuickBoxProductView(product = null, externalProduct = null) {
     : "";
   quickBoxState.product = product;
   quickBoxState.externalProduct = externalProduct;
+  setQuickLookupSource(
+    product ? "Estoque cadastrado" : `Fonte: ${formatLookupSource(externalProduct?.fonte)}`,
+    product || externalProduct?.nome ? "success" : "info"
+  );
   updateQuickBoxCostPreview();
 }
 
@@ -612,66 +653,106 @@ async function lookupQuickBoxProduct() {
 
   quickBarcodeInput.value = barcode;
   quickBoxState.barcode = barcode;
+  quickLookupInFlight = barcode;
+  quickLookupBarcodeButton.disabled = true;
+  setQuickLookupSource("Consultando codigo...", "info");
   setStatus("quick-box-status", "Buscando produto pelo codigo de barras...", "info");
 
-  let product = findProductByBarcode(barcode);
+  try {
+    let product = findProductByBarcode(barcode);
 
-  if (!product) {
-    const snapshot = await getDocs(query(
-      collection(db, "estoque"),
-      where("codigoBarrasNormalizado", "==", barcode),
-      limit(1)
-    ));
+    if (!product) {
+      const snapshot = await getDocs(query(
+        collection(db, "estoque"),
+        where("codigoBarrasNormalizado", "==", barcode),
+        limit(1)
+      ));
 
-    if (!snapshot.empty) {
-      product = {
-        id: snapshot.docs[0].id,
-        ...snapshot.docs[0].data()
-      };
-    }
-  }
-
-  if (product) {
-    syncQuickBoxProductView(product, null);
-    setStatus("quick-box-status", "Produto encontrado. Informe o valor da caixa para entrada ou registre a saida.", "success");
-    return product;
-  }
-
-  const cachedProduct = await getCachedBarcodeProduct(barcode).catch(() => null);
-  const externalProduct = cachedProduct?.nome
-    ? cachedProduct
-    : await apiFetch(`/api/barcodes/${barcode}`)
-      .then((response) => ({
-        barcode,
-        nome: normalizeLookupField(response?.product?.nome),
-        marca: normalizeLookupField(response?.product?.marca),
-        categoria: normalizeLookupField(response?.product?.categoria),
-        fonte: response?.source || "codigo-barras"
-      }))
-      .catch((error) => {
-        console.warn("Nao foi possivel consultar codigo externo.", error);
-        return {
-          barcode,
-          nome: "",
-          marca: "",
-          categoria: "",
-          fonte: "manual"
+      if (!snapshot.empty) {
+        product = {
+          id: snapshot.docs[0].id,
+          ...snapshot.docs[0].data()
         };
-      });
+      }
+    }
 
-  if (externalProduct.nome) {
-    await saveCachedBarcodeProduct(externalProduct).catch(() => null);
+    if (product) {
+      syncQuickBoxProductView(product, null);
+      setStatus("quick-box-status", "Produto encontrado. Informe o valor da caixa para entrada ou registre a saida.", "success");
+      return product;
+    }
+
+    const cachedProduct = await getCachedBarcodeProduct(barcode).catch(() => null);
+    const externalProduct = cachedProduct?.nome
+      ? { ...cachedProduct, fonte: cachedProduct.fonte || "cache" }
+      : await apiFetch(`/api/barcodes/${barcode}`)
+        .then((response) => ({
+          barcode,
+          nome: normalizeLookupField(response?.product?.nome),
+          marca: normalizeLookupField(response?.product?.marca),
+          categoria: normalizeLookupField(response?.product?.categoria),
+          fonte: response?.source || "codigo-barras"
+        }))
+        .catch((error) => {
+          console.warn("Nao foi possivel consultar codigo externo.", error);
+          return {
+            barcode,
+            nome: "",
+            marca: "",
+            categoria: "",
+            fonte: "manual"
+          };
+        });
+
+    if (externalProduct.nome) {
+      await saveCachedBarcodeProduct(externalProduct).catch(() => null);
+    }
+
+    syncQuickBoxProductView(null, externalProduct);
+    setStatus(
+      "quick-box-status",
+      externalProduct.nome
+        ? `Produto identificado via ${formatLookupSource(externalProduct.fonte)}. Confira quantidade por caixa e valor pago.`
+        : "Produto nao encontrado. Preencha nome, marca, categoria e quantidade por caixa.",
+      externalProduct.nome ? "success" : "info"
+    );
+    return null;
+  } finally {
+    quickLookupInFlight = null;
+    quickLookupBarcodeButton.disabled = false;
+  }
+}
+
+function scheduleQuickBarcodeLookup() {
+  const barcode = normalizeBarcode(quickBarcodeInput.value);
+
+  window.clearTimeout(quickBarcodeLookupTimer);
+  quickBarcodeInput.value = barcode;
+  quickBoxState.barcode = barcode;
+
+  if (!barcode) {
+    lastQuickLookupBarcode = "";
+    quickBoxProduct.hidden = true;
+    setQuickLookupSource("Aguardando bipagem", "info");
+    setStatus("quick-box-status", "", "info");
+    return;
   }
 
-  syncQuickBoxProductView(null, externalProduct);
-  setStatus(
-    "quick-box-status",
-    externalProduct.nome
-      ? "Produto identificado. Confira a quantidade por caixa e informe o valor da caixa."
-      : "Produto nao encontrado. Preencha nome, marca, categoria e quantidade por caixa.",
-    externalProduct.nome ? "success" : "info"
-  );
-  return null;
+  if (barcode.length < 8) {
+    setQuickLookupSource("Lendo codigo...", "info");
+    setStatus("quick-box-status", "Continue bipando ou digitando o codigo.", "info");
+    return;
+  }
+
+  if (barcode === lastQuickLookupBarcode || quickLookupInFlight === barcode) {
+    return;
+  }
+
+  setQuickLookupSource("Busca automatica em instantes", "info");
+  quickBarcodeLookupTimer = window.setTimeout(async () => {
+    lastQuickLookupBarcode = barcode;
+    await lookupQuickBoxProduct();
+  }, 450);
 }
 
 function buildQuickBoxProductPayload(nextStockBoxes) {
@@ -795,6 +876,8 @@ async function recordQuickBoxMovement(type) {
     );
     await loadProducts();
     syncQuickBoxProductView(findProductByBarcode(payload.codigoBarras), null);
+    quickBarcodeInput.focus();
+    quickBarcodeInput.select();
   } catch (error) {
     console.error(error);
     setStatus("quick-box-status", error.message || "Nao foi possivel registrar a movimentacao.", "error");
@@ -3202,20 +3285,25 @@ async function importXmlInvoices() {
 xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
 quickBarcodeInput.addEventListener("input", () => {
-  quickBarcodeInput.value = normalizeBarcode(quickBarcodeInput.value);
+  scheduleQuickBarcodeLookup();
 });
 quickBarcodeInput.addEventListener("keydown", async (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
+    window.clearTimeout(quickBarcodeLookupTimer);
+    lastQuickLookupBarcode = normalizeBarcode(quickBarcodeInput.value);
     await lookupQuickBoxProduct();
   }
 });
 quickFocusBarcodeButton.addEventListener("click", () => {
   quickBarcodeInput.focus();
   quickBarcodeInput.select();
-  setStatus("quick-box-status", "Leitor pronto. Bipe o codigo ou digite e pressione Enter.", "info");
+  setQuickLookupSource("Leitor pronto", "info");
+  setStatus("quick-box-status", "Leitor pronto. Ao bipar, a busca roda automaticamente.", "info");
 });
 quickLookupBarcodeButton.addEventListener("click", async () => {
+  window.clearTimeout(quickBarcodeLookupTimer);
+  lastQuickLookupBarcode = normalizeBarcode(quickBarcodeInput.value);
   await lookupQuickBoxProduct();
 });
 quickUnitsPerBoxInput.addEventListener("input", updateQuickBoxCostPreview);
@@ -3500,6 +3588,8 @@ syncCreateFrequencyState();
 refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
 await updateBarcodeModeState();
 await loadProducts();
+setQuickLookupSource("Aguardando bipagem", "info");
+quickBarcodeInput.focus();
 </script>
 </body>
 </html>

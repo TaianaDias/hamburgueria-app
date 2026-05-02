@@ -585,7 +585,12 @@ async function getSaasContext(req, res) {
 }
 
 async function lookupCosmosProduct(barcode) {
-  const cosmosToken = String(process.env.COSMOS_API_TOKEN ?? "").trim();
+  const cosmosToken = String(
+    process.env.COSMOS_API_TOKEN ??
+    process.env.COSMOS_TOKEN ??
+    process.env.COSMOS_API_KEY ??
+    ""
+  ).trim();
   const cosmosUserAgent = String(process.env.COSMOS_USER_AGENT ?? "BurgerOps/1.0 (barcode lookup)").trim();
 
   if (!cosmosToken) {

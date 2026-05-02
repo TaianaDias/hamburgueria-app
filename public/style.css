@@ -898,6 +898,44 @@ h3 {
   gap: 16px;
 }
 
+.stock-daily-entry-panel {
+  border-color: rgba(249, 115, 22, 0.26);
+  background:
+    linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(15, 23, 42, 0.74)),
+    rgba(15, 23, 42, 0.72);
+}
+
+.stock-daily-entry-panel .compact-header {
+  align-items: center;
+}
+
+.stock-lookup-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 34px;
+  padding: 0.42rem 0.68rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.68);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.stock-lookup-chip.success {
+  border-color: rgba(34, 197, 94, 0.26);
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+}
+
+.stock-lookup-chip.error {
+  border-color: rgba(239, 68, 68, 0.26);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
 .quick-box-scan,
 .quick-box-actions {
   display: flex;
@@ -908,6 +946,14 @@ h3 {
 
 .quick-box-scan .field-group {
   flex: 1 1 260px;
+}
+
+.quick-box-scan input {
+  min-height: 58px;
+  border-color: rgba(249, 115, 22, 0.3);
+  font-size: 1.18rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
 .quick-box-scan button,
@@ -921,11 +967,20 @@ h3 {
   padding: 14px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 16px;
-  background: rgba(15, 23, 42, 0.28);
+  background: rgba(2, 6, 23, 0.34);
 }
 
 .quick-box-grid {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.quick-box-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+}
+
+.quick-box-actions button {
+  min-height: 54px;
 }
 
 .quick-cost-preview {
@@ -3171,6 +3226,18 @@ pre {
   .inventory-quick-icon {
     width: 32px;
     height: 32px;
+  }
+
+  .stock-daily-entry-panel .compact-header {
+    gap: 10px;
+  }
+
+  .stock-lookup-chip {
+    width: 100%;
+  }
+
+  .quick-box-actions {
+    grid-template-columns: 1fr;
   }
 
   .detail-subaccordion-summary,
