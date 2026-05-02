@@ -1,9 +1,14 @@
 const NAV_ITEMS = [
-  { href: "dashboard-saas.html", label: "Inicio", icon: "D", matches: ["dashboard-saas.html", "index.html"] },
+  { href: "dashboard-saas.html", label: "Dashboard", icon: "D", matches: ["dashboard-saas.html", "dashboard.html", "index.html"] },
   { href: "estoque.html", label: "Estoque", icon: "E", matches: ["estoque.html", "inventario.html"] },
+  { href: "producao-etiquetas.html", label: "Producao", icon: "P", matches: ["producao-etiquetas.html", "producao.html", "reposicao-producao.html"] },
   { href: "compras.html", label: "Compras", icon: "C", matches: ["compras.html", "dashboard-compras.html", "alertas-reposicao.html", "analise-compras.html"] },
-  { href: "producao-etiquetas.html", label: "Producao", icon: "P", matches: ["producao-etiquetas.html", "reposicao-producao.html", "impressora.html"] },
-  { href: "operacao.html", label: "Operar", icon: "+", matches: ["operacao.html", "desperdicio.html", "relatorio-diario.html", "whatsapp-ia.html"] }
+  { href: "fornecedores.html", label: "Fornecedores", icon: "F", matches: ["fornecedores.html"] },
+  { href: "desperdicio.html", label: "Desperdicio", icon: "!", matches: ["desperdicio.html"] },
+  { href: "relatorio-diario.html", label: "Relatorios", icon: "R", matches: ["relatorio-diario.html", "relatorio.html"] },
+  { href: "impressora.html", label: "Etiquetas", icon: "T", matches: ["impressora.html", "etiquetas.html"] },
+  { href: "funcionarios.html", label: "Funcionarios", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
+  { href: "saas.html", label: "Configuracoes", icon: "S", matches: ["saas.html", "configuracoes.html"] }
 ];
 
 function getCurrentPage() {
@@ -22,8 +27,35 @@ function decorateBody() {
   }
 
   document.body.classList.add("premium-global-body");
+  document.body.classList.add("premium-saas-shell-body");
   page.classList.add("premium-page");
   return true;
+}
+
+function buildSidebar() {
+  const current = getCurrentPage();
+  const sidebar = document.createElement("aside");
+  sidebar.className = "premium-global-sidebar";
+  sidebar.setAttribute("aria-label", "Navegacao SaaS");
+  sidebar.innerHTML = `
+    <a class="premium-global-brand" href="dashboard-saas.html" aria-label="Carioca's Operacao de Controle">
+      <span><img src="cariocas-logo.jpeg" alt="" aria-hidden="true"></span>
+      <strong>Carioca's</strong>
+      <small>Operacao de Controle</small>
+    </a>
+    <nav class="premium-global-nav">
+      ${NAV_ITEMS.map((item) => {
+        const active = item.matches.includes(current) ? " active" : "";
+        return `
+          <a class="${active}" href="${item.href}">
+            <span>${item.icon}</span>
+            <strong>${item.label}</strong>
+          </a>
+        `;
+      }).join("")}
+    </nav>
+  `;
+  document.body.prepend(sidebar);
 }
 
 function buildDock() {
@@ -31,7 +63,7 @@ function buildDock() {
   const dock = document.createElement("nav");
   dock.className = "premium-mobile-dock";
   dock.setAttribute("aria-label", "Navegacao principal");
-  dock.innerHTML = NAV_ITEMS.map((item) => {
+  dock.innerHTML = NAV_ITEMS.slice(0, 5).map((item) => {
     const active = item.matches.includes(current) ? " active" : "";
     return `
       <a class="${active}" href="${item.href}">
@@ -76,6 +108,7 @@ function initPremiumShell() {
 
   decorateHeader();
   decoratePanels();
+  buildSidebar();
   buildDock();
 }
 
