@@ -264,7 +264,7 @@ textarea:focus {
 }
 
 .login-hero-copy h1::after {
-  content: " para operacoes que performam.";
+  content: " para operações que performam.";
   color: var(--brand-soft);
 }
 
@@ -1698,6 +1698,48 @@ button.active,
 .premium-health-row b {
   display: block;
   font-size: 1.1rem;
+}
+
+.premium-action-strip {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.2fr) repeat(3, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.premium-action-card {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.42)),
+    rgba(15, 23, 42, 0.74);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+}
+
+.premium-action-card.urgent {
+  border-color: rgba(249, 115, 22, 0.28);
+  background:
+    linear-gradient(145deg, rgba(249, 115, 22, 0.14), rgba(15, 23, 42, 0.74)),
+    rgba(15, 23, 42, 0.76);
+}
+
+.premium-action-card span,
+.premium-action-card small {
+  color: var(--muted);
+}
+
+.premium-action-card span {
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.premium-action-card strong {
+  font-size: 1.25rem;
+  line-height: 1.15;
 }
 
 .premium-dashboard-grid {
@@ -3624,6 +3666,7 @@ pre {
   }
 
   .premium-kpi-grid,
+  .premium-action-strip,
   .premium-dashboard-grid,
   .premium-lower-grid,
   .premium-phone-actions {

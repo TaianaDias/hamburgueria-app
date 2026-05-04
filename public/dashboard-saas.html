@@ -35,14 +35,14 @@
       <a class="active" href="dashboard-saas.html"><span>D</span> Dashboard</a>
       <a href="treinamento.html"><span>A</span> Treinamento</a>
       <a href="estoque.html"><span>E</span> Estoque</a>
-      <a href="producao-etiquetas.html"><span>P</span> Producao</a>
+      <a href="producao-etiquetas.html"><span>P</span> Produção</a>
       <a href="compras.html"><span>C</span> Compras</a>
       <a href="fornecedores.html"><span>F</span> Fornecedores</a>
-      <a href="desperdicio.html"><span>!</span> Desperdicio</a>
-      <a href="relatorio-diario.html"><span>R</span> Relatorios</a>
+      <a href="desperdicio.html"><span>!</span> Desperdício</a>
+      <a href="relatorio-diario.html"><span>R</span> Relatórios</a>
       <a href="impressora.html"><span>T</span> Etiquetas</a>
-      <a href="funcionarios.html"><span>U</span> Funcionarios</a>
-      <a href="saas.html"><span>S</span> Configuracoes</a>
+      <a href="funcionarios.html"><span>U</span> Funcionários</a>
+      <a href="saas.html"><span>S</span> Configurações</a>
     </nav>
 
     <div class="premium-user-card">
@@ -58,7 +58,7 @@
     <header class="premium-topbar">
       <div>
         <h1>Dashboard</h1>
-        <p class="muted">Controle operacional, alertas e inteligencia em tempo real.</p>
+        <p class="muted">Controle operacional, alertas e inteligência em tempo real.</p>
       </div>
       <div class="premium-topbar-actions">
         <select id="store-filter" aria-label="Selecionar loja">
@@ -67,19 +67,19 @@
           <option value="dark">Dark Kitchen</option>
           <option value="delivery">Unidade Delivery</option>
         </select>
-        <select id="period-filter" aria-label="Selecionar periodo">
+        <select id="period-filter" aria-label="Selecionar período">
           <option value="today">Hoje</option>
           <option value="week" selected>7 dias</option>
           <option value="month">30 dias</option>
         </select>
-        <button class="premium-icon-button" type="button" aria-label="Notificacoes">!</button>
+        <button class="premium-icon-button" type="button" aria-label="Notificações">!</button>
         <button id="logout-button" class="secondary premium-logout" type="button">Sair</button>
       </div>
     </header>
 
     <section class="premium-kpi-grid">
       <article class="premium-kpi-card green">
-        <span>Saude do Estoque</span>
+        <span>Saúde do Estoque</span>
         <div class="premium-health-row">
           <strong id="kpi-health">0%</strong>
           <span>
@@ -89,14 +89,14 @@
         </div>
       </article>
       <article class="premium-kpi-card amber">
-        <span>Itens Criticos</span>
+        <span>Itens Críticos</span>
         <strong id="kpi-risk">0</strong>
-        <small id="kpi-risk-note">Precisam de atencao</small>
+        <small id="kpi-risk-note">Precisam de atenção</small>
       </article>
       <article class="premium-kpi-card red">
         <span>Produtos Vencendo</span>
         <strong id="kpi-warning">0</strong>
-        <small id="kpi-warning-note">Produtos abaixo ou perto do minimo</small>
+        <small id="kpi-warning-note">Produtos abaixo ou perto do mínimo</small>
       </article>
       <article class="premium-kpi-card violet">
         <span>Custo Total em Estoque</span>
@@ -105,10 +105,33 @@
       </article>
     </section>
 
+    <section class="premium-action-strip" aria-label="Ações prioritárias de hoje">
+      <article class="premium-action-card urgent">
+        <span>Prioridade de hoje</span>
+        <strong id="action-primary">Carregando operação...</strong>
+        <small id="action-primary-note">Aguarde a leitura dos dados.</small>
+      </article>
+      <article class="premium-action-card">
+        <span>Comprar agora</span>
+        <strong id="action-purchase">0 itens</strong>
+        <small>Baseado no estoque mínimo.</small>
+      </article>
+      <article class="premium-action-card">
+        <span>Produção e etiquetas</span>
+        <strong id="action-production">0 pendências</strong>
+        <small>Lotes, validade e impressão.</small>
+      </article>
+      <article class="premium-action-card">
+        <span>Perdas do período</span>
+        <strong id="action-waste">R$ 0,00</strong>
+        <small>Desperdício registrado.</small>
+      </article>
+    </section>
+
     <section class="premium-dashboard-grid">
       <article class="premium-panel">
         <div class="premium-panel-header">
-          <h3>Movimentacoes de Hoje</h3>
+          <h3>Movimentações de Hoje</h3>
           <a href="relatorio-diario.html">Ver todas</a>
         </div>
         <div id="movement-list" class="premium-movement-list"></div>
@@ -116,10 +139,10 @@
 
       <article class="premium-panel">
         <div class="premium-panel-header">
-          <h3>Grafico de Consumo (7 dias)</h3>
-          <span class="premium-chart-legend"><i></i> Insumos <b></b> Producao</span>
+          <h3>Gráfico de Consumo (7 dias)</h3>
+          <span class="premium-chart-legend"><i></i> Insumos <b></b> Produção</span>
         </div>
-        <div id="operations-chart" class="premium-line-chart" aria-label="Grafico de operacao"></div>
+        <div id="operations-chart" class="premium-line-chart" aria-label="Gráfico de operação"></div>
         <div class="prototype-mini-stats premium-mini-stats">
           <span><strong id="mini-purchases">R$ 0,00</strong> compras</span>
           <span><strong id="mini-labels">0</strong> etiquetas</span>
@@ -140,17 +163,17 @@
       <article class="premium-phone-card">
         <div class="premium-phone-frame">
           <header>
-            <strong>Modo Operacao Correria</strong>
+            <strong>Modo Operação Correria</strong>
             <span>x</span>
           </header>
           <div class="premium-phone-actions">
             <a class="green" href="estoque.html"><span>+</span> Entrou compra</a>
-            <a class="orange" href="reposicao-producao.html"><span>-</span> Saiu producao</a>
-            <a class="blue" href="producao-etiquetas.html"><span>*</span> Produzir porcoes</a>
+            <a class="orange" href="reposicao-producao.html"><span>-</span> Saiu produção</a>
+            <a class="blue" href="producao-etiquetas.html"><span>*</span> Produzir porções</a>
             <a class="purple" href="impressora.html"><span>#</span> Imprimir etiqueta</a>
-            <a class="red" href="desperdicio.html"><span>x</span> Registrar desperdicio</a>
-            <a class="amber" href="alertas-reposicao.html"><span>!</span> Itens criticos</a>
-            <a class="cyan" href="relatorio-diario.html"><span>R</span> Gerar relatorio</a>
+            <a class="red" href="desperdicio.html"><span>x</span> Registrar desperdício</a>
+            <a class="amber" href="alertas-reposicao.html"><span>!</span> Itens críticos</a>
+            <a class="cyan" href="relatorio-diario.html"><span>R</span> Gerar relatório</a>
             <a class="green" href="compras.html"><span>W</span> Fazer pedido</a>
           </div>
         </div>
@@ -170,7 +193,7 @@
 
       <article class="premium-panel">
         <div class="premium-panel-header">
-          <h3>Modulos SaaS</h3>
+          <h3>Módulos SaaS</h3>
           <a href="saas.html">Escalar</a>
         </div>
         <div class="prototype-module-grid">
@@ -178,7 +201,7 @@
           <a href="compras.html"><strong>Compras</strong><span id="module-purchases">R$ 0,00</span></a>
           <a href="producao-etiquetas.html"><strong>Etiquetas</strong><span id="module-labels">0 emitidas</span></a>
           <a href="whatsapp-ia.html"><strong>WhatsApp/IA</strong><span id="module-whatsapp">0 comandos</span></a>
-          <a href="inventario.html"><strong>Inventario</strong><span id="module-inventory">conferencia</span></a>
+          <a href="inventario.html"><strong>Inventário</strong><span id="module-inventory">conferência</span></a>
           <a href="saas.html"><strong>SaaS</strong><span>escala</span></a>
         </div>
       </article>
@@ -343,7 +366,7 @@ function renderChart(compras, desperdicios, producoes) {
     .join(" ");
 
   document.getElementById("operations-chart").innerHTML = `
-    <svg viewBox="0 0 520 220" role="img" aria-label="Consumo dos ultimos 7 dias">
+    <svg viewBox="0 0 520 220" role="img" aria-label="Consumo dos últimos 7 dias">
       <g class="premium-chart-grid-lines">
         <line x1="28" y1="42" x2="500" y2="42"></line>
         <line x1="28" y1="86" x2="500" y2="86"></line>
@@ -367,12 +390,12 @@ function buildInsight({ estoque, compras, desperdicios, producoes, etiquetas }) 
   const wasteValue = getWasteValue(desperdicios);
 
   return [
-    `Seu estoque esta ${health}% saudavel.`,
-    critical.length ? `${critical.length} item(ns) estao em risco de ruptura${topCritical ? `: ${topCritical}` : ""}.` : "Nenhum item em ruptura no periodo.",
-    attention.length ? `${attention.length} item(ns) precisam de atencao.` : "Nao ha itens proximos do minimo.",
-    purchaseValue > 0 ? `Compras do periodo somam ${formatCurrency(purchaseValue)}.` : "Sem compras registradas no periodo.",
-    wasteValue > 0 ? `Perdas registradas somam ${formatCurrency(wasteValue)}.` : "Sem perdas registradas no periodo.",
-    producoes.length || etiquetas.length ? `${producoes.length} producao(oes) e ${getLabelCount(etiquetas)} etiqueta(s) no periodo.` : ""
+    `Seu estoque está ${health}% saudável.`,
+    critical.length ? `${critical.length} item(ns) estão em risco de ruptura${topCritical ? `: ${topCritical}` : ""}.` : "Nenhum item em ruptura no período.",
+    attention.length ? `${attention.length} item(ns) precisam de atenção.` : "Não há itens próximos do mínimo.",
+    purchaseValue > 0 ? `Compras do período somam ${formatCurrency(purchaseValue)}.` : "Sem compras registradas no período.",
+    wasteValue > 0 ? `Perdas registradas somam ${formatCurrency(wasteValue)}.` : "Sem perdas registradas no período.",
+    producoes.length || etiquetas.length ? `${producoes.length} produção(ões) e ${getLabelCount(etiquetas)} etiqueta(s) no período.` : ""
   ].filter(Boolean).join(" ");
 }
 
@@ -387,7 +410,7 @@ function renderCriticalList(estoque) {
     .slice(0, 8);
 
   if (!attention.length) {
-    criticalList.innerHTML = '<div class="empty-state">Nenhum item critico agora. Operacao respirando bem.</div>';
+    criticalList.innerHTML = '<div class="empty-state">Nenhum item crítico agora. Operação respirando bem.</div>';
     return;
   }
 
@@ -399,14 +422,14 @@ function renderCriticalList(estoque) {
     const button = document.createElement("button");
     button.className = "premium-alert-item";
     button.type = "button";
-    button.dataset.insight = `${item.nome}: estoque atual ${quantity}, minimo ${minimum}. ${urgent ? "Prioridade de compra agora." : "Acompanhar antes do pico de venda."}`;
+    button.dataset.insight = `${item.nome}: estoque atual ${quantity}, mínimo ${minimum}. ${urgent ? "Prioridade de compra agora." : "Acompanhar antes do pico de venda."}`;
     button.innerHTML = `
       <span class="premium-alert-icon ${urgent ? "red" : "amber"}">${urgent ? "!" : "A"}</span>
       <span>
         <strong>${escapeHtml(item.nome || "Produto")}</strong>
-        <small>Atual ${quantity} | Minimo ${minimum} | ${escapeHtml(item.unidadeMedida || item.unidadeUso || "un")}</small>
+        <small>Atual ${quantity} | Mínimo ${minimum} | ${escapeHtml(item.unidadeMedida || item.unidadeUso || "un")}</small>
       </span>
-      <em>${urgent ? "Critico" : "Atencao"}</em>
+      <em>${urgent ? "Crítico" : "Atenção"}</em>
     `;
     button.addEventListener("click", () => {
       document.getElementById("ai-insight").textContent = button.dataset.insight;
@@ -428,7 +451,7 @@ function renderMovements({ compras, desperdicios, producoes, etiquetas }) {
     ...producoes.slice(0, 2).map((item) => ({
       icon: "P",
       tone: "blue",
-      title: "Producao realizada",
+      title: "Produção realizada",
       detail: `${item.produtoNome || "Produto"} - ${toNumber(item.quantidadeProduzida, 0)} ${item.unidade || ""}`,
       date: getDateValue(item.criadoEm)
     })),
@@ -442,7 +465,7 @@ function renderMovements({ compras, desperdicios, producoes, etiquetas }) {
     ...desperdicios.slice(0, 2).map((item) => ({
       icon: "!",
       tone: "red",
-      title: "Desperdicio registrado",
+      title: "Desperdício registrado",
       detail: `${item.productName || item.produtoNome || "Produto"} - ${formatCurrency(toNumber(item.estimatedCost ?? item.custoTotal, 0))}`,
       date: getDateValue(item.criadoEm) || getDateValue(item.data)
     }))
@@ -451,7 +474,7 @@ function renderMovements({ compras, desperdicios, producoes, etiquetas }) {
     .slice(0, 5);
 
   if (!movements.length) {
-    movementList.innerHTML = '<div class="empty-state">Sem movimentacoes recentes para exibir.</div>';
+    movementList.innerHTML = '<div class="empty-state">Sem movimentações recentes para exibir.</div>';
     return;
   }
 
@@ -472,6 +495,31 @@ function renderMovements({ compras, desperdicios, producoes, etiquetas }) {
   }).join("");
 }
 
+function renderPriorityActions({ estoque, desperdicios, producoes, etiquetas }) {
+  const critical = getCriticalItems(estoque);
+  const attention = getAttentionItems(estoque);
+  const wasteValue = getWasteValue(desperdicios);
+  const productionCount = producoes.length;
+  const labelCount = getLabelCount(etiquetas);
+  const pendingOperations = productionCount + labelCount;
+  const mainAction = critical.length
+    ? `Comprar ${critical.length} item(ns) crítico(s)`
+    : attention.length
+      ? `Revisar ${attention.length} item(ns) em atenção`
+      : "Operação sem ruptura imediata";
+  const mainNote = critical[0]?.nome
+    ? `Primeiro item: ${critical[0].nome}.`
+    : attention[0]?.nome
+      ? `Acompanhar: ${attention[0].nome}.`
+      : "Mantenha o acompanhamento no fechamento.";
+
+  document.getElementById("action-primary").textContent = mainAction;
+  document.getElementById("action-primary-note").textContent = mainNote;
+  document.getElementById("action-purchase").textContent = `${critical.length} item(ns)`;
+  document.getElementById("action-production").textContent = `${pendingOperations} pendência(s)`;
+  document.getElementById("action-waste").textContent = formatCurrency(wasteValue);
+}
+
 function renderDashboard() {
   const filtered = getFilteredData();
   const critical = getCriticalItems(filtered.estoque);
@@ -485,9 +533,9 @@ function renderDashboard() {
   document.getElementById("kpi-health").textContent = `${health}%`;
   document.getElementById("kpi-health-note").textContent = `${filtered.estoque.length} produto(s) monitorados`;
   document.getElementById("kpi-warning").textContent = String(attention.length);
-  document.getElementById("kpi-warning-note").textContent = `${Math.max(0, attention.length - critical.length)} perto do minimo`;
+  document.getElementById("kpi-warning-note").textContent = `${Math.max(0, attention.length - critical.length)} perto do mínimo`;
   document.getElementById("kpi-risk").textContent = String(critical.length);
-  document.getElementById("kpi-risk-note").textContent = critical.length ? "acao recomendada hoje" : "sem ruptura imediata";
+  document.getElementById("kpi-risk-note").textContent = critical.length ? "ação recomendada hoje" : "sem ruptura imediata";
   document.getElementById("kpi-stock-value").textContent = formatCurrency(stockValue);
   document.getElementById("mini-purchases").textContent = formatCurrency(purchaseValue);
   document.getElementById("mini-labels").textContent = String(labelCount);
@@ -500,6 +548,7 @@ function renderDashboard() {
   renderChart(filtered.compras, filtered.desperdicios, filtered.producoes);
   renderCriticalList(filtered.estoque);
   renderMovements(filtered);
+  renderPriorityActions(filtered);
 }
 
 async function loadCollection(name) {
@@ -507,7 +556,7 @@ async function loadCollection(name) {
     const snapshot = await getDocs(collection(db, name));
     return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
   } catch (error) {
-    console.warn(`Nao foi possivel carregar ${name}.`, error);
+    console.warn(`Não foi possível carregar ${name}.`, error);
     return [];
   }
 }
@@ -539,8 +588,8 @@ document.getElementById("prepare-whatsapp").addEventListener("click", () => {
   const filtered = getFilteredData();
   const criticalNames = getCriticalItems(filtered.estoque).slice(0, 5).map((item) => item.nome).filter(Boolean);
   document.getElementById("ai-insight").textContent = criticalNames.length
-    ? `Mensagem pronta para o responsavel: Precisamos revisar estes itens agora: ${criticalNames.join(", ")}. Posso gerar sugestao de compra pelo WhatsApp.`
-    : "Mensagem pronta para o responsavel: Estoque sem ruptura imediata. Recomendo apenas manter acompanhamento no fechamento.";
+    ? `Mensagem pronta para o responsável: Precisamos revisar estes itens agora: ${criticalNames.join(", ")}. Posso gerar sugestão de compra pelo WhatsApp.`
+    : "Mensagem pronta para o responsável: Estoque sem ruptura imediata. Recomendo apenas manter acompanhamento no fechamento.";
 });
 
 document.getElementById("store-filter").addEventListener("change", renderDashboard);

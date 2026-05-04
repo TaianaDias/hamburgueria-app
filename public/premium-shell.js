@@ -2,14 +2,14 @@ const NAV_ITEMS = [
   { href: "dashboard-saas.html", label: "Dashboard", icon: "D", matches: ["dashboard-saas.html", "dashboard.html", "index.html"] },
   { href: "treinamento.html", label: "Treinamento", icon: "A", matches: ["treinamento.html"] },
   { href: "estoque.html", label: "Estoque", icon: "E", matches: ["estoque.html", "inventario.html"] },
-  { href: "producao-etiquetas.html", label: "Producao", icon: "P", matches: ["producao-etiquetas.html", "producao.html", "reposicao-producao.html"] },
+  { href: "producao-etiquetas.html", label: "Produção", icon: "P", matches: ["producao-etiquetas.html", "producao.html", "reposicao-producao.html"] },
   { href: "compras.html", label: "Compras", icon: "C", matches: ["compras.html", "dashboard-compras.html", "alertas-reposicao.html", "analise-compras.html"] },
   { href: "fornecedores.html", label: "Fornecedores", icon: "F", matches: ["fornecedores.html"] },
-  { href: "desperdicio.html", label: "Desperdicio", icon: "!", matches: ["desperdicio.html"] },
-  { href: "relatorio-diario.html", label: "Relatorios", icon: "R", matches: ["relatorio-diario.html", "relatorio.html"] },
+  { href: "desperdicio.html", label: "Desperdício", icon: "!", matches: ["desperdicio.html"] },
+  { href: "relatorio-diario.html", label: "Relatórios", icon: "R", matches: ["relatorio-diario.html", "relatorio.html"] },
   { href: "impressora.html", label: "Etiquetas", icon: "T", matches: ["impressora.html", "etiquetas.html"] },
-  { href: "funcionarios.html", label: "Funcionarios", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
-  { href: "saas.html", label: "Configuracoes", icon: "S", matches: ["saas.html", "configuracoes.html"] }
+  { href: "funcionarios.html", label: "Funcionários", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
+  { href: "saas.html", label: "Configurações", icon: "S", matches: ["saas.html", "configuracoes.html"] }
 ];
 
 function getCurrentPage() {
@@ -37,12 +37,12 @@ function buildSidebar() {
   const current = getCurrentPage();
   const sidebar = document.createElement("aside");
   sidebar.className = "premium-global-sidebar";
-  sidebar.setAttribute("aria-label", "Navegacao SaaS");
+  sidebar.setAttribute("aria-label", "Navegação SaaS");
   sidebar.innerHTML = `
-    <a class="premium-global-brand" href="dashboard-saas.html" aria-label="Carioca's Operacao de Controle">
+    <a class="premium-global-brand" href="dashboard-saas.html" aria-label="Carioca's Operação de Controle">
       <span><img src="cariocas-logo.jpeg" alt="" aria-hidden="true"></span>
       <strong>Carioca's</strong>
-      <small>Operacao de Controle</small>
+      <small>Operação de Controle</small>
     </a>
     <nav class="premium-global-nav">
       ${NAV_ITEMS.map((item) => {
@@ -63,7 +63,7 @@ function buildDock() {
   const current = getCurrentPage();
   const dock = document.createElement("nav");
   dock.className = "premium-mobile-dock";
-  dock.setAttribute("aria-label", "Navegacao principal");
+  dock.setAttribute("aria-label", "Navegação principal");
   dock.innerHTML = NAV_ITEMS.slice(0, 5).map((item) => {
     const active = item.matches.includes(current) ? " active" : "";
     return `
