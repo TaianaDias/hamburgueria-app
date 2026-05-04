@@ -247,6 +247,48 @@
     border-collapse: collapse;
   }
 
+  .demo-module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .demo-module-card {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    min-height: 190px;
+  }
+
+  .demo-module-card h3 {
+    margin: 0;
+  }
+
+  .demo-module-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .demo-module-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.36);
+    color: var(--muted);
+  }
+
+  .demo-form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .demo-table th,
   .demo-table td {
     padding: 14px 12px;
@@ -315,7 +357,8 @@
     }
 
     .demo-grid,
-    .demo-card-grid {
+    .demo-card-grid,
+    .demo-module-grid {
       grid-template-columns: 1fr;
     }
 
@@ -373,8 +416,13 @@
       <button type="button" data-section="estoque">Insumos</button>
       <button type="button" data-section="producao">Producao</button>
       <button type="button" data-section="compras">Compras</button>
+      <button type="button" data-section="fornecedores">Fornecedores</button>
+      <button type="button" data-section="desperdicio">Desperdicio</button>
+      <button type="button" data-section="relatorios">Relatorios</button>
       <button type="button" data-section="etiquetas">Etiquetas</button>
       <button type="button" data-section="whatsapp">WhatsApp & IA</button>
+      <button type="button" data-section="funcionarios">Funcionarios</button>
+      <button type="button" data-section="configuracoes">Configuracoes</button>
     </nav>
   </aside>
 
@@ -392,7 +440,7 @@
       </div>
     </header>
 
-    <section class="demo-hero">
+    <section id="demo-hero" class="demo-hero">
       <article class="panel">
         <p class="eyebrow">SaaS premium para hamburguerias</p>
         <h1>Controle estoque, producao, compras e etiquetas em uma operacao simples.</h1>
@@ -407,7 +455,7 @@
       </article>
     </section>
 
-    <section class="demo-grid">
+    <section id="demo-kpis" class="demo-grid">
       <article class="panel demo-kpi">
         <span class="muted">Valor em estoque</span>
         <strong>R$ 12.540,80</strong>
@@ -430,7 +478,7 @@
       </article>
     </section>
 
-    <section class="panel demo-toolbar">
+    <section id="demo-toolbar" class="panel demo-toolbar">
       <div class="summary-line">
         <div>
           <p class="eyebrow">Cadastro de Insumos</p>
@@ -529,7 +577,7 @@
   <button class="secondary active" type="button" data-section="dashboard">Inicio</button>
   <button class="secondary" type="button" data-section="estoque">Insumos</button>
   <button class="secondary" type="button" data-section="compras">Compras</button>
-  <button class="secondary" type="button" data-section="whatsapp">IA</button>
+  <button class="secondary" type="button" data-section="operacao">Operar</button>
 </nav>
 
 <div id="demo-toast" class="demo-toast" hidden></div>
@@ -547,6 +595,7 @@ const products = [
 
 let currentCategory = "Todos";
 let currentView = "cards";
+let activeSection = "dashboard";
 
 const categoryRow = document.getElementById("category-row");
 const productsContainer = document.getElementById("demo-products");
@@ -556,6 +605,302 @@ const drawer = document.getElementById("demo-drawer");
 const toast = document.getElementById("demo-toast");
 const viewCards = document.getElementById("view-cards");
 const viewTable = document.getElementById("view-table");
+const heroSection = document.getElementById("demo-hero");
+const kpiSection = document.getElementById("demo-kpis");
+const toolbarSection = document.getElementById("demo-toolbar");
+const titleElement = document.getElementById("demo-title");
+
+const sectionTitles = {
+  dashboard: "Copiloto Operacional Food Service",
+  estoque: "Cadastro de Insumos",
+  producao: "Producao & Porcionamento",
+  compras: "Compras Inteligentes",
+  fornecedores: "Fornecedores",
+  desperdicio: "Desperdicio & Perdas",
+  relatorios: "Relatorios Operacionais",
+  etiquetas: "Etiquetagem Termica",
+  whatsapp: "WhatsApp & IA",
+  funcionarios: "Funcionarios & Permissoes",
+  configuracoes: "Configuracoes",
+  operacao: "Modo Operacao Correria"
+};
+
+const moduleContent = {
+  producao: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Nova producao</p>
+        <h3>Molho da casa</h3>
+        <div class="form-grid">
+          <div class="field-group"><label>Quantidade produzida</label><input value="5 kg"></div>
+          <div class="field-group"><label>Rendimento</label><input value="100%"></div>
+          <div class="field-group"><label>Validade</label><input value="3 dias"></div>
+          <div class="field-group"><label>Responsavel</label><input value="Joao Pedro"></div>
+        </div>
+        <button class="demo-action" type="button">Registrar producao e gerar etiqueta</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Porcionamento</p>
+        <h3>Batata 250g</h3>
+        <ul class="demo-module-list">
+          <li><span>Insumo bruto</span><strong>10 kg</strong></li>
+          <li><span>Porcoes geradas</span><strong>40</strong></li>
+          <li><span>Custo por porcao</span><strong>R$ 1,62</strong></li>
+        </ul>
+        <button class="secondary demo-action" type="button">Simular porcionamento</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Lotes</p>
+        <h3>Rastreabilidade</h3>
+        <ul class="demo-module-list">
+          <li><span>MOL-300426-001</span><strong>Valido</strong></li>
+          <li><span>BAT-290426-001</span><strong>Vence amanha</strong></li>
+        </ul>
+      </article>
+    </div>
+  `,
+  compras: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Sugestao de compra</p>
+        <h3>Comprar hoje</h3>
+        <ul class="demo-module-list">
+          <li><span>Cheddar fatiado</span><strong>6 CX</strong></li>
+          <li><span>Embalagem burger</span><strong>4 FD</strong></li>
+          <li><span>Pao brioche</span><strong>Amanha</strong></li>
+        </ul>
+        <button class="demo-action" type="button">Gerar pedido WhatsApp</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Comparativo</p>
+        <h3>Fornecedores</h3>
+        <ul class="demo-module-list">
+          <li><span>Laticinios Rio</span><strong>R$ 132,00</strong></li>
+          <li><span>Food Distribuidora</span><strong>R$ 128,90</strong></li>
+          <li><span>Economia</span><strong>2,3%</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Historico</p>
+        <h3>Compras do mes</h3>
+        <strong>R$ 8.450,30</strong>
+        <p class="muted">Demo com tendencia, ultimo preco e melhor preco.</p>
+      </article>
+    </div>
+  `,
+  fornecedores: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Fornecedor principal</p>
+        <h3>Pao & Sabor</h3>
+        <ul class="demo-module-list">
+          <li><span>WhatsApp</span><strong>(21) 99999-0000</strong></li>
+          <li><span>Entrega</span><strong>Seg - Sab</strong></li>
+          <li><span>Produtos</span><strong>3 itens</strong></li>
+        </ul>
+        <button class="secondary demo-action" type="button">Enviar pedido demo</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Ranking</p>
+        <h3>Custo-beneficio</h3>
+        <ul class="demo-module-list">
+          <li><span>Pack Food</span><strong>98%</strong></li>
+          <li><span>Frigorifico Max</span><strong>94%</strong></li>
+          <li><span>Laticinios Rio</span><strong>89%</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Cadastro</p>
+        <h3>Novo fornecedor</h3>
+        <div class="form-grid">
+          <div class="field-group"><label>Nome</label><input value="Distribuidora Demo"></div>
+          <div class="field-group"><label>Entrega</label><input value="Seg - Sab"></div>
+        </div>
+        <button class="demo-action" type="button">Salvar fornecedor demo</button>
+      </article>
+    </div>
+  `,
+  desperdicio: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Registrar perda</p>
+        <h3>Desperdicio</h3>
+        <div class="form-grid">
+          <div class="field-group"><label>Produto</label><select><option>Molho da casa</option><option>Pao brioche</option></select></div>
+          <div class="field-group"><label>Motivo</label><select><option>Vencido</option><option>Erro producao</option><option>Quebra</option></select></div>
+          <div class="field-group"><label>Quantidade</label><input value="1 kg"></div>
+          <div class="field-group"><label>Custo</label><input value="R$ 24,80"></div>
+        </div>
+        <button class="demo-action" type="button">Registrar desperdicio demo</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Resumo</p>
+        <h3>Perdas do mes</h3>
+        <strong>R$ 328,40</strong>
+        <p class="muted">Maior motivo: vencimento e sobra operacional.</p>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">IA</p>
+        <h3>Alerta</h3>
+        <p class="muted">A producao de cebola esta 18% acima do consumo medio das ultimas semanas.</p>
+      </article>
+    </div>
+  `,
+  relatorios: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Relatorio diario</p>
+        <h3>Resumo de hoje</h3>
+        <ul class="demo-module-list">
+          <li><span>Estoque saudavel</span><strong>82%</strong></li>
+          <li><span>Itens de atencao</span><strong>5</strong></li>
+          <li><span>Produtos vencendo</span><strong>3</strong></li>
+        </ul>
+        <div class="demo-form-actions">
+          <button class="demo-action" type="button">Baixar PDF</button>
+          <button class="secondary demo-action" type="button">Enviar WhatsApp</button>
+        </div>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">CMV</p>
+        <h3>Analise gerencial</h3>
+        <strong>31,8%</strong>
+        <p class="muted">Cheddar impactou custo da semana em +14%.</p>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Consumo</p>
+        <h3>Ranking semanal</h3>
+        <ul class="demo-module-list">
+          <li><span>Pao brioche</span><strong>Alta</strong></li>
+          <li><span>Blend bovino</span><strong>Alta</strong></li>
+          <li><span>Molho da casa</span><strong>Estavel</strong></li>
+        </ul>
+      </article>
+    </div>
+  `,
+  etiquetas: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Etiqueta gerada</p>
+        <h3>Molho da casa</h3>
+        <ul class="demo-module-list">
+          <li><span>Produzido</span><strong>30/04 14:30</strong></li>
+          <li><span>Validade</span><strong>03/05 14:30</strong></li>
+          <li><span>Lote</span><strong>MOL-300426-001</strong></li>
+        </ul>
+        <button class="demo-action" type="button">Imprimir etiqueta demo</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Impressora</p>
+        <h3>Elgin L42 Pro</h3>
+        <p class="muted">Formato 50x30mm | Navegador/PDF | Preparado para QZ Tray.</p>
+        <button class="secondary demo-action" type="button">Imprimir teste</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Historico</p>
+        <h3>25 etiquetas</h3>
+        <p class="muted">Todas as impressoes ficam rastreadas por produto, lote e responsavel.</p>
+      </article>
+    </div>
+  `,
+  whatsapp: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Central WhatsApp</p>
+        <h3>Comando recebido</h3>
+        <p class="muted">Entrou 2 caixas de pao brioche com 96 unidades cada por R$ 142.</p>
+        <button class="demo-action" type="button">Confirmar entrada demo</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">IA operacional</p>
+        <h3>Interpretacao</h3>
+        <ul class="demo-module-list">
+          <li><span>Produto</span><strong>Pao brioche</strong></li>
+          <li><span>Total</span><strong>192 un</strong></li>
+          <li><span>Custo unitario</span><strong>R$ 0,74</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Automacao</p>
+        <h3>Fluxo seguro</h3>
+        <p class="muted">Webhook, IA, confirmacao, baixa no sistema, resposta ao usuario e log.</p>
+      </article>
+    </div>
+  `,
+  funcionarios: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Equipe</p>
+        <h3>Permissoes</h3>
+        <ul class="demo-module-list">
+          <li><span>Dono/Admin</span><strong>Total</strong></li>
+          <li><span>Gerente</span><strong>Operacao</strong></li>
+          <li><span>Funcionario</span><strong>Entrada/Saida</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Auditoria</p>
+        <h3>Ultimas acoes</h3>
+        <ul class="demo-module-list">
+          <li><span>Joao</span><strong>Imprimiu etiqueta</strong></li>
+          <li><span>Maria</span><strong>Registrou entrada</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Cadastro</p>
+        <h3>Novo usuario</h3>
+        <button class="demo-action" type="button">Convidar funcionario demo</button>
+      </article>
+    </div>
+  `,
+  configuracoes: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Loja</p>
+        <h3>Cariocas Burger</h3>
+        <p class="muted">Plano Pro | Matriz | Unidade aberta.</p>
+        <button class="secondary demo-action" type="button">Salvar configuracao demo</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">SaaS</p>
+        <h3>Multiempresa</h3>
+        <p class="muted">Estrutura preparada para empresas, lojas, usuarios, planos e auditoria.</p>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Seguranca</p>
+        <h3>Ambiente isolado</h3>
+        <p class="muted">Esta demo nao grava dados reais e nao usa credenciais administrativas.</p>
+      </article>
+    </div>
+  `,
+  operacao: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Modo correria</p>
+        <h3>Acoes grandes</h3>
+        <div class="demo-form-actions">
+          <button class="demo-action" type="button">Entrou compra</button>
+          <button class="secondary demo-action" type="button">Saiu producao</button>
+          <button class="secondary demo-action" type="button">Produzir porcoes</button>
+          <button class="secondary demo-action" type="button">Imprimir etiqueta</button>
+        </div>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Prioridade</p>
+        <h3>Itens criticos</h3>
+        <ul class="demo-module-list">
+          <li><span>Cheddar</span><strong>Comprar hoje</strong></li>
+          <li><span>Embalagem</span><strong>Estoque baixo</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Relatorio</p>
+        <h3>1 clique</h3>
+        <button class="demo-action" type="button">Gerar resumo do dia</button>
+      </article>
+    </div>
+  `
+};
 
 function showToast(message) {
   toast.textContent = message;
@@ -670,6 +1015,29 @@ function setView(view) {
   renderProducts();
 }
 
+function renderModule(section) {
+  if (section === "dashboard" || section === "estoque") {
+    toolbarSection.hidden = false;
+    renderProducts();
+    return;
+  }
+
+  toolbarSection.hidden = true;
+  productsContainer.className = "";
+  productsContainer.innerHTML = moduleContent[section] || moduleContent.operacao;
+}
+
+function setActiveSection(section) {
+  activeSection = section || "dashboard";
+  titleElement.textContent = sectionTitles[activeSection] || "Demo Interativo";
+  heroSection.hidden = activeSection !== "dashboard";
+  kpiSection.hidden = !["dashboard", "estoque", "operacao"].includes(activeSection);
+  document.querySelectorAll("button[data-section]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.section === activeSection);
+  });
+  renderModule(activeSection);
+}
+
 categoryRow.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-category]");
   if (!button) return;
@@ -685,9 +1053,8 @@ document.body.addEventListener("click", (event) => {
 
   const sectionButton = event.target.closest("button[data-section]");
   if (sectionButton) {
-    document.querySelectorAll("button[data-section]").forEach((button) => button.classList.toggle("active", button === sectionButton));
-    document.getElementById("demo-title").textContent = sectionButton.textContent.trim();
-    showToast(`Modulo ${sectionButton.textContent.trim()} aberto em modo demonstracao.`);
+    setActiveSection(sectionButton.dataset.section);
+    showToast(`${sectionTitles[activeSection] || "Modulo"} aberto em modo demonstracao.`);
   }
 });
 
@@ -710,7 +1077,7 @@ document.getElementById("demo-form").addEventListener("submit", (event) => {
 });
 
 renderCategories();
-renderProducts();
+setActiveSection("dashboard");
 </script>
 </body>
 </html>
