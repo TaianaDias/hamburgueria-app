@@ -13,15 +13,20 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Estoque | Hamburgueria</title>
+<title>Cadastro de Insumos | Hamburgueria</title>
 </head>
 <body>
 <main class="page">
   <header class="page-header">
     <div>
       <p class="eyebrow">Operacao</p>
-      <h1>Estoque</h1>
+      <h1>Cadastro de Insumos</h1>
       <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="field-group stock-topbar-search">
+      <label for="stock-top-search">Busca rapida</label>
+      <input id="stock-top-search" type="search" placeholder="Buscar por insumo, SKU, marca ou codigo">
     </div>
 
     <div class="actions">
@@ -31,12 +36,68 @@
     </div>
   </header>
 
+  <section class="stock-kpi-grid" aria-label="Indicadores do cadastro de insumos">
+    <article class="panel stock-kpi-card">
+      <span>Valor total em estoque</span>
+      <strong id="stock-kpi-value">R$ 0,00</strong>
+      <small>Com base no custo unitario atual</small>
+    </article>
+
+    <article class="panel stock-kpi-card warning">
+      <span>Itens abaixo do minimo</span>
+      <strong id="stock-kpi-low">0</strong>
+      <small>Precisam de compra ou producao</small>
+    </article>
+
+    <article class="panel stock-kpi-card danger">
+      <span>Proximos do vencimento</span>
+      <strong id="stock-kpi-expiring">0</strong>
+      <small>Hoje, amanha ou proximos 3 dias</small>
+    </article>
+
+    <article class="panel stock-kpi-card">
+      <span>Sem fornecedor</span>
+      <strong id="stock-kpi-no-supplier">0</strong>
+      <small>Impacta compra automatica</small>
+    </article>
+
+    <article class="panel stock-kpi-card">
+      <span>Para etiquetar</span>
+      <strong id="stock-kpi-labels">0</strong>
+      <small>Itens com validade/producao</small>
+    </article>
+
+    <article class="panel stock-kpi-card warning">
+      <span>Aumento de custo</span>
+      <strong id="stock-kpi-cost-increase">0</strong>
+      <small>Comparado ao custo anterior</small>
+    </article>
+  </section>
+
+  <section class="panel stock-command-panel">
+    <div>
+      <p class="eyebrow">Painel operacional</p>
+      <h3>Insumos por categoria</h3>
+      <p class="muted">Filtre rapido e alterne entre cards para operacao ou tabela para conferencia.</p>
+    </div>
+
+    <div id="stock-category-filters" class="stock-category-filters" aria-label="Filtros de categoria"></div>
+
+    <div class="stock-view-actions">
+      <button id="open-product-drawer" type="button">Novo Produto</button>
+      <div class="stock-view-toggle" aria-label="Alternar visualizacao">
+        <button id="stock-view-cards" class="secondary active" type="button">Cards</button>
+        <button id="stock-view-table" class="secondary" type="button">Tabela</button>
+      </div>
+    </div>
+  </section>
+
   <section class="panel quick-box-panel stock-daily-entry-panel">
     <div class="page-header compact-header">
       <div>
         <p class="eyebrow">Entrada rapida</p>
         <h3>Registro de mercadorias por codigo de barras</h3>
-        <p class="muted">Bipe o produto e o sistema consulta Cosmos/Open Food Facts automaticamente. Depois confirme caixa, custo e entrada.</p>
+        <p class="muted">Bipe o produto e o sistema consulta Cosmos/Open Food Facts automaticamente. Depois confirme pacote, caixa, fardo ou unidade.</p>
       </div>
       <span id="quick-lookup-source" class="stock-lookup-chip">Aguardando bipagem</span>
     </div>
@@ -73,17 +134,47 @@
         </div>
 
         <div class="field-group">
-          <label for="quick_units_per_box">Quantidade por caixa</label>
+          <label for="quick_units_per_box">Quantidade por embalagem</label>
           <input id="quick_units_per_box" type="number" min="1" step="1" value="1">
         </div>
 
         <div class="field-group">
-          <label for="quick_min_boxes">Minimo em caixas</label>
+          <label for="quick_entry_unit">Entrada por</label>
+          <select id="quick_entry_unit">
+            <option value="caixa">Caixa</option>
+            <option value="pacote">Pacote</option>
+            <option value="fardo">Fardo</option>
+            <option value="unidade">Unidade</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="quick_entry_quantity">Quantidade da entrada</label>
+          <input id="quick_entry_quantity" type="number" min="0.01" step="0.01" value="1">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_exit_unit">Saida por</label>
+          <select id="quick_exit_unit">
+            <option value="unidade">Unidade</option>
+            <option value="pacote">Pacote</option>
+            <option value="caixa">Caixa</option>
+            <option value="fardo">Fardo</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="quick_exit_quantity">Quantidade da saida</label>
+          <input id="quick_exit_quantity" type="number" min="0.01" step="0.01" value="1">
+        </div>
+
+        <div class="field-group">
+          <label for="quick_min_boxes">Minimo em embalagens</label>
           <input id="quick_min_boxes" type="number" min="0" step="1" value="2">
         </div>
 
         <div class="field-group">
-          <label for="quick_box_price">Valor pago pela caixa</label>
+          <label for="quick_box_price">Custo total da entrada</label>
           <input id="quick_box_price" type="number" min="0" step="0.01" placeholder="86,40">
         </div>
       </div>
@@ -91,8 +182,8 @@
       <p id="quick-unit-cost-preview" class="muted quick-cost-preview">Custo unitario calculado: R$ 0,00</p>
 
       <div class="quick-box-actions">
-        <button id="quick-entry-box" type="button">Registrar entrada de 1 caixa</button>
-        <button id="quick-exit-box" class="secondary" type="button">Registrar saida de 1 caixa</button>
+        <button id="quick-entry-box" type="button">Registrar entrada</button>
+        <button id="quick-exit-box" class="secondary" type="button">Registrar saida</button>
       </div>
     </div>
 
@@ -129,17 +220,28 @@
     </details>
   </section>
 
-  <section class="panel product-create-panel">
-    <details class="section-accordion">
+  <section id="product-drawer" class="panel product-create-panel">
+    <details id="product-create-details" class="section-accordion">
       <summary class="section-accordion-summary">
         <div>
-          <h3>Novo produto</h3>
-          <p class="muted">Abra apenas quando for cadastrar um item novo no estoque.</p>
+          <h3>Novo insumo</h3>
+          <p class="muted">Cadastro rapido com abas para dados, compra, validade, etiqueta e ficha tecnica.</p>
         </div>
         <span class="section-accordion-cta">Abrir cadastro</span>
       </summary>
 
       <div class="section-accordion-body">
+        <nav class="product-drawer-tabs" aria-label="Abas do cadastro de insumo">
+          <button class="secondary active" type="button" data-drawer-tab="gerais">Dados Gerais</button>
+          <button class="secondary" type="button" data-drawer-tab="estoque">Estoque</button>
+          <button class="secondary" type="button" data-drawer-tab="compra">Compra e Conversao</button>
+          <button class="secondary" type="button" data-drawer-tab="validade">Validade</button>
+          <button class="secondary" type="button" data-drawer-tab="fornecedores">Fornecedores</button>
+          <button class="secondary" type="button" data-drawer-tab="etiqueta">Etiqueta</button>
+          <button class="secondary" type="button" data-drawer-tab="ficha">Ficha Tecnica</button>
+          <button class="secondary" type="button" data-drawer-tab="historico">Historico</button>
+        </nav>
+
         <div class="page-header" style="margin-bottom: 16px;">
           <p class="muted">Preencha o basico para cadastro rapido e abra as opcoes quando precisar.</p>
           <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
@@ -152,9 +254,26 @@
               <input id="novo_nome" placeholder="Blend bovino">
             </div>
 
+            <div class="field-group">
+              <label for="novo_codigo_interno">Codigo interno/SKU</label>
+              <input id="novo_codigo_interno" placeholder="CAR-BLD-001">
+            </div>
+
         <div class="field-group">
-          <label for="novo_unidade_medida">Unidade de medida</label>
+          <label for="novo_unidade_medida">Unidade de uso</label>
           <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_unidade_compra">Unidade de compra</label>
+          <select id="novo_unidade_compra">
+            <option value="caixa">Caixa</option>
+            <option value="pacote">Pacote</option>
+            <option value="fardo">Fardo</option>
+            <option value="unidade">Unidade</option>
+            <option value="kg">Kg</option>
+            <option value="litro">Litro</option>
+          </select>
         </div>
 
         <div class="field-group">
@@ -170,6 +289,26 @@
         <div class="field-group">
           <label for="novo_max">Maximo</label>
           <input id="novo_max" type="number" min="1" step="1" value="50">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_local_armazenamento">Local de armazenamento</label>
+          <input id="novo_local_armazenamento" placeholder="Freezer 1, estoque seco, geladeira">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_status_produto">Status do produto</label>
+          <select id="novo_status_produto">
+            <option value="ativo">Ativo</option>
+            <option value="pausado">Pausado</option>
+            <option value="sem_ficha_tecnica">Sem ficha tecnica</option>
+            <option value="produto_parado">Produto parado</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="novo_imagem_url">Imagem do produto</label>
+          <input id="novo_imagem_url" placeholder="URL da imagem">
         </div>
       </div>
 
@@ -208,16 +347,16 @@
                   <label for="novo_categoria">Categoria</label>
                   <input id="novo_categoria" list="product-categories" placeholder="Ex.: molho, embalagem, bebida, insumo">
                   <datalist id="product-categories">
-                    <option value="molho"></option>
-                    <option value="embalagem"></option>
-                    <option value="bebida"></option>
-                    <option value="insumo"></option>
-                    <option value="proteina"></option>
-                    <option value="laticinio"></option>
-                    <option value="panificacao"></option>
-                    <option value="hortifruti"></option>
-                    <option value="limpeza"></option>
-                    <option value="descartavel"></option>
+                    <option value="Carnes"></option>
+                    <option value="Paes"></option>
+                    <option value="Queijos"></option>
+                    <option value="Molhos"></option>
+                    <option value="Hortifruti"></option>
+                    <option value="Bebidas"></option>
+                    <option value="Embalagens"></option>
+                    <option value="Limpeza"></option>
+                    <option value="Congelados"></option>
+                    <option value="Producao propria"></option>
                   </datalist>
                 </div>
               </div>
@@ -336,6 +475,74 @@
               <div id="new-suppliers-list" class="supplier-list" style="margin-top: 16px;"></div>
             </div>
           </details>
+
+          <details class="supplier-section section-accordion compact-inner-accordion">
+            <summary class="section-accordion-summary">
+              <div>
+                <span>Validade e etiqueta</span>
+                <strong>Dados para controle de lote e impressao termica.</strong>
+              </div>
+              <span class="section-accordion-cta">Abrir validade</span>
+            </summary>
+
+            <div class="section-accordion-body">
+              <div class="form-grid">
+                <div class="field-group">
+                  <label for="novo_validade_original">Validade original</label>
+                  <input id="novo_validade_original" type="date">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_validade_aberto">Validade apos aberto</label>
+                  <input id="novo_validade_aberto" placeholder="Ex.: 3 dias refrigerado">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_validade_producao">Validade apos producao</label>
+                  <input id="novo_validade_producao" placeholder="Ex.: 72 horas">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_lote_interno">Lote interno</label>
+                  <input id="novo_lote_interno" placeholder="MOL-300426-001">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_responsavel_etiqueta">Responsavel</label>
+                  <input id="novo_responsavel_etiqueta" placeholder="Nome do colaborador">
+                </div>
+
+                <div class="field-group">
+                  <label for="novo_observacao_etiqueta">Observacao da etiqueta</label>
+                  <input id="novo_observacao_etiqueta" placeholder="Manter refrigerado">
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="supplier-section section-accordion compact-inner-accordion">
+            <summary class="section-accordion-summary">
+              <div>
+                <span>Ficha tecnica</span>
+                <strong>Vincule o insumo ao cardapio e acompanhe custo por receita.</strong>
+              </div>
+              <span class="section-accordion-cta">Abrir ficha</span>
+            </summary>
+
+            <div class="section-accordion-body">
+              <div class="form-grid">
+                <div class="field-group" style="grid-column: 1 / -1;">
+                  <label for="novo_ficha_vinculos">Produtos do cardapio vinculados</label>
+                  <textarea id="novo_ficha_vinculos" placeholder="Ex.: X-Burger, Smash duplo, molho da casa"></textarea>
+                </div>
+
+                <div class="field-group" style="grid-column: 1 / -1;">
+                  <label for="novo_ficha_observacoes">Observacoes de rendimento e custo</label>
+                  <textarea id="novo_ficha_observacoes" placeholder="Ex.: 1 caixa atende 144 lanches. Revisar custo semanalmente."></textarea>
+                </div>
+              </div>
+            </div>
+          </details>
         </div>
       </details>
 
@@ -351,8 +558,8 @@
     <details class="section-accordion">
       <summary class="section-accordion-summary">
         <div>
-          <h3>Itens cadastrados</h3>
-          <p class="muted">Abra a lista quando quiser revisar ou editar os produtos.</p>
+          <h3>Insumos cadastrados</h3>
+          <p class="muted">Abra a lista quando quiser revisar ou editar os insumos.</p>
         </div>
         <span id="registered-items-summary" class="section-accordion-cta">Carregando itens...</span>
       </summary>
@@ -427,10 +634,35 @@ const DEFAULT_IMPORTED_PRODUCT = Object.freeze({
 const form = document.getElementById("product-form");
 const resetButton = document.getElementById("reset-button");
 const createButton = document.getElementById("create-button");
+const productCreateDetails = document.getElementById("product-create-details");
+const openProductDrawerButton = document.getElementById("open-product-drawer");
+const stockTopSearchInput = document.getElementById("stock-top-search");
+const stockCategoryFilters = document.getElementById("stock-category-filters");
+const stockViewCardsButton = document.getElementById("stock-view-cards");
+const stockViewTableButton = document.getElementById("stock-view-table");
+const stockKpiValue = document.getElementById("stock-kpi-value");
+const stockKpiLow = document.getElementById("stock-kpi-low");
+const stockKpiExpiring = document.getElementById("stock-kpi-expiring");
+const stockKpiNoSupplier = document.getElementById("stock-kpi-no-supplier");
+const stockKpiLabels = document.getElementById("stock-kpi-labels");
+const stockKpiCostIncrease = document.getElementById("stock-kpi-cost-increase");
 const barcodeInput = document.getElementById("novo_codigo_barras");
 const nameInput = document.getElementById("novo_nome");
+const internalCodeInput = document.getElementById("novo_codigo_interno");
 const brandInput = document.getElementById("novo_marca");
 const categoryInput = document.getElementById("novo_categoria");
+const imageInput = document.getElementById("novo_imagem_url");
+const purchaseUnitInput = document.getElementById("novo_unidade_compra");
+const storageLocationInput = document.getElementById("novo_local_armazenamento");
+const productStatusInput = document.getElementById("novo_status_produto");
+const originalExpirationInput = document.getElementById("novo_validade_original");
+const openedExpirationInput = document.getElementById("novo_validade_aberto");
+const productionExpirationInput = document.getElementById("novo_validade_producao");
+const labelLotInput = document.getElementById("novo_lote_interno");
+const labelResponsibleInput = document.getElementById("novo_responsavel_etiqueta");
+const labelObservationInput = document.getElementById("novo_observacao_etiqueta");
+const recipeLinksInput = document.getElementById("novo_ficha_vinculos");
+const recipeNotesInput = document.getElementById("novo_ficha_observacoes");
 const unitMeasureInput = document.getElementById("novo_unidade_medida");
 const packageQuantityInput = document.getElementById("novo_conv");
 const purchaseCostInput = document.getElementById("novo_custo");
@@ -475,6 +707,10 @@ const quickNameInput = document.getElementById("quick_name");
 const quickBrandInput = document.getElementById("quick_brand");
 const quickCategoryInput = document.getElementById("quick_category");
 const quickUnitsPerBoxInput = document.getElementById("quick_units_per_box");
+const quickEntryUnitInput = document.getElementById("quick_entry_unit");
+const quickEntryQuantityInput = document.getElementById("quick_entry_quantity");
+const quickExitUnitInput = document.getElementById("quick_exit_unit");
+const quickExitQuantityInput = document.getElementById("quick_exit_quantity");
 const quickMinBoxesInput = document.getElementById("quick_min_boxes");
 const quickBoxPriceInput = document.getElementById("quick_box_price");
 const quickUnitCostPreview = document.getElementById("quick-unit-cost-preview");
@@ -508,6 +744,42 @@ let quickBoxState = {
   barcode: "",
   product: null,
   externalProduct: null
+};
+let activeStockCategory = "Todos";
+let stockViewMode = "cards";
+
+const STOCK_CATEGORIES = [
+  "Todos",
+  "Carnes",
+  "Paes",
+  "Queijos",
+  "Molhos",
+  "Hortifruti",
+  "Bebidas",
+  "Embalagens",
+  "Limpeza",
+  "Congelados",
+  "Producao propria"
+];
+
+const STOCK_CATEGORY_ALIASES = {
+  carnes: ["carne", "carnes", "proteina", "proteinas", "blend", "bovino", "frango"],
+  paes: ["pao", "paes", "panificacao", "brioche"],
+  queijos: ["queijo", "queijos", "laticinio", "laticinios", "cheddar", "mussarela"],
+  molhos: ["molho", "molhos", "maionese", "ketchup", "mostarda"],
+  hortifruti: ["hortifruti", "hortifruti", "verdura", "legume", "tomate", "alface", "cebola"],
+  bebidas: ["bebida", "bebidas", "refrigerante", "suco", "agua"],
+  embalagens: ["embalagem", "embalagens", "descartavel", "descartaveis", "sacola", "caixa"],
+  limpeza: ["limpeza", "higiene", "detergente", "sanitizante"],
+  congelados: ["congelado", "congelados", "freezer"],
+  "producao propria": ["producao propria", "producao", "pre-preparo", "preparo", "porcionado", "porcao"]
+};
+
+const QUICK_MOVEMENT_UNITS = {
+  caixa: "caixa",
+  pacote: "pacote",
+  fardo: "fardo",
+  unidade: "unidade"
 };
 
 function normalizeBarcode(value) {
@@ -572,6 +844,28 @@ function getBoxOperationMinimum(product = {}) {
   return Math.max(0, toNumber(product.minimum_boxes ?? product.minimo, 2));
 }
 
+function getQuickMovementUnitLabel(unit) {
+  return QUICK_MOVEMENT_UNITS[unit] || unit || "unidade";
+}
+
+function getQuickMovementInputs(isEntry) {
+  const unitInput = isEntry ? quickEntryUnitInput : quickExitUnitInput;
+  const quantityInput = isEntry ? quickEntryQuantityInput : quickExitQuantityInput;
+  const unit = unitInput?.value || (isEntry ? "caixa" : "unidade");
+  const quantity = Math.max(0, toNumber(quantityInput?.value, 1));
+  const unitsPerBox = Math.max(1, toNumber(quickUnitsPerBoxInput.value, 1));
+  const stockDeltaBoxes = unit === "unidade" ? quantity / unitsPerBox : quantity;
+  const unitLabel = getQuickMovementUnitLabel(unit);
+
+  return {
+    unit,
+    unitLabel,
+    quantity,
+    unitsPerBox,
+    stockDeltaBoxes
+  };
+}
+
 function inferUnitsPerBoxFromText(...values) {
   const text = values
     .map((value) => String(value ?? "").toLowerCase())
@@ -597,13 +891,23 @@ function inferUnitsPerBoxFromText(...values) {
 }
 
 function getQuickBoxUnitCost() {
-  const unitsPerBox = Math.max(1, toNumber(quickUnitsPerBoxInput.value, 1));
-  const boxPrice = Math.max(0, toNumber(quickBoxPriceInput.value, 0));
-  return boxPrice > 0 ? boxPrice / unitsPerBox : 0;
+  const movement = getQuickMovementInputs(true);
+  const entryCost = Math.max(0, toNumber(quickBoxPriceInput.value, 0));
+  const totalUnits = movement.unit === "unidade"
+    ? movement.quantity
+    : movement.quantity * movement.unitsPerBox;
+
+  return entryCost > 0 && totalUnits > 0 ? entryCost / totalUnits : 0;
 }
 
 function updateQuickBoxCostPreview() {
-  quickUnitCostPreview.textContent = `Custo unitario calculado: ${formatCurrency(getQuickBoxUnitCost())}`;
+  const movement = getQuickMovementInputs(true);
+  const equivalentBoxes = formatQuantity(movement.stockDeltaBoxes);
+  quickUnitCostPreview.textContent = `Custo unitario calculado: ${formatCurrency(getQuickBoxUnitCost())} | Entrada equivale a ${equivalentBoxes} embalagem(ns)`;
+  quickEntryBoxButton.textContent = `Registrar entrada de ${formatQuantity(movement.quantity)} ${movement.unitLabel}(s)`;
+
+  const exitMovement = getQuickMovementInputs(false);
+  quickExitBoxButton.textContent = `Registrar saida de ${formatQuantity(exitMovement.quantity)} ${exitMovement.unitLabel}(s)`;
 }
 
 function findProductByBarcode(barcode) {
@@ -624,7 +928,7 @@ function syncQuickBoxProductView(product = null, externalProduct = null) {
 
   quickBoxProduct.hidden = false;
   quickProductState.textContent = product ? "Produto encontrado no estoque" : "Produto novo para cadastro";
-  quickProductStock.textContent = `${stockBoxes} caixa(s)`;
+  quickProductStock.textContent = `${formatQuantity(stockBoxes)} embalagem(ns)`;
   quickNameInput.value = product?.nome || externalProduct?.nome || "";
   quickBrandInput.value = product?.marca || externalProduct?.marca || "";
   quickCategoryInput.value = product?.categoria || externalProduct?.categoria || "";
@@ -755,17 +1059,23 @@ function scheduleQuickBarcodeLookup() {
   }, 450);
 }
 
-function buildQuickBoxProductPayload(nextStockBoxes) {
+function buildQuickBoxProductPayload(nextStockBoxes, movement) {
   const barcode = quickBoxState.barcode || normalizeBarcode(quickBarcodeInput.value);
   const nome = quickNameInput.value.trim();
   const marca = quickBrandInput.value.trim();
   const categoria = quickCategoryInput.value.trim();
   const unitsPerBox = Math.max(1, toNumber(quickUnitsPerBoxInput.value, 1));
   const minimumBoxes = Math.max(0, toNumber(quickMinBoxesInput.value, 2));
-  const boxPrice = Math.max(0, toNumber(quickBoxPriceInput.value, 0));
+  const entryTotalCost = Math.max(0, toNumber(quickBoxPriceInput.value, 0));
   const currentBoxPrice = toNumber(quickBoxState.product?.last_box_price ?? quickBoxState.product?.custoCompra, 0);
   const currentUnitCost = toNumber(quickBoxState.product?.unit_cost ?? quickBoxState.product?.custoUnitario, 0);
-  const unitCost = boxPrice > 0 ? boxPrice / unitsPerBox : currentUnitCost;
+  const existingMeasureUnit = quickBoxState.product?.unidadeMedida || (movement?.unit === "unidade" ? "un" : (movement?.unit || "caixa"));
+  const existingUsageUnit = quickBoxState.product?.unidadeUso || "un";
+  const equivalentBoxes = Math.max(0, movement?.stockDeltaBoxes ?? 0);
+  const effectiveBoxCost = entryTotalCost > 0 && equivalentBoxes > 0
+    ? entryTotalCost / equivalentBoxes
+    : currentBoxPrice;
+  const unitCost = entryTotalCost > 0 ? getQuickBoxUnitCost() : currentUnitCost;
 
   if (!barcode) {
     throw new Error("Bipe ou digite o codigo de barras antes de movimentar.");
@@ -790,50 +1100,60 @@ function buildQuickBoxProductPayload(nextStockBoxes) {
     brand: marca,
     categoria,
     category: categoria,
-    purchase_unit: "caixa",
+    purchase_unit: movement?.unit || "caixa",
+    unidadeCompra: movement?.unit || "caixa",
     units_per_box: unitsPerBox,
-    last_box_price: boxPrice || currentBoxPrice,
+    last_box_price: effectiveBoxCost || currentBoxPrice,
+    last_entry_total_cost: entryTotalCost || 0,
     unit_cost: unitCost,
     stock_boxes: nextStockBoxes,
     quantidade: nextStockBoxes,
     minimo: minimumBoxes,
     minimum_boxes: minimumBoxes,
     maximo: Math.max(minimumBoxes + 1, toNumber(quickBoxState.product?.maximo, Math.max(50, nextStockBoxes))),
-    unidadeMedida: "caixa",
-    unidadeUso: "un",
+    unidadeMedida: existingMeasureUnit,
+    unidadeUso: existingUsageUnit,
     conversao: unitsPerBox,
-    custoCompra: boxPrice || currentBoxPrice,
+    custoCompra: effectiveBoxCost || currentBoxPrice,
     custoUnitario: unitCost,
     custo: unitCost,
-    origemCadastro: "codigo_barras_caixa",
+    origemCadastro: "codigo_barras_operacao",
     atualizadoEm: serverTimestamp()
   };
 }
 
 async function recordQuickBoxMovement(type) {
-  const isEntry = type === "entrada_caixa";
+  const isEntry = type === "entrada";
   const currentProduct = quickBoxState.product || await lookupQuickBoxProduct();
+  const movement = getQuickMovementInputs(isEntry);
 
   if (!isEntry && !currentProduct) {
-    setStatus("quick-box-status", "Produto ainda nao cadastrado. Faca uma entrada de caixa para criar o cadastro.", "error");
+    setStatus("quick-box-status", "Produto ainda nao cadastrado. Faca uma entrada para criar o cadastro antes da saida.", "error");
     return;
   }
 
   const currentStockBoxes = currentProduct ? getBoxOperationStock(currentProduct) : 0;
 
-  if (!isEntry && currentStockBoxes <= 0) {
-    setStatus("quick-box-status", "Nao ha caixas em estoque para registrar saida.", "error");
+  if (movement.quantity <= 0 || movement.stockDeltaBoxes <= 0) {
+    setStatus("quick-box-status", "Informe uma quantidade valida para movimentar.", "error");
+    return;
+  }
+
+  if (!isEntry && currentStockBoxes < movement.stockDeltaBoxes) {
+    setStatus("quick-box-status", `Saldo insuficiente. Estoque atual equivale a ${formatQuantity(currentStockBoxes)} embalagem(ns).`, "error");
     return;
   }
 
   if (isEntry && toNumber(quickBoxPriceInput.value, 0) <= 0) {
-    setStatus("quick-box-status", "Informe o valor pago pela caixa para registrar a entrada.", "error");
+    setStatus("quick-box-status", "Informe o custo total dessa entrada para calcular o custo unitario.", "error");
     quickBoxPriceInput.focus();
     return;
   }
 
-  const nextStockBoxes = isEntry ? currentStockBoxes + 1 : currentStockBoxes - 1;
-  const payload = buildQuickBoxProductPayload(nextStockBoxes);
+  const nextStockBoxes = Math.max(0, isEntry
+    ? currentStockBoxes + movement.stockDeltaBoxes
+    : currentStockBoxes - movement.stockDeltaBoxes);
+  const payload = buildQuickBoxProductPayload(nextStockBoxes, movement);
   const productRef = currentProduct
     ? doc(db, "estoque", currentProduct.id)
     : null;
@@ -859,19 +1179,22 @@ async function recordQuickBoxMovement(type) {
       itemId: productId,
       itemNome: payload.nome,
       codigoBarras: payload.codigoBarras,
-      caixas: 1,
+      unidadeMovimentada: movement.unit,
+      quantidadeMovimentada: movement.quantity,
+      caixas: movement.stockDeltaBoxes,
       estoqueCaixas: nextStockBoxes,
       valorCaixa: payload.last_box_price,
+      valorTotalEntrada: isEntry ? payload.last_entry_total_cost : 0,
       unidadesPorCaixa: payload.units_per_box,
       custoUnitario: payload.unit_cost,
       responsavel: profile.email,
       data: serverTimestamp()
     });
 
-    triggerReplenishmentEvaluation(isEntry ? "entrada_caixa" : "saida_caixa").catch(() => null);
+    triggerReplenishmentEvaluation(isEntry ? "entrada_estoque" : "saida_estoque").catch(() => null);
     setStatus(
       "quick-box-status",
-      `${isEntry ? "Entrada" : "Saida"} registrada: estoque atual ${nextStockBoxes} caixa(s).`,
+      `${isEntry ? "Entrada" : "Saida"} registrada: ${formatQuantity(movement.quantity)} ${movement.unitLabel}(s). Estoque atual ${formatQuantity(nextStockBoxes)} embalagem(ns).`,
       "success"
     );
     await loadProducts();
@@ -1008,9 +1331,16 @@ function buildProductStockHighlights(item, stockBoxes) {
   const quantity = formatQuantity(toNumber(item.quantidade, 0));
   const unit = item.unidadeMedida || getUsageUnit(item);
   const highlights = [`${quantity} ${unit}`];
+  const purchaseUnit = item.unidadeCompra || item.purchase_unit || "";
+  const unitLabels = {
+    caixa: "CX",
+    pacote: "PCT",
+    fardo: "FD",
+    unidade: "UN"
+  };
 
-  if (item.purchase_unit === "caixa") {
-    highlights.push(`${formatQuantity(stockBoxes)} CX`);
+  if (unitLabels[purchaseUnit]) {
+    highlights.push(`${formatQuantity(stockBoxes)} ${unitLabels[purchaseUnit]}`);
   }
 
   return highlights;
@@ -1124,8 +1454,21 @@ function resetCreateProductForm() {
   form.reset();
   barcodeInput.value = "";
   nameInput.value = "";
+  internalCodeInput.value = "";
   brandInput.value = "";
   categoryInput.value = "";
+  imageInput.value = "";
+  purchaseUnitInput.value = "caixa";
+  storageLocationInput.value = "";
+  productStatusInput.value = "ativo";
+  originalExpirationInput.value = "";
+  openedExpirationInput.value = "";
+  productionExpirationInput.value = "";
+  labelLotInput.value = "";
+  labelResponsibleInput.value = "";
+  labelObservationInput.value = "";
+  recipeLinksInput.value = "";
+  recipeNotesInput.value = "";
   unitMeasureInput.value = "un";
   document.getElementById("novo_qtd").value = "0";
   document.getElementById("novo_min").value = "2";
@@ -1396,9 +1739,34 @@ function matchesInventorySearch(item, searchTerm) {
   return searchableFields.some((field) => normalizeText(field).includes(normalizedTerm));
 }
 
+function normalizeStockCategoryLabel(value) {
+  return normalizeText(value || "").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function productMatchesStockCategory(item, category) {
+  if (!category || category === "Todos") {
+    return true;
+  }
+
+  const target = normalizeStockCategoryLabel(category);
+  const aliases = STOCK_CATEGORY_ALIASES[target] || [target];
+  const searchable = normalizeStockCategoryLabel([
+    item?.categoria,
+    item?.nome,
+    item?.marca,
+    item?.tipo,
+    item?.statusProduto
+  ].join(" "));
+
+  return aliases.some((alias) => searchable.includes(normalizeStockCategoryLabel(alias)));
+}
+
 function getFilteredProducts(items = []) {
-  const searchTerm = String(inventorySearchInput?.value || "").trim();
-  return items.filter((item) => matchesInventorySearch(item, searchTerm));
+  const searchTerm = String(inventorySearchInput?.value || stockTopSearchInput?.value || "").trim();
+  return items.filter((item) => (
+    matchesInventorySearch(item, searchTerm) &&
+    productMatchesStockCategory(item, activeStockCategory)
+  ));
 }
 
 function updateInventoryFilterMeta(totalCount, filteredCount) {
@@ -1411,17 +1779,177 @@ function updateInventoryFilterMeta(totalCount, filteredCount) {
     return;
   }
 
-  if (filteredCount === totalCount) {
+  if (filteredCount === totalCount && activeStockCategory === "Todos") {
     inventoryFilterMeta.textContent = `${totalCount} item(ns) exibidos`;
     return;
   }
 
-  inventoryFilterMeta.textContent = `${filteredCount} de ${totalCount} item(ns) exibidos`;
+  inventoryFilterMeta.textContent = `${filteredCount} de ${totalCount} item(ns) exibidos | ${activeStockCategory}`;
+}
+
+function parseInventoryDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value?.toDate === "function") {
+    return value.toDate();
+  }
+
+  const candidate = String(value);
+  const parsed = new Date(candidate.includes("T") ? candidate : `${candidate}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getProductExpirationDate(item = {}) {
+  return parseInventoryDate(
+    item.validadeOriginal ||
+    item.validade ||
+    item.dataValidade ||
+    item.expirationDate ||
+    item.validadeOriginalData
+  );
+}
+
+function getExpirationState(item = {}) {
+  const expirationDate = getProductExpirationDate(item);
+
+  if (!expirationDate) {
+    return { state: "none", label: "Configurar validade", days: null };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const normalizedExpiration = new Date(expirationDate);
+  normalizedExpiration.setHours(0, 0, 0, 0);
+  const days = Math.ceil((normalizedExpiration - today) / 86400000);
+
+  if (days < 0) {
+    return { state: "expired", label: "Vencido", days };
+  }
+
+  if (days <= 3) {
+    return { state: "expiring", label: days === 0 ? "Vence hoje" : `Vence em ${days} dia(s)`, days };
+  }
+
+  return { state: "ok", label: normalizedExpiration.toLocaleDateString("pt-BR"), days };
+}
+
+function getProductSku(item = {}) {
+  return item.codigoInterno || item.sku || item.codigoProduto || item.codigoBarras || "Sem SKU";
+}
+
+function getProductImage(item = {}) {
+  return item.imagem || item.imagemUrl || item.imageUrl || item.foto || item.photoUrl || "";
+}
+
+function getProductInitials(name = "") {
+  const words = String(name || "I").trim().split(/\s+/).slice(0, 2);
+  return words.map((word) => word[0] || "").join("").toUpperCase() || "I";
+}
+
+function getOperationalProductStatus(item, productSuppliers = normalizeProductSuppliers(item, fornecedores)) {
+  const stockBoxes = getBoxOperationStock(item);
+  const minimumBoxes = getBoxOperationMinimum(item);
+  const expiration = getExpirationState(item);
+
+  if (expiration.state === "expired") {
+    return { label: "Vencido", badgeClass: "urgent" };
+  }
+
+  if (!productSuppliers.length) {
+    return { label: "Sem fornecedor", badgeClass: "low" };
+  }
+
+  if (expiration.state === "expiring") {
+    return { label: "Proximo do vencimento", badgeClass: "urgent" };
+  }
+
+  if (minimumBoxes > 0 && stockBoxes <= minimumBoxes) {
+    return { label: "Comprar hoje", badgeClass: "urgent" };
+  }
+
+  if (minimumBoxes > 0 && stockBoxes <= Math.ceil(minimumBoxes * 1.5)) {
+    return { label: "Estoque baixo", badgeClass: "low" };
+  }
+
+  if (item.statusProduto === "sem_ficha_tecnica" || item.fichaTecnicaStatus === "pendente") {
+    return { label: "Sem ficha tecnica", badgeClass: "low" };
+  }
+
+  if (item.statusProduto === "produto_parado") {
+    return { label: "Produto parado", badgeClass: "low" };
+  }
+
+  return { label: "OK", badgeClass: "healthy" };
+}
+
+function productNeedsLabel(item = {}) {
+  return Boolean(
+    item.validadeOriginal ||
+    item.validadeAposAberto ||
+    item.validadeAposProducao ||
+    item.loteInterno ||
+    normalizeText(item.categoria).includes("producao")
+  );
+}
+
+function productHasCostIncrease(item = {}) {
+  const currentCost = toNumber(getUnitCost(item), 0);
+  const previousCost = toNumber(item.custoAnterior ?? item.previousUnitCost ?? item.unit_cost_previous, 0);
+  return previousCost > 0 && currentCost > previousCost;
+}
+
+function renderStockKpis(items = []) {
+  const totalValue = items.reduce((total, item) => (
+    total + (Math.max(0, toNumber(item.quantidade, 0)) * Math.max(0, toNumber(getUnitCost(item), 0)))
+  ), 0);
+  const lowItems = items.filter((item) => getBoxOperationStock(item) <= getBoxOperationMinimum(item)).length;
+  const expiringItems = items.filter((item) => {
+    const expiration = getExpirationState(item);
+    return expiration.state === "expired" || expiration.state === "expiring";
+  }).length;
+  const noSupplierItems = items.filter((item) => !normalizeProductSuppliers(item, fornecedores).length).length;
+  const labelItems = items.filter(productNeedsLabel).length;
+  const costIncreaseItems = items.filter(productHasCostIncrease).length;
+
+  stockKpiValue.textContent = formatCurrency(totalValue);
+  stockKpiLow.textContent = String(lowItems);
+  stockKpiExpiring.textContent = String(expiringItems);
+  stockKpiNoSupplier.textContent = String(noSupplierItems);
+  stockKpiLabels.textContent = String(labelItems);
+  stockKpiCostIncrease.textContent = String(costIncreaseItems);
+}
+
+function renderStockCategoryFilters() {
+  if (!stockCategoryFilters) {
+    return;
+  }
+
+  stockCategoryFilters.innerHTML = STOCK_CATEGORIES.map((category) => `
+    <button class="secondary ${category === activeStockCategory ? "active" : ""}" type="button" data-stock-category="${escapeHtml(category)}">
+      ${escapeHtml(category)}
+    </button>
+  `).join("");
+}
+
+function setStockViewMode(mode) {
+  stockViewMode = mode === "table" ? "table" : "cards";
+  stockViewCardsButton.classList.toggle("active", stockViewMode === "cards");
+  stockViewTableButton.classList.toggle("active", stockViewMode === "table");
+  applyProductsView();
 }
 
 function applyProductsView() {
   const filteredItems = getFilteredProducts(produtos);
   updateInventoryFilterMeta(produtos.length, filteredItems.length);
+  renderStockKpis(produtos);
+
+  if (stockViewMode === "table") {
+    renderProductsTable(filteredItems);
+    return;
+  }
+
   renderProducts(filteredItems);
 }
 
@@ -2198,6 +2726,143 @@ function findSupplierMatch(candidate = {}) {
   return fornecedores.find((fornecedor) => normalizeText(fornecedor.nome) === name) || null;
 }
 
+function focusQuickMovementForProduct(item, movementType) {
+  quickBarcodeInput.value = getBoxOperationBarcode(item);
+  quickBoxState.barcode = quickBarcodeInput.value;
+  syncQuickBoxProductView(item, null);
+  quickBoxProduct.hidden = false;
+
+  if (movementType === "saida") {
+    quickExitUnitInput.focus();
+  } else {
+    quickEntryUnitInput.focus();
+  }
+
+  document.querySelector(".stock-daily-entry-panel")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+function handleProductQuickAction(action, item, collapsible = null) {
+  if (action === "entrada" || action === "saida") {
+    focusQuickMovementForProduct(item, action);
+    setStatus("quick-box-status", `Produto carregado para registrar ${action}.`, "info");
+    return;
+  }
+
+  if (collapsible) {
+    collapsible.open = true;
+    collapsible.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
+
+  if (action === "etiqueta") {
+    setStatus("status", "Abra a aba de validade/etiqueta para conferir lote, validade e responsavel.", "info");
+    return;
+  }
+
+  if (action === "historico") {
+    setStatus("status", "Historico completo fica registrado nas movimentacoes e auditoria do sistema.", "info");
+    return;
+  }
+
+  setStatus("status", `Edite os detalhes de ${item.nome} e clique em Salvar.`, "info");
+}
+
+function renderTableActionButtons(item) {
+  return `
+    <button class="secondary" type="button" data-table-action="editar" data-product-id="${escapeHtml(item.id)}">Editar</button>
+    <button class="secondary" type="button" data-table-action="entrada" data-product-id="${escapeHtml(item.id)}">Entrada</button>
+    <button class="secondary" type="button" data-table-action="saida" data-product-id="${escapeHtml(item.id)}">Saida</button>
+    <button class="secondary" type="button" data-table-action="etiqueta" data-product-id="${escapeHtml(item.id)}">Etiqueta</button>
+  `;
+}
+
+function renderProductsTable(items) {
+  list.innerHTML = "";
+  updateRegisteredItemsSummary(items);
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum produto cadastrado ainda.</div>';
+    return;
+  }
+
+  const rows = items.map((item) => {
+    const productSuppliers = normalizeProductSuppliers(item, fornecedores);
+    const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
+    const status = getOperationalProductStatus(item, productSuppliers);
+    const expiration = getExpirationState(item);
+
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(item.nome)}</strong>
+          <small>${escapeHtml(item.marca || item.codigoBarras || "Cadastro interno")}</small>
+        </td>
+        <td>${escapeHtml(getProductSku(item))}</td>
+        <td>${escapeHtml(item.categoria || "Sem categoria")}</td>
+        <td>${escapeHtml(primarySupplier?.nome || "Configurar")}</td>
+        <td>${escapeHtml(item.unidadeCompra || item.purchase_unit || "Configurar")}</td>
+        <td>${escapeHtml(`${formatQuantity(toNumber(item.quantidade, 0))} ${item.unidadeMedida || getUsageUnit(item)}`)}</td>
+        <td>${escapeHtml(formatQuantity(toNumber(item.minimo, 0)))}</td>
+        <td>${escapeHtml(formatCurrency(getUnitCost(item)))}</td>
+        <td>${escapeHtml(expiration.label)}</td>
+        <td><span class="stock-badge stock-badge-${status.badgeClass}">${escapeHtml(status.label)}</span></td>
+        <td><div class="stock-table-actions">${renderTableActionButtons(item)}</div></td>
+      </tr>
+    `;
+  }).join("");
+
+  list.innerHTML = `
+    <div class="stock-table-wrap">
+      <table class="stock-product-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Fornecedor</th>
+            <th>Unidade de compra</th>
+            <th>Estoque atual</th>
+            <th>Minimo</th>
+            <th>Custo unitario</th>
+            <th>Validade</th>
+            <th>Status</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  list.querySelectorAll("button[data-table-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = produtos.find((candidate) => candidate.id === button.dataset.productId);
+
+      if (!item) {
+        return;
+      }
+
+      if (button.dataset.tableAction === "editar") {
+        setStockViewMode("cards");
+        window.setTimeout(() => {
+          const card = Array.from(document.querySelectorAll(".inventory-product-card"))
+            .find((candidate) => candidate.textContent.includes(item.nome));
+          const details = card?.querySelector(".product-card-details");
+          handleProductQuickAction("editar", item, details);
+        }, 0);
+        return;
+      }
+
+      handleProductQuickAction(button.dataset.tableAction, item);
+    });
+  });
+}
+
 function renderProducts(items) {
   list.innerHTML = "";
   updateRegisteredItemsSummary(items);
@@ -2219,6 +2884,9 @@ function renderProducts(items) {
     fields.appendChild(createField(`barcode_${item.id}`, "Codigo de barras", item.codigoBarras || "", {
       type: "text"
     }));
+    fields.appendChild(createField(`sku_${item.id}`, "Codigo interno/SKU", item.codigoInterno || item.sku || "", {
+      type: "text"
+    }));
     fields.appendChild(createField(`brand_${item.id}`, "Marca", item.marca || "", {
       type: "text"
     }));
@@ -2228,9 +2896,21 @@ function renderProducts(items) {
     fields.appendChild(createField(`unit_${item.id}`, "Unidade de medida", item.unidadeMedida || getUsageUnit(item), {
       type: "text"
     }));
+    fields.appendChild(createField(`purchase_unit_${item.id}`, "Unidade de compra", item.unidadeCompra || item.purchase_unit || "caixa", {
+      type: "text"
+    }));
     fields.appendChild(createField(`qtd_${item.id}`, "Quantidade", item.quantidade));
     fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
     fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
+    fields.appendChild(createField(`storage_${item.id}`, "Local de armazenamento", item.localArmazenamento || "", {
+      type: "text"
+    }));
+    fields.appendChild(createField(`expiration_${item.id}`, "Validade original", item.validadeOriginal || "", {
+      type: "date"
+    }));
+    fields.appendChild(createField(`image_${item.id}`, "Imagem", getProductImage(item), {
+      type: "text"
+    }));
 
     const orderDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasPedido");
     const deliveryDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasEntrega");
@@ -2246,7 +2926,7 @@ function renderProducts(items) {
         : "Cadastre um fornecedor para calcular custo";
     const stockBoxes = getBoxOperationStock(item);
     const minimumBoxes = getBoxOperationMinimum(item);
-    const stockStatus = getStockStatus(stockBoxes, minimumBoxes);
+    const operationalStatus = getOperationalProductStatus(item, productSuppliers);
     const stockHighlights = buildProductStockHighlights(item, stockBoxes);
     const supplierCountLabel = buildSupplierCountLabel(productSuppliers);
     const primarySupplierName = primarySupplier?.nome || "Configurar fornecedor";
@@ -2255,7 +2935,11 @@ function renderProducts(items) {
       ? (formatCompactWeekdayRange(primarySupplier.diasPedido) || "Configurar frequencia")
       : "Configurar frequencia";
     const compactCategory = [item.categoria, item.marca].map((value) => String(value || "").trim()).filter(Boolean).join(" | ");
-    article.className = `card inventory-product-card inventory-product-card-${stockStatus.className}`;
+    const productSku = getProductSku(item);
+    const productImage = getProductImage(item);
+    const purchaseUnit = item.unidadeCompra || item.purchase_unit || "Configurar";
+    const expiration = getExpirationState(item);
+    article.className = `card inventory-product-card inventory-product-card-${operationalStatus.badgeClass}`;
 
     const supplierOverviewSection = document.createElement("div");
     supplierOverviewSection.className = "supplier-price-grid";
@@ -2381,12 +3065,17 @@ function renderProducts(items) {
     saveButton.addEventListener("click", async () => {
       try {
         const codigoBarras = normalizeBarcode(document.getElementById(`barcode_${item.id}`).value);
+        const codigoInterno = document.getElementById(`sku_${item.id}`).value.trim();
         const marca = document.getElementById(`brand_${item.id}`).value.trim();
         const categoria = document.getElementById(`category_${item.id}`).value.trim();
         const unidadeMedida = String(document.getElementById(`unit_${item.id}`).value || "un").trim() || "un";
+        const unidadeCompra = String(document.getElementById(`purchase_unit_${item.id}`).value || "caixa").trim() || "caixa";
         const quantidade = toNumber(document.getElementById(`qtd_${item.id}`).value, 0);
         const minimo = toNumber(document.getElementById(`min_${item.id}`).value, 0);
         const maximo = toNumber(document.getElementById(`max_${item.id}`).value, 0);
+        const localArmazenamento = document.getElementById(`storage_${item.id}`).value.trim();
+        const validadeOriginal = document.getElementById(`expiration_${item.id}`).value || "";
+        const imagemUrl = document.getElementById(`image_${item.id}`).value.trim();
         const duplicateBarcode = codigoBarras
           ? produtos.some((candidate) => candidate.id !== item.id && normalizeBarcode(candidate.codigoBarras) === codigoBarras)
           : false;
@@ -2410,12 +3099,18 @@ function renderProducts(items) {
         await updateDoc(doc(db, "estoque", item.id), {
           codigoBarras,
           codigoBarrasNormalizado: codigoBarras,
+          codigoInterno,
+          sku: codigoInterno,
           marca,
           categoria,
           unidadeMedida,
+          unidadeCompra,
           quantidade,
           minimo,
           maximo,
+          localArmazenamento,
+          validadeOriginal,
+          imagemUrl,
           origemCadastro: codigoBarras ? "codigo_barras" : "manual",
           ...buildPrimarySupplierFields(nextSuppliers, item),
           atualizadoEm: serverTimestamp()
@@ -2465,7 +3160,7 @@ function renderProducts(items) {
 
     const collapsible = document.createElement("details");
     collapsible.className = "product-card-details";
-    collapsible.open = stockStatus.className === "urgent";
+    collapsible.open = operationalStatus.badgeClass === "urgent";
     const detailsSummary = document.createElement("summary");
     detailsSummary.className = "product-card-details-summary";
     detailsSummary.innerHTML = `
@@ -2480,11 +3175,17 @@ function renderProducts(items) {
 
     article.innerHTML = `
       <div class="inventory-product-topline">
+        <div class="inventory-product-media" aria-hidden="true">
+          ${productImage
+            ? `<img src="${escapeHtml(productImage)}" alt="">`
+            : `<span>${escapeHtml(getProductInitials(item.nome))}</span>`}
+        </div>
         <div class="inventory-product-title">
           <span class="inventory-product-kicker">${escapeHtml(compactCategory || formatProductBarcodeLabel(item))}</span>
           <h3>${escapeHtml(item.nome)}</h3>
+          <p class="muted">SKU ${escapeHtml(productSku)}</p>
         </div>
-        <span class="stock-badge stock-badge-${stockStatus.className}">${escapeHtml(stockStatus.label)}</span>
+        <span class="stock-badge stock-badge-${operationalStatus.badgeClass}">${escapeHtml(operationalStatus.label)}</span>
       </div>
 
       <div class="inventory-stock-strip">
@@ -2517,11 +3218,45 @@ function renderProducts(items) {
           <span class="inventory-quick-icon" aria-hidden="true">R$</span>
           <div>
             <span>Custo atual</span>
-            <strong>${escapeHtml(currentCostLabel)}</strong>
+            <strong>${escapeHtml(formatCurrency(getUnitCost(item)))}</strong>
             <small>${escapeHtml(currentCostDetails)}</small>
           </div>
         </div>
+        <div class="inventory-quick-item">
+          <span class="inventory-quick-icon" aria-hidden="true">CX</span>
+          <div>
+            <span>Unidade de compra</span>
+            <strong>${escapeHtml(purchaseUnit)}</strong>
+            <small>${escapeHtml(getPackageQuantity(item))} ${escapeHtml(getUsageUnit(item))} por embalagem</small>
+          </div>
+        </div>
+        <div class="inventory-quick-item">
+          <span class="inventory-quick-icon" aria-hidden="true">M</span>
+          <div>
+            <span>Estoque minimo</span>
+            <strong>${escapeHtml(formatQuantity(toNumber(item.minimo, 0)))}</strong>
+            <small>Ideal: ${escapeHtml(formatQuantity(toNumber(item.maximo, 0)))}</small>
+          </div>
+        </div>
+        <div class="inventory-quick-item">
+          <span class="inventory-quick-icon" aria-hidden="true">V</span>
+          <div>
+            <span>Validade</span>
+            <strong>${escapeHtml(expiration.label)}</strong>
+            <small>${escapeHtml(item.localArmazenamento || "Configurar local")}</small>
+          </div>
+        </div>
       </div>
+    `;
+
+    const cardQuickActions = document.createElement("div");
+    cardQuickActions.className = "inventory-card-quick-actions";
+    cardQuickActions.innerHTML = `
+      <button class="secondary" type="button" data-product-action="editar">Editar</button>
+      <button class="secondary" type="button" data-product-action="entrada">Entrada</button>
+      <button class="secondary" type="button" data-product-action="saida">Saida</button>
+      <button class="secondary" type="button" data-product-action="etiqueta">Etiqueta</button>
+      <button class="secondary" type="button" data-product-action="historico">Historico</button>
     `;
 
     const advancedOverview = createDetailAccordion({
@@ -2565,6 +3300,17 @@ function renderProducts(items) {
     detailsBody.appendChild(actions);
     collapsible.appendChild(detailsSummary);
     collapsible.appendChild(detailsBody);
+    cardQuickActions.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-product-action]");
+
+      if (!button) {
+        return;
+      }
+
+      handleProductQuickAction(button.dataset.productAction, item, collapsible);
+    });
+
+    article.appendChild(cardQuickActions);
     article.appendChild(collapsible);
     list.appendChild(article);
   });
@@ -2578,8 +3324,16 @@ async function loadProducts() {
       id: document.id,
       ...document.data(),
       codigoBarras: document.data().codigoBarras || document.data().codigoBarrasNormalizado || "",
+      codigoInterno: document.data().codigoInterno || document.data().sku || "",
       marca: document.data().marca || "",
       categoria: document.data().categoria || "",
+      imagemUrl: document.data().imagemUrl || document.data().imagem || "",
+      localArmazenamento: document.data().localArmazenamento || "",
+      statusProduto: document.data().statusProduto || "ativo",
+      validadeOriginal: document.data().validadeOriginal || document.data().validade || "",
+      validadeAposAberto: document.data().validadeAposAberto || "",
+      validadeAposProducao: document.data().validadeAposProducao || "",
+      loteInterno: document.data().loteInterno || "",
       quantidade: toNumber(document.data().quantidade, 0),
       minimo: toNumber(document.data().minimo, 0),
       maximo: toNumber(document.data().maximo, 0),
@@ -3284,6 +4038,57 @@ async function importXmlInvoices() {
 
 xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
+openProductDrawerButton.addEventListener("click", () => {
+  productCreateDetails.open = true;
+  productCreateDetails.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+  nameInput.focus();
+});
+document.querySelectorAll(".product-drawer-tabs button").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".product-drawer-tabs button").forEach((candidate) => {
+      candidate.classList.toggle("active", candidate === button);
+    });
+
+    const tab = button.dataset.drawerTab;
+    const selector = {
+      gerais: "#novo_nome",
+      estoque: "#novo_qtd",
+      compra: "#novo_unidade_compra",
+      validade: "#novo_validade_original",
+      fornecedores: "#novo_fornecedor",
+      etiqueta: "#novo_lote_interno",
+      ficha: "#novo_ficha_vinculos",
+      historico: "#status"
+    }[tab];
+
+    const target = selector ? document.querySelector(selector) : null;
+    target?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    target?.focus?.();
+  });
+});
+stockCategoryFilters.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-stock-category]");
+
+  if (!button) {
+    return;
+  }
+
+  activeStockCategory = button.dataset.stockCategory || "Todos";
+  renderStockCategoryFilters();
+  applyProductsView();
+});
+stockViewCardsButton.addEventListener("click", () => setStockViewMode("cards"));
+stockViewTableButton.addEventListener("click", () => setStockViewMode("table"));
+stockTopSearchInput.addEventListener("input", () => {
+  inventorySearchInput.value = stockTopSearchInput.value;
+  applyProductsView();
+});
 quickBarcodeInput.addEventListener("input", () => {
   scheduleQuickBarcodeLookup();
 });
@@ -3307,12 +4112,16 @@ quickLookupBarcodeButton.addEventListener("click", async () => {
   await lookupQuickBoxProduct();
 });
 quickUnitsPerBoxInput.addEventListener("input", updateQuickBoxCostPreview);
+quickEntryUnitInput.addEventListener("change", updateQuickBoxCostPreview);
+quickEntryQuantityInput.addEventListener("input", updateQuickBoxCostPreview);
+quickExitUnitInput.addEventListener("change", updateQuickBoxCostPreview);
+quickExitQuantityInput.addEventListener("input", updateQuickBoxCostPreview);
 quickBoxPriceInput.addEventListener("input", updateQuickBoxCostPreview);
 quickEntryBoxButton.addEventListener("click", async () => {
-  await recordQuickBoxMovement("entrada_caixa");
+  await recordQuickBoxMovement("entrada");
 });
 quickExitBoxButton.addEventListener("click", async () => {
-  await recordQuickBoxMovement("saida_caixa");
+  await recordQuickBoxMovement("saida");
 });
 barcodeInput.addEventListener("input", () => {
   barcodeInput.value = normalizeBarcode(barcodeInput.value);
@@ -3347,6 +4156,7 @@ createPromotionEndInput.addEventListener("input", updateCreateCostPreview);
 createFrequencyActiveSelect.addEventListener("change", syncCreateFrequencyState);
 newSuppliersList.addEventListener("change", updateSuppliersAccordionSummary);
 inventorySearchInput.addEventListener("input", () => {
+  stockTopSearchInput.value = inventorySearchInput.value;
   applyProductsView();
 });
 addSupplierButton.addEventListener("click", () => {
@@ -3422,9 +4232,11 @@ form.addEventListener("submit", async (event) => {
 
   const codigoBarras = normalizeBarcode(barcodeInput.value);
   const nome = nameInput.value.trim();
+  const codigoInterno = internalCodeInput.value.trim();
   const marca = brandInput.value.trim();
   const categoria = categoryInput.value.trim();
   const unidadeMedida = String(unitMeasureInput.value || "un").trim() || "un";
+  const unidadeCompra = String(purchaseUnitInput.value || "caixa").trim() || "caixa";
   const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
   const minimo = Math.max(0, toNumber(document.getElementById("novo_min").value, 0));
   const maximo = Math.max(1, toNumber(document.getElementById("novo_max").value, 1));
@@ -3486,14 +4298,28 @@ form.addEventListener("submit", async (event) => {
     await addDoc(collection(db, "estoque"), {
       codigoBarras,
       codigoBarrasNormalizado: codigoBarras,
+      codigoInterno,
+      sku: codigoInterno,
       nome,
       nomeNormalizado: normalizedName,
       marca,
       categoria,
+      imagemUrl: imageInput.value.trim(),
+      unidadeCompra,
       unidadeMedida,
       quantidade,
       minimo,
       maximo,
+      localArmazenamento: storageLocationInput.value.trim(),
+      validadeOriginal: originalExpirationInput.value || "",
+      validadeAposAberto: openedExpirationInput.value.trim(),
+      validadeAposProducao: productionExpirationInput.value.trim(),
+      statusProduto: productStatusInput.value || "ativo",
+      loteInterno: labelLotInput.value.trim(),
+      etiquetaResponsavel: labelResponsibleInput.value.trim(),
+      etiquetaObservacao: labelObservationInput.value.trim(),
+      fichaTecnicaVinculos: recipeLinksInput.value.trim(),
+      fichaTecnicaObservacoes: recipeNotesInput.value.trim(),
       origemCadastro: codigoBarras ? "codigo_barras" : "manual",
       ...buildPrimarySupplierFields(productSuppliers),
       criadoEm: serverTimestamp(),
@@ -3580,10 +4406,12 @@ window.addEventListener("beforeunload", () => {
 });
 
 renderXmlPreview(xmlImports);
+renderStockCategoryFilters();
 populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
 populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
 syncUnitMeasureFields();
 updateCreateCostPreview();
+updateQuickBoxCostPreview();
 syncCreateFrequencyState();
 refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
 await updateBarcodeModeState();
