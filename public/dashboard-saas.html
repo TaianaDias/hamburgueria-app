@@ -54,6 +54,18 @@
     </div>
   </aside>
 
+  <header class="dashboard-mobile-topbar" aria-label="Topo mobile">
+    <a class="dashboard-mobile-brand" href="dashboard-saas.html" aria-label="Copiloto Operacional">
+      <span>C</span>
+      <strong>Copiloto</strong>
+      <small>Operação Food Service</small>
+    </a>
+    <div class="dashboard-mobile-topbar-actions">
+      <button type="button" aria-label="Notificações">!</button>
+      <button type="button" aria-label="Perfil">JP</button>
+    </div>
+  </header>
+
   <section class="premium-dashboard">
     <header class="premium-topbar">
       <div>
@@ -128,8 +140,21 @@
       </article>
     </section>
 
+    <section class="dashboard-mobile-quick-actions" aria-label="Ações rápidas">
+      <div class="premium-panel-header">
+        <h3>Ações rápidas</h3>
+        <a href="operacao.html">Ver modo operação</a>
+      </div>
+      <div class="dashboard-mobile-action-grid">
+        <a class="green" href="estoque.html"><span>+</span><strong>Entrada</strong></a>
+        <a class="orange" href="reposicao-producao.html"><span>-</span><strong>Saída</strong></a>
+        <a class="blue" href="producao-etiquetas.html"><span>P</span><strong>Produção</strong></a>
+        <a class="purple" href="impressora.html"><span>T</span><strong>Etiqueta</strong></a>
+      </div>
+    </section>
+
     <section class="premium-dashboard-grid">
-      <article class="premium-panel">
+      <article class="premium-panel dashboard-mobile-movements">
         <div class="premium-panel-header">
           <h3>Movimentações de Hoje</h3>
           <a href="relatorio-diario.html">Ver todas</a>
@@ -137,7 +162,7 @@
         <div id="movement-list" class="premium-movement-list"></div>
       </article>
 
-      <article class="premium-panel">
+      <article class="premium-panel dashboard-mobile-chart">
         <div class="premium-panel-header">
           <h3>Gráfico de Consumo (7 dias)</h3>
           <span class="premium-chart-legend"><i></i> Insumos <b></b> Produção</span>
@@ -150,7 +175,7 @@
         </div>
       </article>
 
-      <article class="premium-panel">
+      <article class="premium-panel dashboard-mobile-alerts">
         <div class="premium-panel-header">
           <h3>Alertas Inteligentes</h3>
           <a href="alertas-reposicao.html">Ver todos</a>
@@ -191,7 +216,7 @@
         </div>
       </article>
 
-      <article class="premium-panel">
+      <article class="premium-panel dashboard-mobile-modules">
         <div class="premium-panel-header">
           <h3>Módulos SaaS</h3>
           <a href="saas.html">Escalar</a>
@@ -208,6 +233,37 @@
     </section>
   </section>
 </main>
+
+<nav class="dashboard-mobile-bottom-nav" aria-label="Navegação mobile">
+  <a class="active" href="dashboard-saas.html"><span>D</span><strong>Dashboard</strong></a>
+  <a href="estoque.html"><span>E</span><strong>Estoque</strong></a>
+  <a href="producao-etiquetas.html"><span>P</span><strong>Produção</strong></a>
+  <a href="compras.html"><span>C</span><strong>Compras</strong></a>
+  <button id="dashboard-mobile-more" type="button" aria-expanded="false" aria-controls="dashboard-mobile-drawer">
+    <span>+</span><strong>Mais</strong>
+  </button>
+</nav>
+
+<div id="dashboard-mobile-drawer-backdrop" class="dashboard-mobile-drawer-backdrop" hidden>
+  <section id="dashboard-mobile-drawer" class="dashboard-mobile-drawer" role="dialog" aria-modal="true" aria-label="Mais opções">
+    <header>
+      <div>
+        <strong>Mais opções</strong>
+        <small>Acesse todos os módulos da operação.</small>
+      </div>
+      <button id="dashboard-mobile-drawer-close" type="button" aria-label="Fechar menu">x</button>
+    </header>
+    <div class="dashboard-mobile-drawer-grid">
+      <a href="treinamento.html"><span>A</span><strong>Treinamento</strong></a>
+      <a href="fornecedores.html"><span>F</span><strong>Fornecedores</strong></a>
+      <a href="desperdicio.html"><span>!</span><strong>Desperdício</strong></a>
+      <a href="relatorio-diario.html"><span>R</span><strong>Relatórios</strong></a>
+      <a href="impressora.html"><span>T</span><strong>Etiquetas</strong></a>
+      <a href="funcionarios.html"><span>U</span><strong>Funcionários</strong></a>
+      <a href="saas.html"><span>S</span><strong>Configurações</strong></a>
+    </div>
+  </section>
+</div>
 
 <script type="module">
 import { db } from "./firebase.js";
@@ -226,6 +282,47 @@ import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 bindLogoutButton();
 const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = profile.nome || profile.email || describeProfile(profile);
+
+const mobileProfileButton = document.querySelector(".dashboard-mobile-topbar-actions button[aria-label='Perfil']");
+if (mobileProfileButton) {
+  const initials = String(profile.nome || profile.email || "U")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  mobileProfileButton.textContent = initials || "U";
+}
+
+const mobileMoreButton = document.getElementById("dashboard-mobile-more");
+const mobileDrawerBackdrop = document.getElementById("dashboard-mobile-drawer-backdrop");
+const mobileDrawerClose = document.getElementById("dashboard-mobile-drawer-close");
+
+function toggleMobileDrawer(open) {
+  if (!mobileDrawerBackdrop || !mobileMoreButton) {
+    return;
+  }
+
+  mobileDrawerBackdrop.hidden = !open;
+  document.body.classList.toggle("dashboard-mobile-drawer-open", open);
+  mobileMoreButton.setAttribute("aria-expanded", String(open));
+}
+
+mobileMoreButton?.addEventListener("click", () => {
+  toggleMobileDrawer(mobileDrawerBackdrop?.hidden !== false);
+});
+mobileDrawerClose?.addEventListener("click", () => toggleMobileDrawer(false));
+mobileDrawerBackdrop?.addEventListener("click", (event) => {
+  if (event.target === mobileDrawerBackdrop) {
+    toggleMobileDrawer(false);
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && mobileDrawerBackdrop?.hidden === false) {
+    toggleMobileDrawer(false);
+  }
+});
 
 const state = {
   estoque: [],
