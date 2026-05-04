@@ -1,5 +1,6 @@
 const NAV_ITEMS = [
   { href: "dashboard-saas.html", label: "Dashboard", icon: "D", matches: ["dashboard-saas.html", "dashboard.html", "index.html"] },
+  { href: "treinamento.html", label: "Treinamento", icon: "A", matches: ["treinamento.html"] },
   { href: "estoque.html", label: "Estoque", icon: "E", matches: ["estoque.html", "inventario.html"] },
   { href: "producao-etiquetas.html", label: "Producao", icon: "P", matches: ["producao-etiquetas.html", "producao.html", "reposicao-producao.html"] },
   { href: "compras.html", label: "Compras", icon: "C", matches: ["compras.html", "dashboard-compras.html", "alertas-reposicao.html", "analise-compras.html"] },

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<script src="premium-shell.js" defer></script>
+<title>Treinamento | Carioca's Operacao</title>
+</head>
+<body>
+<main class="page training-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Aprendizado operacional</p>
+      <h1>Treinamento</h1>
+      <p id="user-info" class="muted"></p>
+    </div>
+
+    <div class="actions">
+      <a class="button secondary" href="dashboard-saas.html">Dashboard</a>
+      <a class="button secondary" href="demo.html">Demo</a>
+      <button id="logout-button" class="secondary" type="button">Sair</button>
+    </div>
+  </header>
+
+  <section class="training-hero panel">
+    <div>
+      <span class="training-pill">Para equipe, gerente e novos clientes SaaS</span>
+      <h2>Aprenda o sistema em passos curtos, simples e focados na operacao.</h2>
+      <p class="muted">Use esta area para treinar funcionarios, padronizar a rotina e apresentar o sistema para novas lojas sem depender de suporte o tempo todo.</p>
+      <div class="training-hero-actions">
+        <a class="button" href="#primeiros-passos">Comecar treinamento</a>
+        <button id="open-tour-button" class="secondary" type="button">Ver tour do sistema</button>
+      </div>
+    </div>
+
+    <article class="training-progress-card">
+      <span>Treinamento basico</span>
+      <strong id="training-progress-percent">0%</strong>
+      <div class="training-progress-track">
+        <span id="training-progress-fill"></span>
+      </div>
+      <p id="training-progress-summary" class="muted">Calculando aulas...</p>
+      <small id="training-last-lesson">Ultima aula: nenhuma ainda</small>
+    </article>
+  </section>
+
+  <section class="training-grid training-start-grid">
+    <article class="panel training-start-card">
+      <p class="eyebrow">Comece por aqui</p>
+      <h3>O que e o sistema?</h3>
+      <p class="muted">E uma central operacional para controlar insumos, compras, producao, etiquetas, desperdicio, fornecedores e relatorios em uma rotina simples.</p>
+    </article>
+    <article class="panel training-start-card">
+      <p class="eyebrow">Para que serve?</p>
+      <h3>Menos erro na correria</h3>
+      <p class="muted">Ajuda a saber o que tem em estoque, o que precisa comprar, o que esta vencendo e quanto cada item custa na operacao.</p>
+    </article>
+    <article class="panel training-start-card">
+      <p class="eyebrow">Ordem ideal</p>
+      <h3>Fornecedor, insumo, entrada, saida</h3>
+      <p class="muted">Cadastre fornecedores, depois insumos, configure minimo, registre entradas/saidas, gere etiquetas e acompanhe o dashboard.</p>
+    </article>
+  </section>
+
+  <section id="primeiros-passos" class="panel">
+    <div class="training-section-head">
+      <div>
+        <p class="eyebrow">Primeiros passos</p>
+        <h2>Sequencia recomendada para operar certo</h2>
+      </div>
+      <span class="training-pill">8 passos essenciais</span>
+    </div>
+    <div id="first-steps-grid" class="training-step-grid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="training-section-head">
+      <div>
+        <p class="eyebrow">Videos rapidos</p>
+        <h2>Aulas curtas para aprender na pratica</h2>
+      </div>
+      <div class="training-filter-row">
+        <button class="secondary active" type="button" data-video-filter="todos">Todos</button>
+        <button class="secondary" type="button" data-video-filter="basico">Basico</button>
+        <button class="secondary" type="button" data-video-filter="intermediario">Intermediario</button>
+        <button class="secondary" type="button" data-video-filter="avancado">Avancado</button>
+      </div>
+    </div>
+    <div id="training-video-grid" class="training-video-grid"></div>
+  </section>
+
+  <section class="training-two-column">
+    <article class="panel">
+      <div class="training-section-head">
+        <div>
+          <p class="eyebrow">Passo a passo guiado</p>
+          <h2>Como cadastrar um novo insumo</h2>
+        </div>
+        <span class="training-pill">Checklist</span>
+      </div>
+      <div id="guided-checklist" class="training-checklist"></div>
+    </article>
+
+    <article class="panel">
+      <div class="training-section-head">
+        <div>
+          <p class="eyebrow">Central de duvidas</p>
+          <h2>Perguntas frequentes</h2>
+        </div>
+      </div>
+      <div id="training-faq-list" class="training-faq-list"></div>
+    </article>
+  </section>
+
+  <section class="panel training-ai-panel">
+    <div class="training-section-head">
+      <div>
+        <p class="eyebrow">Assistente IA interno</p>
+        <h2>Assistente IA de Treinamento</h2>
+        <p class="muted">Simulacao no front-end. Futuramente pode usar IA real para responder pela base de conhecimento do sistema.</p>
+      </div>
+      <span class="training-pill">Simulado</span>
+    </div>
+
+    <div class="training-ai-layout">
+      <div>
+        <div class="field-group">
+          <label for="training-question">Digite sua duvida</label>
+          <textarea id="training-question" placeholder="Ex.: Como faco entrada de estoque?"></textarea>
+        </div>
+        <button id="ask-training-ai" type="button">Perguntar</button>
+      </div>
+
+      <div class="training-ai-answer">
+        <span>Resposta</span>
+        <p id="training-ai-response">Escolha uma sugestao ou digite uma duvida para receber uma orientacao simples.</p>
+      </div>
+    </div>
+
+    <div id="training-suggestion-row" class="training-suggestion-row"></div>
+  </section>
+
+  <section class="panel">
+    <div class="training-section-head">
+      <div>
+        <p class="eyebrow">Treinamento por perfil</p>
+        <h2>O que cada funcao precisa aprender</h2>
+      </div>
+    </div>
+    <div id="training-profile-grid" class="training-profile-grid"></div>
+  </section>
+
+  <section class="training-two-column">
+    <article class="panel">
+      <div class="training-section-head">
+        <div>
+          <p class="eyebrow">Progresso</p>
+          <h2>Acompanhamento visual</h2>
+        </div>
+      </div>
+      <div class="training-progress-summary-grid">
+        <div><span>Aulas concluidas</span><strong id="completed-lessons">0</strong></div>
+        <div><span>Aulas pendentes</span><strong id="pending-lessons">0</strong></div>
+        <div><span>Percentual</span><strong id="progress-lessons">0%</strong></div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="training-section-head">
+        <div>
+          <p class="eyebrow">Modo apresentacao</p>
+          <h2>Tour para novos clientes</h2>
+        </div>
+        <button id="tour-inline-button" class="secondary" type="button">Ver tour do sistema</button>
+      </div>
+      <div id="training-tour-list" class="training-tour-list"></div>
+    </article>
+  </section>
+</main>
+
+<div id="training-tour-modal" class="training-tour-modal" hidden>
+  <div class="training-tour-dialog">
+    <div class="summary-line">
+      <div>
+        <p class="eyebrow">Tour do sistema</p>
+        <h2 id="tour-title">Dashboard</h2>
+      </div>
+      <button id="close-tour-button" class="secondary" type="button">Fechar</button>
+    </div>
+    <p id="tour-description" class="muted"></p>
+    <div class="training-progress-track">
+      <span id="tour-progress-fill"></span>
+    </div>
+    <div class="training-tour-actions">
+      <button id="prev-tour-button" class="secondary" type="button">Anterior</button>
+      <button id="next-tour-button" type="button">Proximo</button>
+    </div>
+  </div>
+</div>
+
+<div id="training-toast" class="training-toast" hidden></div>
+
+<script type="module">
+import {
+  bindLogoutButton,
+  describeProfile,
+  escapeHtml,
+  requireAuth
+} from "./app.js";
+
+const { profile } = await requireAuth();
+document.getElementById("user-info").textContent = describeProfile(profile);
+bindLogoutButton();
+
+const TRAINING_STORAGE_KEY = "cariocas-training-progress";
+
+const firstSteps = [
+  { title: "Cadastrar fornecedores", text: "Registre nome, WhatsApp, dias de compra e dias de entrega." },
+  { title: "Cadastrar insumos", text: "Crie os itens usados na hamburgueria: paes, carnes, molhos, embalagens e bebidas." },
+  { title: "Configurar estoque minimo", text: "Defina o ponto de alerta para evitar ruptura na operacao." },
+  { title: "Fazer entrada de estoque", text: "Registre compras por caixa, pacote, fardo ou unidade." },
+  { title: "Fazer saida de estoque", text: "Baixe itens usados na producao ou na rotina da loja." },
+  { title: "Gerar etiqueta", text: "Imprima validade, lote, responsavel e armazenamento." },
+  { title: "Criar ficha tecnica", text: "Vincule insumos ao cardapio para calcular custo e CMV." },
+  { title: "Acompanhar dashboard", text: "Veja alertas, itens criticos, custo e sugestoes de compra." }
+];
+
+const lessons = [
+  { id: "insumo", titulo: "Como cadastrar um insumo", descricao: "Aprenda o cadastro basico com categoria, fornecedor, unidade e custo.", modulo: "Estoque", duracao: "4 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Funcionario", ordem: 1 },
+  { id: "entrada", titulo: "Como dar entrada no estoque", descricao: "Registre compras por caixa, pacote, fardo ou unidade sem errar custo.", modulo: "Estoque", duracao: "3 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Funcionario", ordem: 2 },
+  { id: "saida", titulo: "Como registrar saida de estoque", descricao: "Baixe insumos usados na producao e mantenha o saldo atualizado.", modulo: "Estoque", duracao: "3 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Producao", ordem: 3 },
+  { id: "minimo", titulo: "Como configurar estoque minimo", descricao: "Entenda quando o sistema deve avisar que precisa comprar.", modulo: "Estoque", duracao: "5 min", nivel: "intermediario", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Gerente", ordem: 4 },
+  { id: "etiqueta", titulo: "Como gerar etiqueta de validade", descricao: "Use lote, validade, responsavel e armazenamento para padronizar a loja.", modulo: "Etiquetas", duracao: "4 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Producao", ordem: 5 },
+  { id: "fornecedor", titulo: "Como cadastrar fornecedor", descricao: "Configure contatos, entrega, dias de pedido e produtos fornecidos.", modulo: "Fornecedores", duracao: "4 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Compras", ordem: 6 },
+  { id: "ficha", titulo: "Como criar ficha tecnica", descricao: "Monte receitas, insumos e custo por item do cardapio.", modulo: "Ficha tecnica", duracao: "7 min", nivel: "intermediario", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Admin", ordem: 7 },
+  { id: "cmv", titulo: "Como entender o CMV", descricao: "Veja como custo, venda e margem conversam na operacao.", modulo: "Relatorios", duracao: "8 min", nivel: "avancado", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Admin", ordem: 8 },
+  { id: "dashboard", titulo: "Como usar o dashboard", descricao: "Leia indicadores, alertas e sugestoes de compra do dia.", modulo: "Dashboard", duracao: "5 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Gerente", ordem: 9 },
+  { id: "vencimento", titulo: "Como acompanhar produtos vencendo", descricao: "Saiba o que vence hoje, amanha e nos proximos dias.", modulo: "Validade", duracao: "4 min", nivel: "intermediario", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Producao", ordem: 10 }
+];
+
+const guidedChecklist = [
+  "Clique em Estoque",
+  "Clique em Novo Insumo",
+  "Preencha nome, categoria e fornecedor",
+  "Informe unidade de compra",
+  "Informe quantidade por embalagem",
+  "Informe custo total da compra",
+  "Confira o custo unitario automatico",
+  "Defina estoque minimo",
+  "Salve o produto"
+];
+
+const faqs = [
+  { question: "O que e estoque minimo?", answer: "E a quantidade limite para o sistema avisar que o item precisa de reposicao." },
+  { question: "O que e custo unitario?", answer: "E o custo de cada unidade depois de dividir o valor da compra pela quantidade da embalagem." },
+  { question: "Como calcular caixa com unidades?", answer: "Informe a unidade de compra como caixa, a quantidade por embalagem e o custo total. O sistema calcula o custo unitario." },
+  { question: "O que significa CMV?", answer: "CMV e o custo da mercadoria vendida. Ele mostra quanto os insumos pesam sobre as vendas." },
+  { question: "Quando gerar etiqueta?", answer: "Sempre que houver producao, abertura de embalagem, porcionamento ou item com validade controlada." },
+  { question: "Como saber o que comprar hoje?", answer: "Acesse Dashboard ou Compras e veja itens abaixo do minimo e sugestoes de reposicao." },
+  { question: "O que fazer com produto vencido?", answer: "Separe o produto, registre desperdicio com motivo vencido e nunca use na producao." }
+];
+
+const aiSuggestions = [
+  "Como cadastro um produto?",
+  "Como faco entrada de estoque?",
+  "Como gero uma etiqueta?",
+  "Como vejo o que precisa comprar?",
+  "Como calculo o CMV?",
+  "Como configuro fornecedor?"
+];
+
+const profileTraining = [
+  { title: "Admin", items: ["Configurar sistema", "Cadastrar usuarios", "Ver relatorios", "Acompanhar CMV"] },
+  { title: "Gerente", items: ["Acompanhar estoque", "Aprovar compras", "Ver alertas", "Conferir desperdicio"] },
+  { title: "Producao", items: ["Registrar producao", "Gerar etiqueta", "Conferir validade", "Dar baixa nos insumos"] },
+  { title: "Compras", items: ["Ver lista de reposicao", "Comparar fornecedores", "Registrar entrada", "Acompanhar precos"] },
+  { title: "Funcionario", items: ["Fazer entrada simples", "Fazer saida simples", "Consultar produto", "Seguir checklist"] }
+];
+
+const tourSteps = [
+  { title: "Dashboard", description: "Mostra saude do estoque, itens criticos, produtos vencendo, custo total, movimentacoes e alertas inteligentes." },
+  { title: "Estoque", description: "Central para cadastrar insumos, controlar minimo, entrada, saida, fornecedores, custo e validade." },
+  { title: "Compras", description: "Ajuda a decidir o que comprar, comparar fornecedores e montar pedido para WhatsApp." },
+  { title: "Producao", description: "Registra pre-preparo, porcionamento, rendimento, lote e baixa dos insumos utilizados." },
+  { title: "Etiquetas", description: "Gera etiqueta termica com validade, lote, responsavel, armazenamento e dados de rastreio." },
+  { title: "Ficha tecnica", description: "Liga insumos aos produtos do cardapio para calcular custo, margem e CMV." },
+  { title: "Relatorios", description: "Resume entradas, saidas, desperdicio, produtos vencendo, compras e sugestoes da IA." }
+];
+
+let completedLessons = readProgress();
+let currentVideoFilter = "todos";
+let currentTourIndex = 0;
+
+function readProgress() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(TRAINING_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveProgress() {
+  window.localStorage.setItem(TRAINING_STORAGE_KEY, JSON.stringify([...completedLessons]));
+}
+
+function showToast(message) {
+  const toast = document.getElementById("training-toast");
+  toast.textContent = message;
+  toast.hidden = false;
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 2800);
+}
+
+function renderFirstSteps() {
+  document.getElementById("first-steps-grid").innerHTML = firstSteps.map((step, index) => `
+    <article class="training-step-card">
+      <span>${String(index + 1).padStart(2, "0")}</span>
+      <h3>${escapeHtml(step.title)}</h3>
+      <p class="muted">${escapeHtml(step.text)}</p>
+    </article>
+  `).join("");
+}
+
+function renderVideos() {
+  const filteredLessons = lessons.filter((lesson) => currentVideoFilter === "todos" || lesson.nivel === currentVideoFilter);
+  document.getElementById("training-video-grid").innerHTML = filteredLessons.map((lesson) => {
+    const completed = completedLessons.has(lesson.id);
+    return `
+      <article class="training-video-card ${completed ? "completed" : ""}">
+        <div class="training-video-thumb">
+          <span>${lesson.videoUrl ? "Video" : "Placeholder"}</span>
+        </div>
+        <div class="training-video-body">
+          <div class="summary-line">
+            <span class="training-pill">${escapeHtml(lesson.modulo)}</span>
+            <span class="stock-badge stock-badge-${completed ? "healthy" : "low"}">${completed ? "Concluido" : "Pendente"}</span>
+          </div>
+          <h3>${escapeHtml(lesson.titulo)}</h3>
+          <p class="muted">${escapeHtml(lesson.descricao)}</p>
+          <div class="training-video-meta">
+            <span>${escapeHtml(lesson.duracao)}</span>
+            <span>${escapeHtml(lesson.nivel)}</span>
+            <span>${escapeHtml(lesson.perfilIndicado)}</span>
+          </div>
+          <button class="secondary" type="button" data-watch-lesson="${escapeHtml(lesson.id)}">${completed ? "Rever" : "Assistir"}</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderChecklist() {
+  document.getElementById("guided-checklist").innerHTML = guidedChecklist.map((item, index) => `
+    <label>
+      <input type="checkbox">
+      <span>${index + 1}. ${escapeHtml(item)}</span>
+    </label>
+  `).join("");
+}
+
+function renderFaq() {
+  document.getElementById("training-faq-list").innerHTML = faqs.map((faq) => `
+    <details>
+      <summary>${escapeHtml(faq.question)}</summary>
+      <p class="muted">${escapeHtml(faq.answer)}</p>
+    </details>
+  `).join("");
+}
+
+function renderSuggestions() {
+  document.getElementById("training-suggestion-row").innerHTML = aiSuggestions.map((suggestion) => `
+    <button class="secondary" type="button" data-ai-suggestion="${escapeHtml(suggestion)}">${escapeHtml(suggestion)}</button>
+  `).join("");
+}
+
+function answerTrainingQuestion(question) {
+  const normalized = question.toLowerCase();
+
+  if (normalized.includes("produto") || normalized.includes("insumo") || normalized.includes("cadastro")) {
+    return "Para cadastrar um produto, acesse Estoque > Novo Insumo, preencha os dados gerais, informe a unidade de compra, quantidade por embalagem e custo total. O sistema calculara automaticamente o custo unitario.";
+  }
+
+  if (normalized.includes("entrada")) {
+    return "Para dar entrada, va em Estoque, bipe ou selecione o insumo, escolha se entrou por caixa, pacote, fardo ou unidade, informe a quantidade e o custo total da compra.";
+  }
+
+  if (normalized.includes("etiqueta")) {
+    return "Para gerar etiqueta, abra o insumo ou a producao, confira data de producao, validade, responsavel, lote e local de armazenamento. Depois clique em imprimir etiqueta.";
+  }
+
+  if (normalized.includes("comprar") || normalized.includes("compra")) {
+    return "Para ver o que precisa comprar, acesse Dashboard ou Compras. O sistema destaca itens abaixo do minimo, produtos criticos e sugestoes de reposicao.";
+  }
+
+  if (normalized.includes("cmv")) {
+    return "CMV e o custo da mercadoria vendida. Ele mostra quanto os insumos custam em relacao ao preco de venda. Use ficha tecnica e relatorios para acompanhar.";
+  }
+
+  if (normalized.includes("fornecedor")) {
+    return "Para configurar fornecedor, acesse Fornecedores, cadastre nome, WhatsApp, dias de pedido, dias de entrega e vincule os produtos fornecidos.";
+  }
+
+  return "Comece pelo fluxo principal: cadastre fornecedor, cadastre insumo, configure minimo, registre entrada, registre saida e acompanhe o dashboard.";
+}
+
+function renderProfiles() {
+  document.getElementById("training-profile-grid").innerHTML = profileTraining.map((profileItem) => `
+    <article class="training-profile-card">
+      <h3>${escapeHtml(profileItem.title)}</h3>
+      <ul>
+        ${profileItem.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+    </article>
+  `).join("");
+}
+
+function renderTourList() {
+  document.getElementById("training-tour-list").innerHTML = tourSteps.map((step, index) => `
+    <button class="secondary" type="button" data-tour-index="${index}">
+      <strong>${escapeHtml(step.title)}</strong>
+      <span>${escapeHtml(step.description)}</span>
+    </button>
+  `).join("");
+}
+
+function updateProgress() {
+  const completed = lessons.filter((lesson) => completedLessons.has(lesson.id)).length;
+  const total = lessons.length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+  const lastLesson = [...completedLessons].at(-1);
+  const lastLessonTitle = lessons.find((lesson) => lesson.id === lastLesson)?.titulo || "nenhuma ainda";
+
+  document.getElementById("training-progress-percent").textContent = `${percent}%`;
+  document.getElementById("training-progress-fill").style.width = `${percent}%`;
+  document.getElementById("training-progress-summary").textContent = `${completed} aulas concluidas | ${total - completed} pendentes`;
+  document.getElementById("training-last-lesson").textContent = `Ultima aula: ${lastLessonTitle}`;
+  document.getElementById("completed-lessons").textContent = String(completed);
+  document.getElementById("pending-lessons").textContent = String(total - completed);
+  document.getElementById("progress-lessons").textContent = `${percent}%`;
+}
+
+function openTour(index = 0) {
+  currentTourIndex = Math.max(0, Math.min(index, tourSteps.length - 1));
+  const step = tourSteps[currentTourIndex];
+  document.getElementById("tour-title").textContent = step.title;
+  document.getElementById("tour-description").textContent = step.description;
+  document.getElementById("tour-progress-fill").style.width = `${((currentTourIndex + 1) / tourSteps.length) * 100}%`;
+  document.getElementById("prev-tour-button").disabled = currentTourIndex === 0;
+  document.getElementById("next-tour-button").textContent = currentTourIndex === tourSteps.length - 1 ? "Concluir tour" : "Proximo";
+  document.getElementById("training-tour-modal").hidden = false;
+}
+
+function closeTour() {
+  document.getElementById("training-tour-modal").hidden = true;
+}
+
+document.body.addEventListener("click", (event) => {
+  const watchButton = event.target.closest("[data-watch-lesson]");
+
+  if (watchButton) {
+    completedLessons.add(watchButton.dataset.watchLesson);
+    saveProgress();
+    renderVideos();
+    updateProgress();
+    showToast("Aula marcada como concluida nesta maquina.");
+    return;
+  }
+
+  const suggestionButton = event.target.closest("[data-ai-suggestion]");
+
+  if (suggestionButton) {
+    document.getElementById("training-question").value = suggestionButton.dataset.aiSuggestion;
+    document.getElementById("training-ai-response").textContent = answerTrainingQuestion(suggestionButton.dataset.aiSuggestion);
+    return;
+  }
+
+  const tourButton = event.target.closest("[data-tour-index]");
+
+  if (tourButton) {
+    openTour(Number(tourButton.dataset.tourIndex));
+  }
+});
+
+document.querySelectorAll("[data-video-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    currentVideoFilter = button.dataset.videoFilter;
+    document.querySelectorAll("[data-video-filter]").forEach((candidate) => {
+      candidate.classList.toggle("active", candidate === button);
+    });
+    renderVideos();
+  });
+});
+
+document.getElementById("ask-training-ai").addEventListener("click", () => {
+  const question = document.getElementById("training-question").value.trim();
+  document.getElementById("training-ai-response").textContent = answerTrainingQuestion(question);
+});
+
+document.getElementById("open-tour-button").addEventListener("click", () => openTour(0));
+document.getElementById("tour-inline-button").addEventListener("click", () => openTour(0));
+document.getElementById("close-tour-button").addEventListener("click", closeTour);
+document.getElementById("prev-tour-button").addEventListener("click", () => openTour(currentTourIndex - 1));
+document.getElementById("next-tour-button").addEventListener("click", () => {
+  if (currentTourIndex === tourSteps.length - 1) {
+    closeTour();
+    showToast("Tour concluido.");
+    return;
+  }
+
+  openTour(currentTourIndex + 1);
+});
+
+renderFirstSteps();
+renderVideos();
+renderChecklist();
+renderFaq();
+renderSuggestions();
+renderProfiles();
+renderTourList();
+updateProgress();
+</script>
+</body>
+</html>
