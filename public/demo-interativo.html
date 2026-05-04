@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<link rel="icon" href="favicon-32.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+<title>Demo Interativo | Carioca's Operacao</title>
+<style>
+  body {
+    background:
+      linear-gradient(90deg, rgba(2, 6, 23, 0.96), rgba(3, 7, 18, 0.9)),
+      radial-gradient(circle at 16% 10%, rgba(249, 115, 22, 0.16), transparent 30%),
+      radial-gradient(circle at 84% 20%, rgba(34, 197, 94, 0.11), transparent 28%),
+      #020617;
+  }
+
+  .demo-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .demo-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 22px;
+    border-right: 1px solid var(--line);
+    background: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(18px);
+  }
+
+  .demo-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+
+  .demo-logo-mark {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-soft));
+    font-weight: 900;
+  }
+
+  .demo-nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  .demo-nav button {
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+  }
+
+  .demo-nav button.active,
+  .demo-nav button:hover {
+    border-color: rgba(249, 115, 22, 0.26);
+    background: rgba(249, 115, 22, 0.12);
+    color: var(--text);
+  }
+
+  .demo-main {
+    padding: 22px;
+  }
+
+  .demo-topbar,
+  .demo-hero,
+  .demo-grid,
+  .demo-toolbar,
+  .demo-card-grid,
+  .demo-mobile-dock {
+    margin-bottom: 18px;
+  }
+
+  .demo-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .demo-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 32px;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid rgba(34, 197, 94, 0.24);
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+    font-size: 0.82rem;
+    font-weight: 900;
+  }
+
+  .demo-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .demo-hero .panel {
+    display: grid;
+    align-content: center;
+    gap: 12px;
+  }
+
+  .demo-hero h1 {
+    margin: 0;
+    max-width: 780px;
+    font-size: clamp(2rem, 4vw, 4rem);
+    line-height: 1;
+  }
+
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .demo-kpi {
+    display: grid;
+    gap: 8px;
+    min-height: 124px;
+  }
+
+  .demo-kpi strong {
+    font-size: 1.7rem;
+  }
+
+  .demo-toolbar {
+    display: grid;
+    gap: 12px;
+  }
+
+  .demo-category-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+  }
+
+  .demo-category-row button,
+  .demo-view-toggle button {
+    min-height: 38px;
+    padding: 0.65rem 0.9rem;
+    white-space: nowrap;
+  }
+
+  .demo-view-toggle {
+    display: inline-flex;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.46);
+  }
+
+  .demo-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .demo-product {
+    display: grid;
+    gap: 12px;
+  }
+
+  .demo-product-head {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .demo-product-img {
+    width: 56px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: rgba(249, 115, 22, 0.14);
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+
+  .demo-product h3 {
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .demo-product-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .demo-mini {
+    padding: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.42);
+  }
+
+  .demo-mini span,
+  .demo-product small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .demo-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .demo-actions button {
+    min-height: 38px;
+    padding: 0.58rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.82rem;
+  }
+
+  .demo-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.56);
+  }
+
+  .demo-table {
+    width: 100%;
+    min-width: 860px;
+    border-collapse: collapse;
+  }
+
+  .demo-table th,
+  .demo-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    text-align: left;
+  }
+
+  .demo-table th {
+    color: var(--muted);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+  }
+
+  .demo-drawer {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 10;
+    width: min(520px, 100%);
+    padding: 18px;
+    border-left: 1px solid var(--line);
+    background: rgba(2, 6, 23, 0.96);
+    box-shadow: -24px 0 80px rgba(0, 0, 0, 0.34);
+    transform: translateX(102%);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+  }
+
+  .demo-drawer.open {
+    transform: translateX(0);
+  }
+
+  .demo-toast {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 20;
+    max-width: 360px;
+    padding: 14px 16px;
+    border: 1px solid rgba(34, 197, 94, 0.24);
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.96);
+    color: var(--text);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .demo-mobile-dock {
+    display: none;
+  }
+
+  @media (max-width: 980px) {
+    .demo-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .demo-sidebar {
+      display: none;
+    }
+
+    .demo-main {
+      padding: 14px 14px 96px;
+    }
+
+    .demo-topbar,
+    .demo-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .demo-grid,
+    .demo-card-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .demo-product-head {
+      grid-template-columns: 52px minmax(0, 1fr);
+    }
+
+    .demo-product-head .stock-badge {
+      grid-column: 1 / -1;
+      width: fit-content;
+    }
+
+    .demo-actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .demo-mobile-dock {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 8;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(2, 6, 23, 0.92);
+      backdrop-filter: blur(18px);
+    }
+
+    .demo-mobile-dock button {
+      min-height: 42px;
+      padding: 0.5rem;
+      border-radius: 14px;
+      font-size: 0.78rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="demo-shell">
+  <aside class="demo-sidebar">
+    <div class="demo-logo">
+      <div class="demo-logo-mark">C</div>
+      <div>
+        <strong>Carioca's</strong>
+        <small class="muted">Operacao de Controle</small>
+      </div>
+    </div>
+
+    <nav class="demo-nav" aria-label="Navegacao demo">
+      <button class="active" type="button" data-section="dashboard">Dashboard</button>
+      <button type="button" data-section="estoque">Insumos</button>
+      <button type="button" data-section="producao">Producao</button>
+      <button type="button" data-section="compras">Compras</button>
+      <button type="button" data-section="etiquetas">Etiquetas</button>
+      <button type="button" data-section="whatsapp">WhatsApp & IA</button>
+    </nav>
+  </aside>
+
+  <main class="demo-main">
+    <header class="demo-topbar">
+      <div>
+        <span class="demo-badge">Modo demonstracao: dados ficticios</span>
+        <h1 id="demo-title">Copiloto Operacional Food Service</h1>
+        <p class="muted">Link seguro para apresentar o sistema sem alterar estoque, compras, usuarios ou dados reais.</p>
+      </div>
+
+      <div class="actions">
+        <button id="demo-open-drawer" type="button">Novo insumo demo</button>
+        <a class="button secondary" href="login.html">Ir para login real</a>
+      </div>
+    </header>
+
+    <section class="demo-hero">
+      <article class="panel">
+        <p class="eyebrow">SaaS premium para hamburguerias</p>
+        <h1>Controle estoque, producao, compras e etiquetas em uma operacao simples.</h1>
+        <p class="muted">A navegacao abaixo e interativa, mas funciona em ambiente isolado: nenhuma acao salva no banco real.</p>
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow">Resumo IA</p>
+        <h3>Seu estoque esta 82% saudavel</h3>
+        <p class="muted">Comprar pao brioche amanha, revisar cheddar por aumento de custo e imprimir etiquetas de molho da casa.</p>
+        <button class="secondary demo-action" type="button">Gerar relatorio demo</button>
+      </article>
+    </section>
+
+    <section class="demo-grid">
+      <article class="panel demo-kpi">
+        <span class="muted">Valor em estoque</span>
+        <strong>R$ 12.540,80</strong>
+        <small class="muted">Atualizado na demo</small>
+      </article>
+      <article class="panel demo-kpi">
+        <span class="muted">Itens criticos</span>
+        <strong>6</strong>
+        <small class="muted">Precisam de atencao</small>
+      </article>
+      <article class="panel demo-kpi">
+        <span class="muted">Produtos vencendo</span>
+        <strong>3</strong>
+        <small class="muted">Proximos 3 dias</small>
+      </article>
+      <article class="panel demo-kpi">
+        <span class="muted">Etiquetas emitidas</span>
+        <strong>25</strong>
+        <small class="muted">Hoje</small>
+      </article>
+    </section>
+
+    <section class="panel demo-toolbar">
+      <div class="summary-line">
+        <div>
+          <p class="eyebrow">Cadastro de Insumos</p>
+          <h3>Visualizacao para apresentacao</h3>
+        </div>
+        <div class="demo-view-toggle">
+          <button id="view-cards" class="secondary active" type="button">Cards</button>
+          <button id="view-table" class="secondary" type="button">Tabela</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field-group">
+          <label for="demo-search">Busca rapida</label>
+          <input id="demo-search" type="search" placeholder="Buscar insumo, categoria ou fornecedor">
+        </div>
+        <div class="field-group">
+          <label for="demo-barcode">Entrada por codigo de barras</label>
+          <input id="demo-barcode" inputmode="numeric" placeholder="Bipe 789..." autocomplete="off">
+        </div>
+      </div>
+
+      <div id="category-row" class="demo-category-row"></div>
+    </section>
+
+    <section id="demo-products"></section>
+  </main>
+</div>
+
+<aside id="demo-drawer" class="demo-drawer" aria-label="Drawer demo">
+  <div class="summary-line">
+    <div>
+      <p class="eyebrow">Cadastro simulado</p>
+      <h2>Novo insumo</h2>
+    </div>
+    <button id="demo-close-drawer" class="secondary" type="button">Fechar</button>
+  </div>
+
+  <div class="product-drawer-tabs" style="margin-top: 14px;">
+    <button class="secondary active" type="button">Dados Gerais</button>
+    <button class="secondary" type="button">Estoque</button>
+    <button class="secondary" type="button">Validade</button>
+    <button class="secondary" type="button">Etiqueta</button>
+  </div>
+
+  <form class="product-create-shell" id="demo-form">
+    <div class="form-grid">
+      <div class="field-group">
+        <label>Nome</label>
+        <input value="Molho especial demo">
+      </div>
+      <div class="field-group">
+        <label>Categoria</label>
+        <select>
+          <option>Molhos</option>
+          <option>Carnes</option>
+          <option>Paes</option>
+          <option>Embalagens</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Unidade de compra</label>
+        <select>
+          <option>Caixa</option>
+          <option>Pacote</option>
+          <option>Fardo</option>
+          <option>Unidade</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Quantidade por embalagem</label>
+        <input type="number" value="144">
+      </div>
+      <div class="field-group">
+        <label>Custo total</label>
+        <input type="number" value="120">
+      </div>
+      <div class="field-group">
+        <label>Custo unitario calculado</label>
+        <input value="R$ 0,83" readonly>
+      </div>
+      <div class="field-group">
+        <label>Validade apos aberto</label>
+        <input value="3 dias refrigerado">
+      </div>
+      <div class="field-group">
+        <label>Local</label>
+        <input value="Geladeira 1">
+      </div>
+    </div>
+    <button type="submit">Simular cadastro</button>
+  </form>
+</aside>
+
+<nav class="demo-mobile-dock" aria-label="Navegacao mobile demo">
+  <button class="secondary active" type="button" data-section="dashboard">Inicio</button>
+  <button class="secondary" type="button" data-section="estoque">Insumos</button>
+  <button class="secondary" type="button" data-section="compras">Compras</button>
+  <button class="secondary" type="button" data-section="whatsapp">IA</button>
+</nav>
+
+<div id="demo-toast" class="demo-toast" hidden></div>
+
+<script>
+const categories = ["Todos", "Carnes", "Paes", "Queijos", "Molhos", "Hortifruti", "Embalagens", "Producao propria"];
+const products = [
+  { icon: "BR", name: "Pao brioche", sku: "PAO-BRI-96", category: "Paes", supplier: "Pao & Sabor", stock: "14 CX", min: "8 CX", cost: "R$ 0,74", status: "OK", badge: "healthy" },
+  { icon: "CH", name: "Cheddar fatiado", sku: "QUE-CHED-001", category: "Queijos", supplier: "Laticinios Rio", stock: "4 CX", min: "6 CX", cost: "R$ 0,92", status: "Comprar hoje", badge: "urgent" },
+  { icon: "MO", name: "Molho da casa", sku: "MOL-CASA-001", category: "Molhos", supplier: "Producao propria", stock: "5 kg", min: "3 kg", cost: "R$ 4,80", status: "Etiquetar", badge: "low" },
+  { icon: "CA", name: "Blend bovino 160g", sku: "CAR-BLD-160", category: "Carnes", supplier: "Frigorifico Max", stock: "220 un", min: "120 un", cost: "R$ 3,95", status: "OK", badge: "healthy" },
+  { icon: "EM", name: "Embalagem burger", sku: "EMB-BUR-100", category: "Embalagens", supplier: "Pack Food", stock: "2 FD", min: "4 FD", cost: "R$ 0,38", status: "Estoque baixo", badge: "low" },
+  { icon: "CE", name: "Cebola caramelizada", sku: "PRO-CEB-001", category: "Producao propria", supplier: "Cozinha", stock: "3 kg", min: "2 kg", cost: "R$ 6,10", status: "Vence amanha", badge: "urgent" }
+];
+
+let currentCategory = "Todos";
+let currentView = "cards";
+
+const categoryRow = document.getElementById("category-row");
+const productsContainer = document.getElementById("demo-products");
+const searchInput = document.getElementById("demo-search");
+const barcodeInput = document.getElementById("demo-barcode");
+const drawer = document.getElementById("demo-drawer");
+const toast = document.getElementById("demo-toast");
+const viewCards = document.getElementById("view-cards");
+const viewTable = document.getElementById("view-table");
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.hidden = false;
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 3200);
+}
+
+function filteredProducts() {
+  const term = searchInput.value.trim().toLowerCase();
+  return products.filter((product) => {
+    const matchesCategory = currentCategory === "Todos" || product.category === currentCategory;
+    const matchesSearch = !term || [product.name, product.sku, product.category, product.supplier].join(" ").toLowerCase().includes(term);
+    return matchesCategory && matchesSearch;
+  });
+}
+
+function renderCategories() {
+  categoryRow.innerHTML = categories.map((category) => `
+    <button class="secondary ${category === currentCategory ? "active" : ""}" type="button" data-category="${category}">
+      ${category}
+    </button>
+  `).join("");
+}
+
+function renderCards(items) {
+  productsContainer.className = "demo-card-grid";
+  productsContainer.innerHTML = items.map((product) => `
+    <article class="panel demo-product">
+      <div class="demo-product-head">
+        <div class="demo-product-img">${product.icon}</div>
+        <div>
+          <h3>${product.name}</h3>
+          <small>${product.category} | SKU ${product.sku}</small>
+        </div>
+        <span class="stock-badge stock-badge-${product.badge}">${product.status}</span>
+      </div>
+      <div class="demo-product-meta">
+        <div class="demo-mini"><span>Fornecedor</span><strong>${product.supplier}</strong></div>
+        <div class="demo-mini"><span>Estoque</span><strong>${product.stock}</strong></div>
+        <div class="demo-mini"><span>Minimo</span><strong>${product.min}</strong></div>
+        <div class="demo-mini"><span>Custo unitario</span><strong>${product.cost}</strong></div>
+      </div>
+      <div class="demo-actions">
+        <button class="secondary demo-action" type="button">Entrada</button>
+        <button class="secondary demo-action" type="button">Saida</button>
+        <button class="secondary demo-action" type="button">Etiqueta</button>
+        <button class="secondary demo-action" type="button">Historico</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderTable(items) {
+  productsContainer.className = "";
+  productsContainer.innerHTML = `
+    <div class="demo-table-wrap">
+      <table class="demo-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Fornecedor</th>
+            <th>Estoque</th>
+            <th>Minimo</th>
+            <th>Custo</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((product) => `
+            <tr>
+              <td><strong>${product.name}</strong></td>
+              <td>${product.sku}</td>
+              <td>${product.category}</td>
+              <td>${product.supplier}</td>
+              <td>${product.stock}</td>
+              <td>${product.min}</td>
+              <td>${product.cost}</td>
+              <td><span class="stock-badge stock-badge-${product.badge}">${product.status}</span></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderProducts() {
+  const items = filteredProducts();
+  if (!items.length) {
+    productsContainer.className = "";
+    productsContainer.innerHTML = '<div class="empty-state">Nenhum insumo encontrado nesta demonstracao.</div>';
+    return;
+  }
+
+  if (currentView === "table") {
+    renderTable(items);
+    return;
+  }
+
+  renderCards(items);
+}
+
+function setView(view) {
+  currentView = view;
+  viewCards.classList.toggle("active", view === "cards");
+  viewTable.classList.toggle("active", view === "table");
+  renderProducts();
+}
+
+categoryRow.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-category]");
+  if (!button) return;
+  currentCategory = button.dataset.category;
+  renderCategories();
+  renderProducts();
+});
+
+document.body.addEventListener("click", (event) => {
+  if (event.target.closest(".demo-action")) {
+    showToast("Acao simulada. Nenhum dado real foi alterado.");
+  }
+
+  const sectionButton = event.target.closest("button[data-section]");
+  if (sectionButton) {
+    document.querySelectorAll("button[data-section]").forEach((button) => button.classList.toggle("active", button === sectionButton));
+    document.getElementById("demo-title").textContent = sectionButton.textContent.trim();
+    showToast(`Modulo ${sectionButton.textContent.trim()} aberto em modo demonstracao.`);
+  }
+});
+
+searchInput.addEventListener("input", renderProducts);
+barcodeInput.addEventListener("input", () => {
+  const code = barcodeInput.value.replace(/\D/g, "");
+  barcodeInput.value = code;
+  if (code.length >= 8) {
+    showToast("Codigo lido na demo. Produto sugerido: Pao brioche.");
+  }
+});
+viewCards.addEventListener("click", () => setView("cards"));
+viewTable.addEventListener("click", () => setView("table"));
+document.getElementById("demo-open-drawer").addEventListener("click", () => drawer.classList.add("open"));
+document.getElementById("demo-close-drawer").addEventListener("click", () => drawer.classList.remove("open"));
+document.getElementById("demo-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  showToast("Cadastro simulado com sucesso. Banco real protegido.");
+  drawer.classList.remove("open");
+});
+
+renderCategories();
+renderProducts();
+</script>
+</body>
+</html>
