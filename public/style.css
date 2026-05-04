@@ -956,6 +956,40 @@ h3 {
   padding-bottom: 2px;
 }
 
+.stock-category-manager {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.22);
+}
+
+.stock-category-manager .field-group {
+  margin: 0;
+}
+
+.stock-category-manager button {
+  min-height: 46px;
+  padding-inline: 0.9rem;
+}
+
+.stock-category-status {
+  grid-column: 1 / -1;
+  min-height: 18px;
+  font-size: 0.84rem;
+}
+
+.stock-category-status.success {
+  color: #86efac;
+}
+
+.stock-category-status.error {
+  color: #fca5a5;
+}
+
 .stock-category-filters button,
 .stock-view-toggle button,
 .product-drawer-tabs button {
@@ -3401,6 +3435,10 @@ pre {
 
   .stock-view-actions {
     display: grid;
+  }
+
+  .stock-category-manager {
+    grid-template-columns: 1fr;
   }
 
   .stock-view-toggle {

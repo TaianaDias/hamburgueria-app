@@ -83,6 +83,23 @@
 
     <div id="stock-category-filters" class="stock-category-filters" aria-label="Filtros de categoria"></div>
 
+    <div class="stock-category-manager">
+      <div class="field-group">
+        <label for="stock-new-category">Nova categoria</label>
+        <input id="stock-new-category" placeholder="Ex.: Temperos, Sobremesas, Bar">
+      </div>
+
+      <button id="stock-add-category" type="button">Cadastrar categoria</button>
+
+      <div class="field-group">
+        <label for="stock-delete-category">Excluir categoria existente</label>
+        <select id="stock-delete-category"></select>
+      </div>
+
+      <button id="stock-delete-category-button" class="secondary" type="button">Excluir categoria</button>
+      <span id="stock-category-status" class="stock-category-status muted"></span>
+    </div>
+
     <div class="stock-view-actions">
       <button id="open-product-drawer" type="button">Novo Produto</button>
       <div class="stock-view-toggle" aria-label="Alternar visualizacao">
@@ -262,6 +279,11 @@
         <div class="field-group">
           <label for="novo_unidade_medida">Unidade de uso</label>
           <input id="novo_unidade_medida" placeholder="un, kg, L, g, ml" value="un">
+        </div>
+
+        <div class="field-group">
+          <label for="novo_tipo_categoria">Tipo de categoria</label>
+          <select id="novo_tipo_categoria"></select>
         </div>
 
         <div class="field-group">
@@ -638,6 +660,11 @@ const productCreateDetails = document.getElementById("product-create-details");
 const openProductDrawerButton = document.getElementById("open-product-drawer");
 const stockTopSearchInput = document.getElementById("stock-top-search");
 const stockCategoryFilters = document.getElementById("stock-category-filters");
+const stockNewCategoryInput = document.getElementById("stock-new-category");
+const stockAddCategoryButton = document.getElementById("stock-add-category");
+const stockDeleteCategorySelect = document.getElementById("stock-delete-category");
+const stockDeleteCategoryButton = document.getElementById("stock-delete-category-button");
+const stockCategoryStatus = document.getElementById("stock-category-status");
 const stockViewCardsButton = document.getElementById("stock-view-cards");
 const stockViewTableButton = document.getElementById("stock-view-table");
 const stockKpiValue = document.getElementById("stock-kpi-value");
@@ -651,6 +678,8 @@ const nameInput = document.getElementById("novo_nome");
 const internalCodeInput = document.getElementById("novo_codigo_interno");
 const brandInput = document.getElementById("novo_marca");
 const categoryInput = document.getElementById("novo_categoria");
+const categoryTypeInput = document.getElementById("novo_tipo_categoria");
+const categoryDatalist = document.getElementById("product-categories");
 const imageInput = document.getElementById("novo_imagem_url");
 const purchaseUnitInput = document.getElementById("novo_unidade_compra");
 const storageLocationInput = document.getElementById("novo_local_armazenamento");
@@ -747,8 +776,12 @@ let quickBoxState = {
 };
 let activeStockCategory = "Todos";
 let stockViewMode = "cards";
+let stockCategories = [];
+let customStockCategoryDocs = [];
+let hiddenStockCategoryDocs = [];
+let hiddenStockCategoryKeys = new Set();
 
-const STOCK_CATEGORIES = [
+const DEFAULT_STOCK_CATEGORIES = [
   "Todos",
   "Carnes",
   "Paes",
@@ -761,6 +794,8 @@ const STOCK_CATEGORIES = [
   "Congelados",
   "Producao propria"
 ];
+const STOCK_CATEGORY_STORAGE_KEY = "cariocas-stock-custom-categories";
+const STOCK_CATEGORY_HIDDEN_STORAGE_KEY = "cariocas-stock-hidden-categories";
 
 const STOCK_CATEGORY_ALIASES = {
   carnes: ["carne", "carnes", "proteina", "proteinas", "blend", "bovino", "frango"],
@@ -1427,6 +1462,7 @@ function applyBarcodeLookupProduct(product, options = {}) {
   barcodeInput.value = normalizeBarcode(product?.barcode);
   brandInput.value = normalizeLookupField(product?.marca);
   categoryInput.value = normalizeLookupField(product?.categoria);
+  syncCategoryTypeFromCategoryInput();
   unitMeasureInput.value = String(product?.unidadeMedida || unitMeasureInput.value || "un").trim() || "un";
   syncUnitMeasureFields();
 
@@ -1457,6 +1493,7 @@ function resetCreateProductForm() {
   internalCodeInput.value = "";
   brandInput.value = "";
   categoryInput.value = "";
+  categoryTypeInput.value = "";
   imageInput.value = "";
   purchaseUnitInput.value = "caixa";
   storageLocationInput.value = "";
@@ -1743,6 +1780,253 @@ function normalizeStockCategoryLabel(value) {
   return normalizeText(value || "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function normalizeCategoryDisplayName(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function readLocalCategoryList(key) {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed.map(normalizeCategoryDisplayName).filter(Boolean) : [];
+  } catch (error) {
+    console.warn("Nao foi possivel ler categorias locais.", error);
+    return [];
+  }
+}
+
+function saveLocalCategoryList(key, categories) {
+  window.localStorage.setItem(key, JSON.stringify([...new Set(categories.map(normalizeCategoryDisplayName).filter(Boolean))]));
+}
+
+function mergeStockCategories(...categoryGroups) {
+  const used = new Set();
+  const merged = [];
+
+  categoryGroups.flat().forEach((category) => {
+    const displayName = normalizeCategoryDisplayName(category);
+    const categoryKey = normalizeStockCategoryLabel(displayName);
+
+    if (!displayName || used.has(categoryKey)) {
+      return;
+    }
+
+    if (categoryKey !== "todos" && hiddenStockCategoryKeys.has(categoryKey)) {
+      return;
+    }
+
+    used.add(categoryKey);
+    merged.push(displayName);
+  });
+
+  return merged.includes("Todos") ? merged : ["Todos", ...merged];
+}
+
+function setStockCategoryStatus(message = "", type = "info") {
+  if (!stockCategoryStatus) {
+    return;
+  }
+
+  stockCategoryStatus.textContent = message;
+  stockCategoryStatus.className = `stock-category-status muted ${type}`;
+}
+
+function syncManagedCategoryInputs() {
+  const categoryOptions = stockCategories.filter((category) => category !== "Todos");
+
+  if (categoryDatalist) {
+    categoryDatalist.innerHTML = categoryOptions
+      .map((category) => `<option value="${escapeHtml(category)}"></option>`)
+      .join("");
+  }
+
+  if (categoryTypeInput) {
+    const selectedValue = categoryTypeInput.value || categoryInput.value;
+    categoryTypeInput.innerHTML = [
+      '<option value="">Selecione a categoria</option>',
+      ...categoryOptions.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+    ].join("");
+    categoryTypeInput.value = categoryOptions.find((category) => normalizeStockCategoryLabel(category) === normalizeStockCategoryLabel(selectedValue)) || "";
+  }
+
+  if (stockDeleteCategorySelect) {
+    stockDeleteCategorySelect.innerHTML = [
+      '<option value="">Selecione para excluir</option>',
+      ...categoryOptions.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+    ].join("");
+  }
+}
+
+async function loadStockCategories() {
+  const localCustomCategories = readLocalCategoryList(STOCK_CATEGORY_STORAGE_KEY);
+  const localHiddenCategories = readLocalCategoryList(STOCK_CATEGORY_HIDDEN_STORAGE_KEY);
+  hiddenStockCategoryKeys = new Set(localHiddenCategories.map(normalizeStockCategoryLabel));
+  customStockCategoryDocs = [];
+  hiddenStockCategoryDocs = [];
+
+  try {
+    const customSnapshot = await getDocs(collection(db, "categoriasInsumos"));
+    customStockCategoryDocs = customSnapshot.docs.map((categoryDocument) => ({
+      id: categoryDocument.id,
+      nome: normalizeCategoryDisplayName(categoryDocument.data().nome)
+    })).filter((category) => category.nome);
+
+    const hiddenSnapshot = await getDocs(collection(db, "categoriasInsumosRemovidas"));
+    hiddenStockCategoryDocs = hiddenSnapshot.docs.map((categoryDocument) => ({
+      id: categoryDocument.id,
+      nome: normalizeCategoryDisplayName(categoryDocument.data().nome),
+      nomeNormalizado: normalizeStockCategoryLabel(categoryDocument.data().nomeNormalizado || categoryDocument.data().nome)
+    })).filter((category) => category.nomeNormalizado);
+
+    hiddenStockCategoryDocs.forEach((category) => hiddenStockCategoryKeys.add(category.nomeNormalizado));
+  } catch (error) {
+    console.warn("Categorias remotas indisponiveis. Usando categorias locais.", error);
+  }
+
+  stockCategories = mergeStockCategories(
+    DEFAULT_STOCK_CATEGORIES,
+    localCustomCategories,
+    customStockCategoryDocs.map((category) => category.nome)
+  );
+
+  if (!stockCategories.includes(activeStockCategory)) {
+    activeStockCategory = "Todos";
+  }
+
+  renderStockCategoryFilters();
+  syncManagedCategoryInputs();
+}
+
+async function addStockCategory() {
+  const categoryName = normalizeCategoryDisplayName(stockNewCategoryInput.value);
+  const categoryKey = normalizeStockCategoryLabel(categoryName);
+
+  setStockCategoryStatus("", "info");
+
+  if (!categoryName) {
+    setStockCategoryStatus("Informe o nome da categoria.", "error");
+    stockNewCategoryInput.focus();
+    return;
+  }
+
+  if (categoryKey === "todos") {
+    setStockCategoryStatus("Todos e uma categoria fixa do painel.", "error");
+    return;
+  }
+
+  const alreadyExists = stockCategories.some((category) => normalizeStockCategoryLabel(category) === categoryKey);
+
+  if (alreadyExists) {
+    setStockCategoryStatus("Essa categoria ja existe.", "error");
+    return;
+  }
+
+  stockAddCategoryButton.disabled = true;
+
+  try {
+    hiddenStockCategoryKeys.delete(categoryKey);
+    saveLocalCategoryList(
+      STOCK_CATEGORY_HIDDEN_STORAGE_KEY,
+      [...hiddenStockCategoryKeys].filter((key) => key !== categoryKey)
+    );
+
+    const hiddenDocsToRemove = hiddenStockCategoryDocs
+      .filter((category) => category.nomeNormalizado === categoryKey);
+
+    await Promise.all(hiddenDocsToRemove.map((category) => (
+      deleteDoc(doc(db, "categoriasInsumosRemovidas", category.id)).catch((error) => {
+        console.warn("Nao foi possivel restaurar categoria remota.", error);
+      })
+    )));
+
+    const localCategories = readLocalCategoryList(STOCK_CATEGORY_STORAGE_KEY);
+    saveLocalCategoryList(STOCK_CATEGORY_STORAGE_KEY, [...localCategories, categoryName]);
+
+    await addDoc(collection(db, "categoriasInsumos"), {
+      nome: categoryName,
+      nomeNormalizado: categoryKey,
+      origem: "estoque",
+      responsavel: profile.email,
+      criadoEm: serverTimestamp()
+    }).catch((error) => {
+      console.warn("Categoria salva apenas localmente.", error);
+    });
+
+    stockNewCategoryInput.value = "";
+    await loadStockCategories();
+    activeStockCategory = categoryName;
+    renderStockCategoryFilters();
+    applyProductsView();
+    setStockCategoryStatus(`Categoria ${categoryName} cadastrada.`, "success");
+  } finally {
+    stockAddCategoryButton.disabled = false;
+  }
+}
+
+async function deleteStockCategoryByName(categoryName) {
+  const categoryKey = normalizeStockCategoryLabel(categoryName);
+
+  if (!categoryKey || categoryKey === "todos") {
+    setStockCategoryStatus("Selecione uma categoria valida para excluir.", "error");
+    return;
+  }
+
+  const hasProducts = produtos.some((item) => normalizeStockCategoryLabel(item.categoria || item.tipoCategoria) === categoryKey);
+
+  if (hasProducts && !window.confirm(`Existem insumos vinculados a ${categoryName}. Deseja remover a categoria dos filtros mesmo assim?`)) {
+    return;
+  }
+
+  stockDeleteCategoryButton.disabled = true;
+
+  try {
+    const localCategories = readLocalCategoryList(STOCK_CATEGORY_STORAGE_KEY)
+      .filter((category) => normalizeStockCategoryLabel(category) !== categoryKey);
+    saveLocalCategoryList(STOCK_CATEGORY_STORAGE_KEY, localCategories);
+
+    const remoteCategory = customStockCategoryDocs.find((category) => normalizeStockCategoryLabel(category.nome) === categoryKey);
+
+    if (remoteCategory?.id) {
+      await deleteDoc(doc(db, "categoriasInsumos", remoteCategory.id)).catch((error) => {
+        console.warn("Nao foi possivel excluir categoria remota.", error);
+      });
+    }
+
+    hiddenStockCategoryKeys.add(categoryKey);
+    saveLocalCategoryList(STOCK_CATEGORY_HIDDEN_STORAGE_KEY, [...hiddenStockCategoryKeys]);
+
+    if (!remoteCategory?.id) {
+      await addDoc(collection(db, "categoriasInsumosRemovidas"), {
+        nome: categoryName,
+        nomeNormalizado: categoryKey,
+        responsavel: profile.email,
+        removidoEm: serverTimestamp()
+      }).catch((error) => {
+        console.warn("Categoria removida apenas localmente.", error);
+      });
+    }
+
+    if (activeStockCategory === categoryName) {
+      activeStockCategory = "Todos";
+    }
+
+    await loadStockCategories();
+    applyProductsView();
+    setStockCategoryStatus(`Categoria ${categoryName} removida dos filtros.`, "success");
+  } finally {
+    stockDeleteCategoryButton.disabled = false;
+  }
+}
+
+function syncCategoryTypeFromCategoryInput() {
+  if (!categoryTypeInput) {
+    return;
+  }
+
+  const typedCategory = normalizeStockCategoryLabel(categoryInput.value);
+  const match = stockCategories.find((category) => normalizeStockCategoryLabel(category) === typedCategory);
+  categoryTypeInput.value = match && match !== "Todos" ? match : "";
+}
+
 function productMatchesStockCategory(item, category) {
   if (!category || category === "Todos") {
     return true;
@@ -1752,6 +2036,7 @@ function productMatchesStockCategory(item, category) {
   const aliases = STOCK_CATEGORY_ALIASES[target] || [target];
   const searchable = normalizeStockCategoryLabel([
     item?.categoria,
+    item?.tipoCategoria,
     item?.nome,
     item?.marca,
     item?.tipo,
@@ -1926,7 +2211,7 @@ function renderStockCategoryFilters() {
     return;
   }
 
-  stockCategoryFilters.innerHTML = STOCK_CATEGORIES.map((category) => `
+  stockCategoryFilters.innerHTML = stockCategories.map((category) => `
     <button class="secondary ${category === activeStockCategory ? "active" : ""}" type="button" data-stock-category="${escapeHtml(category)}">
       ${escapeHtml(category)}
     </button>
@@ -3103,6 +3388,7 @@ function renderProducts(items) {
           sku: codigoInterno,
           marca,
           categoria,
+          tipoCategoria: categoria,
           unidadeMedida,
           unidadeCompra,
           quantidade,
@@ -3327,6 +3613,7 @@ async function loadProducts() {
       codigoInterno: document.data().codigoInterno || document.data().sku || "",
       marca: document.data().marca || "",
       categoria: document.data().categoria || "",
+      tipoCategoria: document.data().tipoCategoria || document.data().categoria || "",
       imagemUrl: document.data().imagemUrl || document.data().imagem || "",
       localArmazenamento: document.data().localArmazenamento || "",
       statusProduto: document.data().statusProduto || "ativo",
@@ -4083,6 +4370,16 @@ stockCategoryFilters.addEventListener("click", (event) => {
   renderStockCategoryFilters();
   applyProductsView();
 });
+stockAddCategoryButton.addEventListener("click", addStockCategory);
+stockNewCategoryInput.addEventListener("keydown", async (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    await addStockCategory();
+  }
+});
+stockDeleteCategoryButton.addEventListener("click", async () => {
+  await deleteStockCategoryByName(stockDeleteCategorySelect.value);
+});
 stockViewCardsButton.addEventListener("click", () => setStockViewMode("cards"));
 stockViewTableButton.addEventListener("click", () => setStockViewMode("table"));
 stockTopSearchInput.addEventListener("input", () => {
@@ -4130,6 +4427,11 @@ barcodeInput.addEventListener("input", () => {
 nameInput.addEventListener("input", updateBarcodeAccordionSummary);
 brandInput.addEventListener("input", updateBarcodeAccordionSummary);
 categoryInput.addEventListener("input", updateBarcodeAccordionSummary);
+categoryInput.addEventListener("input", syncCategoryTypeFromCategoryInput);
+categoryTypeInput.addEventListener("change", () => {
+  categoryInput.value = categoryTypeInput.value;
+  updateBarcodeAccordionSummary();
+});
 manualProductToggle.addEventListener("change", async () => {
   await updateBarcodeModeState();
 });
@@ -4234,7 +4536,8 @@ form.addEventListener("submit", async (event) => {
   const nome = nameInput.value.trim();
   const codigoInterno = internalCodeInput.value.trim();
   const marca = brandInput.value.trim();
-  const categoria = categoryInput.value.trim();
+  const tipoCategoria = categoryTypeInput.value.trim();
+  const categoria = categoryInput.value.trim() || tipoCategoria;
   const unidadeMedida = String(unitMeasureInput.value || "un").trim() || "un";
   const unidadeCompra = String(purchaseUnitInput.value || "caixa").trim() || "caixa";
   const quantidade = Math.max(0, toNumber(document.getElementById("novo_qtd").value, 0));
@@ -4304,6 +4607,7 @@ form.addEventListener("submit", async (event) => {
       nomeNormalizado: normalizedName,
       marca,
       categoria,
+      tipoCategoria,
       imagemUrl: imageInput.value.trim(),
       unidadeCompra,
       unidadeMedida,
@@ -4406,7 +4710,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 renderXmlPreview(xmlImports);
-renderStockCategoryFilters();
+await loadStockCategories();
 populateWeekdaySelector(createOrderDaysContainer, [], "novo_dias_pedido");
 populateWeekdaySelector(createDeliveryDaysContainer, [], "novo_dias_entrega");
 syncUnitMeasureFields();
