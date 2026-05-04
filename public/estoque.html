@@ -748,7 +748,7 @@ const quickExitBoxButton = document.getElementById("quick-exit-box");
 
 bindLogoutButton();
 
-const { profile } = await requireAuth();
+const { profile } = await requireAuth({ permission: "estoque.ver" });
 userInfo.textContent = describeProfile(profile);
 const isAdmin = profile?.tipo === "admin";
 

@@ -611,7 +611,119 @@ export function describeProfile(profile) {
   }
 
   const identity = profile.nome ? `${profile.nome} | ${profile.email}` : profile.email;
-  return `${identity} | ${profile.tipo}`;
+  return `${identity} | ${formatProfileRole(profile.perfilPrincipal || profile.tipo)}`;
+}
+
+const ROLE_PERMISSION_DEFAULTS = Object.freeze({
+  admin: ["*"],
+  gerente: [
+    "estoque.ver", "estoque.entrada", "estoque.saida", "estoque.historico",
+    "compras.verLista", "compras.sugerir", "compras.registrarCompra", "compras.verPrecos", "compras.aprovar",
+    "producao.ver", "producao.criar", "producao.finalizar", "producao.baixarInsumos", "producao.verValidade",
+    "etiquetas.gerar", "etiquetas.reimprimir",
+    "relatorios.operacionais", "relatorios.financeiros",
+    "fornecedores.ver", "fornecedores.editar",
+    "treinamento.ver"
+  ],
+  compras: ["compras.verLista", "compras.sugerir", "compras.registrarCompra", "compras.verPrecos", "fornecedores.ver", "estoque.ver"],
+  producao: ["producao.ver", "producao.criar", "producao.finalizar", "producao.baixarInsumos", "producao.verValidade", "etiquetas.gerar", "estoque.ver"],
+  estoque: [
+    "estoque.ver", "estoque.cadastrarInsumo", "estoque.editarInsumo", "estoque.entrada", "estoque.saida", "estoque.historico",
+    "compras.verLista", "compras.sugerir",
+    "producao.ver", "producao.criar"
+  ],
+  funcionario: ["estoque.ver", "estoque.entrada", "estoque.saida", "producao.ver", "etiquetas.gerar", "treinamento.ver"],
+  visualizacao: ["estoque.ver", "compras.verLista", "producao.ver", "relatorios.operacionais", "treinamento.ver"],
+  caixa: ["estoque.ver", "estoque.saida", "treinamento.ver"]
+});
+
+const FUNCTION_PERMISSION_DEFAULTS = Object.freeze({
+  estoque: ROLE_PERMISSION_DEFAULTS.estoque,
+  compras: ROLE_PERMISSION_DEFAULTS.compras,
+  producao: ROLE_PERMISSION_DEFAULTS.producao,
+  etiquetas: ["etiquetas.gerar", "etiquetas.reimprimir"],
+  cmv: ["cmv.verFicha", "cmv.criarFicha", "cmv.editarFicha", "cmv.ver"],
+  relatorios: ["relatorios.operacionais", "relatorios.financeiros", "relatorios.exportar"],
+  treinamento: ["treinamento.ver", "treinamento.concluir"],
+  fornecedores: ["fornecedores.ver", "fornecedores.cadastrar", "fornecedores.editar"],
+  funcionarios: ["funcionarios.ver", "funcionarios.cadastrar", "funcionarios.editar"],
+  configuracoes: ["configuracoes.ver"]
+});
+
+const ROLE_LABELS = Object.freeze({
+  admin: "Admin",
+  gerente: "Gerente",
+  compras: "Compras",
+  producao: "Produção",
+  estoque: "Estoque",
+  funcionario: "Funcionário",
+  visualizacao: "Visualização",
+  caixa: "Caixa"
+});
+
+export const PERMISSION_DENIED_MESSAGE = "Seu perfil não possui permissão para esta ação. Solicite liberação ao administrador.";
+
+function normalizePermissionRole(value) {
+  return normalizeText(value).replace(/\s+/g, "_") || "funcionario";
+}
+
+function getManualPermission(profile = {}, permission = "") {
+  const [moduleKey, actionKey] = String(permission).split(".");
+
+  if (!moduleKey || !actionKey) {
+    return null;
+  }
+
+  const value = profile.permissoes?.[moduleKey]?.[actionKey];
+  return typeof value === "boolean" ? value : null;
+}
+
+function permissionListHas(permissionList = [], permission = "") {
+  return permissionList.includes("*") || permissionList.includes(permission);
+}
+
+export function formatProfileRole(value) {
+  const role = normalizePermissionRole(value);
+  return ROLE_LABELS[role] || String(value || "Funcionário");
+}
+
+export function can(permission, profile = globalThis.window?.__burgerOpsProfile || null) {
+  if (!profile || !permission) {
+    return false;
+  }
+
+  const manualValue = getManualPermission(profile, permission);
+
+  if (manualValue === false) {
+    return false;
+  }
+
+  if (manualValue === true) {
+    return true;
+  }
+
+  const principalRole = normalizePermissionRole(profile.perfilPrincipal || profile.tipo);
+  const principalPermissions = ROLE_PERMISSION_DEFAULTS[principalRole] || [];
+
+  if (permissionListHas(principalPermissions, permission)) {
+    return true;
+  }
+
+  const additionalFunctions = Array.isArray(profile.funcoesAdicionais) ? profile.funcoesAdicionais : [];
+
+  return additionalFunctions.some((functionKey) => {
+    const normalizedKey = normalizePermissionRole(functionKey);
+    return permissionListHas(FUNCTION_PERMISSION_DEFAULTS[normalizedKey] || [], permission);
+  });
+}
+
+export function ensurePermission(permission, profile = globalThis.window?.__burgerOpsProfile || null) {
+  if (can(permission, profile)) {
+    return true;
+  }
+
+  window.alert(PERMISSION_DENIED_MESSAGE);
+  return false;
 }
 
 export async function getUserContext(options = {}) {
@@ -623,7 +735,7 @@ export async function getUserContext(options = {}) {
 }
 
 export async function requireAuth(options = {}) {
-  const { adminOnly = false } = options;
+  const { adminOnly = false, permission = "" } = options;
   const context = await getUserContext();
 
   if (!context?.user) {
@@ -638,10 +750,14 @@ export async function requireAuth(options = {}) {
     throw new Error("Usuario sem perfil.");
   }
 
-  if (adminOnly && context.profile.tipo !== "admin") {
-    window.alert("Acesso restrito.");
+  window.__burgerOpsProfile = context.profile;
+
+  const hasAdminAccess = can("funcionarios.alterarPermissoes", context.profile);
+
+  if ((adminOnly && !hasAdminAccess) || (permission && !can(permission, context.profile))) {
+    window.alert(PERMISSION_DENIED_MESSAGE);
     window.location.href = "index.html";
-    throw new Error("Permissao insuficiente.");
+    throw new Error("Permissão insuficiente.");
   }
 
   return context;

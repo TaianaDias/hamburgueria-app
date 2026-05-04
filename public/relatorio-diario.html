@@ -57,7 +57,7 @@ import { bindLogoutButton, describeProfile, escapeHtml, formatCurrency, requireA
 import { buildDailySummary, OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
-const { profile } = await requireAuth();
+const { profile } = await requireAuth({ permission: "relatorios.operacionais" });
 document.getElementById("user-info").textContent = describeProfile(profile);
 
 const [stockSnapshot, productionSnapshot, labelSnapshot, wasteSnapshot, purchaseSnapshot] = await Promise.all([

@@ -13,61 +13,160 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Funcionarios | Hamburgueria</title>
+<title>Funcionários | Carioca's Operação</title>
 </head>
 <body>
-<main class="page">
+<main class="page employee-permissions-page">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Administracao</p>
-      <h1>Funcionarios</h1>
+      <p class="eyebrow">Administração</p>
+      <h1>Funcionários & Permissões</h1>
       <p id="user-info" class="muted"></p>
     </div>
 
     <div class="actions">
-      <a class="button secondary" href="index.html">Voltar</a>
+      <a class="button secondary" href="dashboard-saas.html">Dashboard</a>
       <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
-  <section class="panel">
-    <h3>Criar novo acesso</h3>
-    <form id="employee-form" class="form-grid" style="margin-top: 16px;">
-      <div class="field-group">
-        <label for="nome">Nome</label>
-        <input id="nome" type="text" placeholder="Nome do funcionario">
-      </div>
-
-      <div class="field-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="novo@empresa.com">
-      </div>
-
-      <div class="field-group">
-        <label for="senha">Senha</label>
-        <input id="senha" type="password" placeholder="Minimo de 6 caracteres">
-      </div>
-
-      <div class="field-group">
-        <label for="tipo">Tipo</label>
-        <select id="tipo">
-          <option value="admin">Admin</option>
-          <option value="estoque">Estoque</option>
-        </select>
-      </div>
-
-      <button id="create-button" type="submit">Criar funcionario</button>
-    </form>
-
-    <div id="status" class="status info" hidden></div>
+  <section class="stats-grid employee-kpi-grid" aria-label="Resumo de acessos">
+    <article class="card">
+      <span class="muted">Funcionários ativos</span>
+      <strong id="kpi-active">0</strong>
+    </article>
+    <article class="card">
+      <span class="muted">Perfis administrativos</span>
+      <strong id="kpi-admins">0</strong>
+    </article>
+    <article class="card">
+      <span class="muted">Funções extras liberadas</span>
+      <strong id="kpi-functions">0</strong>
+    </article>
+    <article class="card">
+      <span class="muted">Acessos bloqueados</span>
+      <strong id="kpi-inactive">0</strong>
+    </article>
   </section>
 
-  <section class="panel">
-    <h3>Lista de acessos</h3>
-    <p class="muted" style="margin-top: 8px;">
-      Permissoes atuais: Admin (acesso total), Estoque (Reposicao para producao e Compras com lembrete/pedidos sugeridos).
-    </p>
-    <div id="lista" class="list" style="margin-top: 16px;"></div>
+  <section class="layout-grid employee-layout">
+    <article class="panel employee-editor-panel">
+      <div class="panel-heading-row">
+        <div>
+          <p class="eyebrow">Cadastro flexível</p>
+          <h3 id="form-title">Novo funcionário</h3>
+          <p class="muted">Defina um perfil base e ajuste permissões conforme a rotina real da operação.</p>
+        </div>
+        <button id="new-employee-button" class="secondary" type="button">Novo acesso</button>
+      </div>
+
+      <form id="employee-form" class="employee-form">
+        <input id="editing-id" type="hidden">
+
+        <div class="employee-tabs" role="tablist" aria-label="Etapas do cadastro">
+          <button class="active" type="button" data-tab="dados" role="tab" aria-selected="true">1. Dados</button>
+          <button type="button" data-tab="perfil" role="tab" aria-selected="false">2. Perfil e funções</button>
+          <button type="button" data-tab="permissoes" role="tab" aria-selected="false">3. Permissões</button>
+        </div>
+
+        <section class="employee-tab-panel active" data-panel="dados" role="tabpanel">
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="nome">Nome</label>
+              <input id="nome" type="text" placeholder="Nome do funcionário" autocomplete="name">
+            </div>
+
+            <div class="field-group">
+              <label for="email">E-mail</label>
+              <input id="email" type="email" placeholder="novo@empresa.com" autocomplete="email">
+            </div>
+
+            <div class="field-group">
+              <label for="telefone">Telefone/WhatsApp</label>
+              <input id="telefone" type="tel" placeholder="(21) 99999-9999" autocomplete="tel">
+            </div>
+
+            <div class="field-group">
+              <label for="cargo-interno">Cargo interno</label>
+              <input id="cargo-interno" type="text" placeholder="Ex.: líder de cozinha">
+            </div>
+
+            <div class="field-group">
+              <label for="senha">Senha inicial</label>
+              <input id="senha" type="password" placeholder="Mínimo de 6 caracteres">
+              <small class="muted">Obrigatória apenas ao criar um novo acesso.</small>
+            </div>
+
+            <div class="field-group">
+              <label for="ativo">Status</label>
+              <select id="ativo">
+                <option value="true">Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="employee-tab-panel" data-panel="perfil" role="tabpanel" hidden>
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="perfil-principal">Perfil principal</label>
+              <select id="perfil-principal"></select>
+            </div>
+
+            <div class="field-group">
+              <label for="preset-select">Modelo rápido</label>
+              <select id="preset-select"></select>
+            </div>
+
+            <div class="field-group">
+              <label for="copy-user-select">Copiar permissões de</label>
+              <select id="copy-user-select">
+                <option value="">Selecionar funcionário</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="employee-section-title">
+            <h4>Funções adicionais</h4>
+            <p class="muted">Selecione tudo que essa pessoa também faz no dia a dia.</p>
+          </div>
+          <div id="additional-functions" class="employee-check-grid"></div>
+
+          <div class="inline-actions compact-actions">
+            <button id="apply-recommended" class="secondary" type="button">Selecionar permissões recomendadas</button>
+            <button id="copy-permissions" class="secondary" type="button">Copiar permissões</button>
+            <button id="clear-permissions" class="secondary" type="button">Limpar permissões</button>
+          </div>
+        </section>
+
+        <section class="employee-tab-panel" data-panel="permissoes" role="tabpanel" hidden>
+          <div class="employee-section-title">
+            <h4>Permissões de acesso</h4>
+            <p class="muted">Marque somente as ações que o funcionário pode executar. Permissões desmarcadas ficam bloqueadas.</p>
+          </div>
+          <div id="permissions-grid" class="employee-permission-grid"></div>
+        </section>
+
+        <div id="status" class="status info" hidden></div>
+
+        <div class="actions employee-form-actions">
+          <button id="create-button" type="submit">Salvar funcionário</button>
+          <button id="cancel-edit-button" class="secondary" type="button" hidden>Cancelar edição</button>
+        </div>
+      </form>
+    </article>
+
+    <aside class="panel">
+      <div class="panel-heading-row">
+        <div>
+          <p class="eyebrow">Equipe</p>
+          <h3>Lista de acessos</h3>
+        </div>
+      </div>
+      <p class="muted">Admin continua com acesso total. Os demais podem receber funções extras e permissões específicas.</p>
+      <div id="lista" class="list employee-list"></div>
+    </aside>
   </section>
 </main>
 
@@ -77,94 +176,547 @@ import {
   bindLogoutButton,
   describeProfile,
   escapeHtml,
+  formatProfileRole,
   requireAuth,
   setStatus
 } from "./app.js";
 
+const PROFILE_OPTIONS = [
+  { value: "admin", label: "Admin" },
+  { value: "gerente", label: "Gerente" },
+  { value: "compras", label: "Compras" },
+  { value: "producao", label: "Produção" },
+  { value: "estoque", label: "Estoque" },
+  { value: "funcionario", label: "Funcionário" },
+  { value: "visualizacao", label: "Visualização" }
+];
+
+const ADDITIONAL_FUNCTIONS = [
+  { value: "estoque", label: "Estoque" },
+  { value: "compras", label: "Compras" },
+  { value: "producao", label: "Produção" },
+  { value: "etiquetas", label: "Etiquetas" },
+  { value: "cmv", label: "Ficha técnica/CMV" },
+  { value: "relatorios", label: "Relatórios" },
+  { value: "treinamento", label: "Treinamento" },
+  { value: "fornecedores", label: "Fornecedores" },
+  { value: "funcionarios", label: "Funcionários" },
+  { value: "configuracoes", label: "Configurações" }
+];
+
+const PERMISSION_GROUPS = [
+  {
+    key: "estoque",
+    title: "Estoque",
+    actions: [
+      ["ver", "Ver estoque"],
+      ["cadastrarInsumo", "Cadastrar insumo"],
+      ["editarInsumo", "Editar insumo"],
+      ["entrada", "Registrar entrada"],
+      ["saida", "Registrar saída"],
+      ["historico", "Ver histórico"],
+      ["excluirInsumo", "Excluir insumo"]
+    ]
+  },
+  {
+    key: "compras",
+    title: "Compras",
+    actions: [
+      ["verLista", "Ver lista de compras"],
+      ["sugerir", "Sugerir compras"],
+      ["registrarCompra", "Registrar compra"],
+      ["editarFornecedores", "Editar fornecedores"],
+      ["verPrecos", "Ver preços"],
+      ["aprovar", "Aprovar compra"]
+    ]
+  },
+  {
+    key: "producao",
+    title: "Produção",
+    actions: [
+      ["ver", "Ver produção"],
+      ["criar", "Criar produção"],
+      ["finalizar", "Finalizar produção"],
+      ["baixarInsumos", "Baixar insumos"],
+      ["verValidade", "Ver validade"]
+    ]
+  },
+  {
+    key: "etiquetas",
+    title: "Etiquetas",
+    actions: [
+      ["gerar", "Gerar etiqueta"],
+      ["reimprimir", "Reimprimir etiqueta"],
+      ["editarModelo", "Editar modelo de etiqueta"]
+    ]
+  },
+  {
+    key: "cmv",
+    title: "Ficha Técnica/CMV",
+    actions: [
+      ["verFicha", "Ver ficha técnica"],
+      ["criarFicha", "Criar ficha técnica"],
+      ["editarFicha", "Editar ficha técnica"],
+      ["ver", "Ver CMV"],
+      ["alterarCustoReceita", "Alterar custo/receita"]
+    ]
+  },
+  {
+    key: "funcionarios",
+    title: "Funcionários",
+    actions: [
+      ["ver", "Ver funcionários"],
+      ["cadastrar", "Cadastrar funcionário"],
+      ["editar", "Editar funcionário"],
+      ["alterarPermissoes", "Alterar permissões"],
+      ["desativar", "Desativar funcionário"]
+    ]
+  },
+  {
+    key: "relatorios",
+    title: "Relatórios",
+    actions: [
+      ["operacionais", "Ver relatórios operacionais"],
+      ["financeiros", "Ver relatórios financeiros"],
+      ["exportar", "Exportar relatórios"]
+    ]
+  },
+  {
+    key: "fornecedores",
+    title: "Fornecedores",
+    actions: [
+      ["ver", "Ver fornecedores"],
+      ["cadastrar", "Cadastrar fornecedor"],
+      ["editar", "Editar fornecedor"]
+    ]
+  },
+  {
+    key: "treinamento",
+    title: "Treinamento",
+    actions: [
+      ["ver", "Ver treinamento"],
+      ["concluir", "Concluir aulas/checklists"]
+    ]
+  },
+  {
+    key: "configuracoes",
+    title: "Configurações",
+    actions: [
+      ["ver", "Ver configurações"],
+      ["editar", "Editar configurações"],
+      ["gerenciarPlano", "Gerenciar plano"]
+    ]
+  }
+];
+
+const PRESETS = {
+  basico: {
+    label: "Operação básica",
+    funcoes: ["estoque", "producao", "etiquetas", "treinamento"],
+    permissoes: [
+      "estoque.ver", "estoque.entrada", "estoque.saida",
+      "producao.ver", "producao.verValidade",
+      "etiquetas.gerar",
+      "treinamento.ver"
+    ]
+  },
+  estoqueCompras: {
+    label: "Estoque + compras",
+    funcoes: ["estoque", "compras", "fornecedores"],
+    permissoes: [
+      "estoque.ver", "estoque.entrada", "estoque.saida", "estoque.historico",
+      "compras.verLista", "compras.sugerir", "compras.verPrecos",
+      "fornecedores.ver"
+    ]
+  },
+  producaoEtiquetas: {
+    label: "Produção + etiquetas",
+    funcoes: ["producao", "etiquetas", "treinamento"],
+    permissoes: [
+      "producao.ver", "producao.criar", "producao.finalizar", "producao.baixarInsumos", "producao.verValidade",
+      "etiquetas.gerar", "etiquetas.reimprimir",
+      "estoque.ver",
+      "treinamento.ver"
+    ]
+  },
+  gerente: {
+    label: "Gerente operacional",
+    funcoes: ["estoque", "compras", "producao", "etiquetas", "relatorios", "fornecedores", "treinamento"],
+    permissoes: [
+      "estoque.ver", "estoque.cadastrarInsumo", "estoque.editarInsumo", "estoque.entrada", "estoque.saida", "estoque.historico",
+      "compras.verLista", "compras.sugerir", "compras.registrarCompra", "compras.editarFornecedores", "compras.verPrecos", "compras.aprovar",
+      "producao.ver", "producao.criar", "producao.finalizar", "producao.baixarInsumos", "producao.verValidade",
+      "etiquetas.gerar", "etiquetas.reimprimir",
+      "relatorios.operacionais", "relatorios.financeiros",
+      "fornecedores.ver", "fornecedores.cadastrar", "fornecedores.editar",
+      "treinamento.ver"
+    ]
+  },
+  visualizacao: {
+    label: "Somente visualização",
+    funcoes: ["treinamento"],
+    permissoes: [
+      "estoque.ver", "compras.verLista", "producao.ver", "relatorios.operacionais", "fornecedores.ver", "treinamento.ver"
+    ]
+  }
+};
+
 const form = document.getElementById("employee-form");
 const createButton = document.getElementById("create-button");
+const cancelEditButton = document.getElementById("cancel-edit-button");
 const list = document.getElementById("lista");
+let employees = [];
 
 bindLogoutButton();
 
 const { profile } = await requireAuth({ adminOnly: true });
 document.getElementById("user-info").textContent = describeProfile(profile);
 
-function describeAccessScope(tipo) {
-  if (tipo === "admin") {
-    return "Acesso total a todas as abas.";
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value || {}));
+}
+
+function permissionToObject(permissionList = []) {
+  return permissionList.reduce((result, permission) => {
+    const [moduleKey, actionKey] = permission.split(".");
+
+    if (!moduleKey || !actionKey) {
+      return result;
+    }
+
+    result[moduleKey] ||= {};
+    result[moduleKey][actionKey] = true;
+    return result;
+  }, {});
+}
+
+function flattenPermissions(permissoes = {}) {
+  return Object.entries(permissoes).flatMap(([moduleKey, actions]) =>
+    Object.entries(actions || {})
+      .filter(([, allowed]) => allowed === true)
+      .map(([actionKey]) => `${moduleKey}.${actionKey}`)
+  );
+}
+
+function getSelectedPermissions() {
+  return Array.from(document.querySelectorAll("[data-permission]:checked"))
+    .map((checkbox) => checkbox.dataset.permission);
+}
+
+function setPermissionChecks(permissionList = []) {
+  const selected = new Set(permissionList);
+  document.querySelectorAll("[data-permission]").forEach((checkbox) => {
+    checkbox.checked = selected.has(checkbox.dataset.permission);
+  });
+}
+
+function getSelectedFunctions() {
+  return Array.from(document.querySelectorAll("[data-function]:checked"))
+    .map((checkbox) => checkbox.dataset.function);
+}
+
+function setFunctionChecks(values = []) {
+  const selected = new Set(values);
+  document.querySelectorAll("[data-function]").forEach((checkbox) => {
+    checkbox.checked = selected.has(checkbox.dataset.function);
+  });
+}
+
+function renderStaticControls() {
+  document.getElementById("perfil-principal").innerHTML = PROFILE_OPTIONS
+    .map((item) => `<option value="${item.value}">${item.label}</option>`)
+    .join("");
+
+  document.getElementById("preset-select").innerHTML = [
+    '<option value="">Selecionar modelo</option>',
+    ...Object.entries(PRESETS).map(([key, preset]) => `<option value="${key}">${preset.label}</option>`)
+  ].join("");
+
+  document.getElementById("additional-functions").innerHTML = ADDITIONAL_FUNCTIONS
+    .map((item) => `
+      <label class="employee-check-card">
+        <input type="checkbox" data-function="${item.value}">
+        <span>${item.label}</span>
+      </label>
+    `).join("");
+
+  document.getElementById("permissions-grid").innerHTML = PERMISSION_GROUPS
+    .map((group) => `
+      <article class="employee-permission-group">
+        <h4>${group.title}</h4>
+        <div>
+          ${group.actions.map(([actionKey, label]) => {
+            const permission = `${group.key}.${actionKey}`;
+            return `
+              <label>
+                <input type="checkbox" data-permission="${permission}">
+                <span>${label}</span>
+              </label>
+            `;
+          }).join("")}
+        </div>
+      </article>
+    `).join("");
+}
+
+function setActiveTab(tab) {
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+
+  document.querySelectorAll("[data-panel]").forEach((panel) => {
+    const active = panel.dataset.panel === tab;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+  });
+}
+
+function resetForm() {
+  form.reset();
+  document.getElementById("editing-id").value = "";
+  document.getElementById("perfil-principal").value = "funcionario";
+  document.getElementById("ativo").value = "true";
+  setFunctionChecks([]);
+  setPermissionChecks([]);
+  document.getElementById("form-title").textContent = "Novo funcionário";
+  createButton.textContent = "Criar funcionário";
+  cancelEditButton.hidden = true;
+  document.getElementById("email").disabled = false;
+  document.getElementById("senha").placeholder = "Mínimo de 6 caracteres";
+  setActiveTab("dados");
+}
+
+function fillForm(employee) {
+  document.getElementById("editing-id").value = employee.id || "";
+  document.getElementById("nome").value = employee.nome || "";
+  document.getElementById("email").value = employee.email || "";
+  document.getElementById("telefone").value = employee.telefone || "";
+  document.getElementById("cargo-interno").value = employee.cargoInterno || "";
+  document.getElementById("senha").value = "";
+  document.getElementById("senha").placeholder = "Deixe vazio para manter a senha atual";
+  document.getElementById("perfil-principal").value = employee.perfilPrincipal || employee.tipo || "funcionario";
+  document.getElementById("ativo").value = String(employee.ativo !== false);
+  setFunctionChecks(employee.funcoesAdicionais || []);
+  setPermissionChecks(flattenPermissions(employee.permissoes || {}));
+  document.getElementById("form-title").textContent = `Editar ${employee.nome || employee.email}`;
+  createButton.textContent = "Salvar alterações";
+  cancelEditButton.hidden = false;
+  document.getElementById("email").disabled = true;
+  setActiveTab("perfil");
+}
+
+function applyPreset(key) {
+  const preset = PRESETS[key];
+
+  if (!preset) {
+    return;
   }
 
-  if (tipo === "estoque") {
-    return "Acesso somente a Reposicao para producao e Compras (lembrete do admin e pedidos sugeridos).";
+  setFunctionChecks(preset.funcoes);
+  setPermissionChecks(preset.permissoes);
+  setStatus("status", `Modelo "${preset.label}" aplicado. Revise antes de salvar.`, "info");
+}
+
+function applyRecommendedPermissions() {
+  const role = document.getElementById("perfil-principal").value;
+  const map = {
+    admin: "gerente",
+    gerente: "gerente",
+    compras: "estoqueCompras",
+    producao: "producaoEtiquetas",
+    estoque: "estoqueCompras",
+    funcionario: "basico",
+    visualizacao: "visualizacao"
+  };
+  applyPreset(map[role] || "basico");
+}
+
+function copyPermissionsFromEmployee() {
+  const employeeId = document.getElementById("copy-user-select").value;
+  const employee = employees.find((item) => item.id === employeeId);
+
+  if (!employee) {
+    setStatus("status", "Selecione um funcionário para copiar as permissões.", "error");
+    return;
   }
 
-  return "Escopo de acesso nao mapeado.";
+  document.getElementById("perfil-principal").value = employee.perfilPrincipal || employee.tipo || "funcionario";
+  setFunctionChecks(employee.funcoesAdicionais || []);
+  setPermissionChecks(flattenPermissions(employee.permissoes || {}));
+  setStatus("status", `Permissões copiadas de ${employee.nome || employee.email}.`, "success");
+}
+
+function buildPayload() {
+  const editingId = document.getElementById("editing-id").value;
+  const permissoes = permissionToObject(getSelectedPermissions());
+
+  return {
+    editingId,
+    payload: {
+      nome: document.getElementById("nome").value.trim(),
+      email: document.getElementById("email").value.trim().toLowerCase(),
+      telefone: document.getElementById("telefone").value.trim(),
+      cargoInterno: document.getElementById("cargo-interno").value.trim(),
+      senha: document.getElementById("senha").value,
+      perfilPrincipal: document.getElementById("perfil-principal").value,
+      tipo: document.getElementById("perfil-principal").value,
+      funcoesAdicionais: getSelectedFunctions(),
+      permissoes,
+      ativo: document.getElementById("ativo").value === "true"
+    }
+  };
+}
+
+function renderCopyOptions() {
+  const selectedId = document.getElementById("editing-id").value;
+  document.getElementById("copy-user-select").innerHTML = [
+    '<option value="">Selecionar funcionário</option>',
+    ...employees
+      .filter((employee) => employee.id !== selectedId)
+      .map((employee) => `<option value="${employee.id}">${escapeHtml(employee.nome || employee.email)}</option>`)
+  ].join("");
+}
+
+function renderKpis() {
+  const active = employees.filter((employee) => employee.ativo !== false).length;
+  const admins = employees.filter((employee) => ["admin", "gerente"].includes(employee.perfilPrincipal || employee.tipo)).length;
+  const functionsCount = employees.reduce((total, employee) => total + (employee.funcoesAdicionais || []).length, 0);
+  const inactive = employees.length - active;
+
+  document.getElementById("kpi-active").textContent = String(active);
+  document.getElementById("kpi-admins").textContent = String(admins);
+  document.getElementById("kpi-functions").textContent = String(functionsCount);
+  document.getElementById("kpi-inactive").textContent = String(inactive);
+}
+
+function renderEmployees() {
+  list.innerHTML = "";
+
+  if (!employees.length) {
+    list.innerHTML = '<div class="empty-state">Nenhum funcionário cadastrado.</div>';
+    return;
+  }
+
+  employees.forEach((employee) => {
+    const functions = (employee.funcoesAdicionais || [])
+      .map((functionKey) => ADDITIONAL_FUNCTIONS.find((item) => item.value === functionKey)?.label || functionKey)
+      .join(", ");
+    const permissionCount = flattenPermissions(employee.permissoes || {}).length;
+    const article = document.createElement("article");
+    article.className = "card employee-card";
+    article.innerHTML = `
+      <div>
+        <h3>${escapeHtml(employee.nome || employee.email)}</h3>
+        <p class="muted">${escapeHtml(employee.email || "")}</p>
+        <p class="muted">${escapeHtml(employee.cargoInterno || "Cargo interno não informado")}</p>
+      </div>
+      <div class="employee-card-meta">
+        <span class="badge ${employee.ativo === false ? "danger" : "success"}">${employee.ativo === false ? "Inativo" : "Ativo"}</span>
+        <span class="badge">${escapeHtml(formatProfileRole(employee.perfilPrincipal || employee.tipo))}</span>
+        <small>${functions ? escapeHtml(functions) : "Sem função adicional"}</small>
+        <small>${permissionCount} permissão(ões) manuais</small>
+      </div>
+      <div class="actions">
+        <button class="secondary" type="button" data-edit="${employee.id}">Editar</button>
+      </div>
+    `;
+    list.appendChild(article);
+  });
+
+  renderCopyOptions();
 }
 
 async function loadEmployees() {
-  list.innerHTML = "";
-
   try {
     const data = await apiFetch("/api/usuarios");
-    const usuarios = data.usuarios || [];
-
-    if (!usuarios.length) {
-      list.innerHTML = '<div class="empty-state">Nenhum funcionario cadastrado.</div>';
-      return;
-    }
-
-    usuarios.forEach((usuario) => {
-      const article = document.createElement("article");
-      article.className = "card";
-      article.innerHTML = `
-        <h3>${escapeHtml(usuario.nome || usuario.email)}</h3>
-        <p class="muted">${escapeHtml(usuario.email)}</p>
-        <p class="muted">Perfil: ${escapeHtml(usuario.tipo)}</p>
-        <p class="muted">${escapeHtml(describeAccessScope(usuario.tipo))}</p>
-      `;
-      list.appendChild(article);
-    });
+    employees = (data.usuarios || []).sort((left, right) => String(left.nome || left.email).localeCompare(String(right.nome || right.email), "pt-BR"));
+    renderKpis();
+    renderEmployees();
   } catch (error) {
     console.error(error);
-    list.innerHTML = '<div class="empty-state">Nao foi possivel carregar os funcionarios.</div>';
+    list.innerHTML = '<div class="empty-state">Não foi possível carregar os funcionários.</div>';
   }
 }
+
+renderStaticControls();
+resetForm();
+
+document.querySelectorAll("[data-tab]").forEach((button) => {
+  button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+});
+
+document.getElementById("preset-select").addEventListener("change", (event) => {
+  applyPreset(event.target.value);
+});
+
+document.getElementById("apply-recommended").addEventListener("click", applyRecommendedPermissions);
+document.getElementById("copy-permissions").addEventListener("click", copyPermissionsFromEmployee);
+document.getElementById("clear-permissions").addEventListener("click", () => {
+  setFunctionChecks([]);
+  setPermissionChecks([]);
+  setStatus("status", "Permissões limpas para revisão manual.", "info");
+});
+document.getElementById("new-employee-button").addEventListener("click", resetForm);
+cancelEditButton.addEventListener("click", resetForm);
+
+list.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-edit]");
+
+  if (!button) {
+    return;
+  }
+
+  const employee = employees.find((item) => item.id === button.dataset.edit);
+
+  if (employee) {
+    fillForm(deepClone(employee));
+  }
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("status", "", "info");
 
-  const nome = document.getElementById("nome").value.trim();
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const senha = document.getElementById("senha").value;
-  const tipo = document.getElementById("tipo").value;
+  const { editingId, payload } = buildPayload();
 
-  if (!nome || !email || !senha) {
-    setStatus("status", "Preencha nome, email e senha.", "error");
+  if (!payload.nome || !payload.email) {
+    setStatus("status", "Preencha nome e e-mail.", "error");
     return;
   }
 
-  if (senha.length < 6) {
-    setStatus("status", "A senha precisa ter pelo menos 6 caracteres.", "error");
+  if (!editingId && payload.senha.length < 6) {
+    setStatus("status", "A senha inicial precisa ter pelo menos 6 caracteres.", "error");
     return;
+  }
+
+  if (editingId && !payload.senha) {
+    delete payload.senha;
   }
 
   createButton.disabled = true;
 
   try {
-    await apiFetch("/api/usuarios", {
-      method: "POST",
-      body: JSON.stringify({ nome, email, senha, tipo })
-    });
+    if (editingId) {
+      await apiFetch(`/api/usuarios/${editingId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload)
+      });
+      setStatus("status", "Funcionário atualizado com sucesso.", "success");
+    } else {
+      await apiFetch("/api/usuarios", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      setStatus("status", "Funcionário criado com sucesso.", "success");
+    }
 
-    form.reset();
-    document.getElementById("tipo").value = "admin";
-    setStatus("status", "Funcionario criado com sucesso.", "success");
+    resetForm();
     await loadEmployees();
   } catch (error) {
     console.error(error);
-    setStatus("status", error.message || "Nao foi possivel criar o funcionario.", "error");
+    setStatus("status", error.message || "Não foi possível salvar o funcionário.", "error");
   } finally {
     createButton.disabled = false;
   }

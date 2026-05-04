@@ -195,7 +195,7 @@ const adminReminderDescription = document.getElementById("admin-reminder-descrip
 
 bindLogoutButton();
 
-const { profile } = await requireAuth();
+const { profile } = await requireAuth({ permission: "compras.verLista" });
 userInfo.textContent = describeProfile(profile);
 alertsLink.hidden = profile.tipo !== "admin";
 

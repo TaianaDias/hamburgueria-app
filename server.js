@@ -8,7 +8,28 @@ import { createStockAlertService } from "./server/stock-alerts.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
-const validRoles = new Set(["admin", "estoque", "caixa"]);
+const validRoles = new Set([
+  "admin",
+  "gerente",
+  "compras",
+  "producao",
+  "estoque",
+  "funcionario",
+  "visualizacao",
+  "caixa"
+]);
+const validAdditionalFunctions = new Set([
+  "estoque",
+  "compras",
+  "producao",
+  "etiquetas",
+  "cmv",
+  "relatorios",
+  "treinamento",
+  "fornecedores",
+  "funcionarios",
+  "configuracoes"
+]);
 const validWeekdayKeys = new Set(["seg", "ter", "qua", "qui", "sex", "sab", "dom"]);
 const LOOKUP_TIMEOUT_MS = 8000;
 const __filename = fileURLToPath(import.meta.url);
@@ -272,6 +293,121 @@ function parseBooleanValue(value, fallback = false) {
   }
 
   return fallback;
+}
+
+function normalizeRole(value, fallback = "funcionario") {
+  const normalized = String(value ?? "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace("producao", "producao");
+
+  if (normalized === "funcionario" || normalized === "funcionário") {
+    return "funcionario";
+  }
+
+  if (normalized === "visualizacao" || normalized === "visualização") {
+    return "visualizacao";
+  }
+
+  return validRoles.has(normalized) ? normalized : fallback;
+}
+
+function sanitizeAdditionalFunctions(values = []) {
+  const rawValues = Array.isArray(values)
+    ? values
+    : String(values ?? "")
+      .split(/[,\s;|/]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  const selected = new Set();
+
+  rawValues.forEach((value) => {
+    const normalized = String(value ?? "")
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+    const mapped = normalized === "ficha_tecnica" || normalized === "ficha_tecnica_cmv"
+      ? "cmv"
+      : normalized;
+
+    if (validAdditionalFunctions.has(mapped)) {
+      selected.add(mapped);
+    }
+  });
+
+  return Array.from(selected);
+}
+
+function sanitizePermissionTree(source = {}) {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return {};
+  }
+
+  return Object.entries(source).reduce((permissions, [moduleKey, actions]) => {
+    if (!actions || typeof actions !== "object" || Array.isArray(actions)) {
+      return permissions;
+    }
+
+    const cleanModuleKey = String(moduleKey ?? "")
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .slice(0, 40);
+
+    if (!cleanModuleKey) {
+      return permissions;
+    }
+
+    const cleanActions = Object.entries(actions).reduce((result, [actionKey, value]) => {
+      const cleanActionKey = String(actionKey ?? "")
+        .trim()
+        .replace(/[^\w]/g, "")
+        .slice(0, 60);
+
+      if (!cleanActionKey) {
+        return result;
+      }
+
+      result[cleanActionKey] = parseBooleanValue(value, false);
+      return result;
+    }, {});
+
+    permissions[cleanModuleKey] = cleanActions;
+    return permissions;
+  }, {});
+}
+
+function getPermissionValue(profile = {}, permission = "") {
+  const [moduleKey, actionKey] = String(permission ?? "").split(".");
+
+  if (!moduleKey || !actionKey) {
+    return null;
+  }
+
+  const value = profile.permissoes?.[moduleKey]?.[actionKey];
+  return typeof value === "boolean" ? value : null;
+}
+
+function hasPermission(profile = {}, permission = "") {
+  const manualValue = getPermissionValue(profile, permission);
+
+  if (manualValue === false) {
+    return false;
+  }
+
+  if (manualValue === true) {
+    return true;
+  }
+
+  return profile.tipo === "admin" || profile.perfilPrincipal === "admin";
 }
 
 function clampNumber(value, fallback, minimum, maximum) {
@@ -696,7 +832,9 @@ async function hasRegisteredUsers() {
 async function saveUserProfile(userId, profile) {
   await admin.firestore().collection("usuarios").doc(userId).set({
     ...profile,
-    criadoEm: admin.firestore.FieldValue.serverTimestamp()
+    criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
 }
 
@@ -725,7 +863,7 @@ async function requireAuthenticated(req, res, next) {
 
 async function requireAdmin(req, res, next) {
   return requireAuthenticated(req, res, async () => {
-    if (req.profile.tipo !== "admin") {
+    if (!hasPermission(req.profile, "funcionarios.alterarPermissoes")) {
       return res.status(403).json({ erro: "Somente administradores podem executar esta acao." });
     }
 
@@ -752,15 +890,21 @@ async function listUsers(req, res) {
 async function createUser(req, res) {
   const email = String(req.body?.email ?? "").trim().toLowerCase();
   const senha = String(req.body?.senha ?? "");
-  const tipo = String(req.body?.tipo ?? "").trim().toLowerCase();
+  const perfilPrincipal = normalizeRole(req.body?.perfilPrincipal ?? req.body?.tipo, "funcionario");
+  const tipo = perfilPrincipal;
   const nome = normalizeName(req.body?.nome);
+  const telefone = normalizePhone(req.body?.telefone ?? "");
+  const cargoInterno = normalizeLookupText(req.body?.cargoInterno ?? req.body?.cargo ?? "").slice(0, 80);
+  const funcoesAdicionais = sanitizeAdditionalFunctions(req.body?.funcoesAdicionais);
+  const permissoes = sanitizePermissionTree(req.body?.permissoes);
+  const ativo = parseBooleanValue(req.body?.ativo, true);
 
-  if (!email || !senha || !tipo) {
-    return res.status(400).json({ erro: "Email, senha e tipo sao obrigatorios." });
+  if (!email || !senha || !perfilPrincipal) {
+    return res.status(400).json({ erro: "Email, senha e perfil principal sao obrigatorios." });
   }
 
-  if (!validRoles.has(tipo)) {
-    return res.status(400).json({ erro: "Tipo de funcionario invalido." });
+  if (!validRoles.has(perfilPrincipal)) {
+    return res.status(400).json({ erro: "Perfil principal invalido." });
   }
 
   if (senha.length < 6) {
@@ -777,7 +921,33 @@ async function createUser(req, res) {
       email,
       tipo,
       nome,
-      criadoPor: req.profile.email
+      telefone,
+      cargoInterno,
+      perfilPrincipal,
+      funcoesAdicionais,
+      permissoes,
+      ativo,
+      criadoPor: req.profile.email,
+      empresaId: req.profile?.empresaId || process.env.DEFAULT_EMPRESA_ID || "default",
+      lojaId: req.profile?.lojaId || process.env.DEFAULT_LOJA_ID || "matriz"
+    });
+
+    await recordAuditLog({
+      tipo: "permissoes_funcionario_criadas",
+      origem: "api",
+      actor: req.profile?.email || req.user?.email || "admin",
+      tenant: req.profile,
+      payload: {
+        funcionarioId: user.uid,
+        funcionarioEmail: email
+      },
+      before: null,
+      after: {
+        perfilPrincipal,
+        funcoesAdicionais,
+        permissoes,
+        ativo
+      }
     });
 
     return res.status(201).json({
@@ -785,7 +955,11 @@ async function createUser(req, res) {
       usuario: {
         id: user.uid,
         email,
-        tipo
+        tipo,
+        perfilPrincipal,
+        funcoesAdicionais,
+        permissoes,
+        ativo
       }
     });
   } catch (error) {
@@ -795,6 +969,80 @@ async function createUser(req, res) {
 
     return res.status(400).json({ erro: error.message || "Nao foi possivel criar o usuario." });
   }
+}
+
+async function updateUser(req, res) {
+  const userId = String(req.params?.userId ?? "").trim();
+
+  if (!userId) {
+    return res.status(400).json({ erro: "Funcionario nao informado." });
+  }
+
+  const profileRef = admin.firestore().collection("usuarios").doc(userId);
+  const beforeSnapshot = await profileRef.get();
+
+  if (!beforeSnapshot.exists) {
+    return res.status(404).json({ erro: "Funcionario nao encontrado." });
+  }
+
+  const before = beforeSnapshot.data();
+  const perfilPrincipal = normalizeRole(req.body?.perfilPrincipal ?? req.body?.tipo ?? before.perfilPrincipal ?? before.tipo, "funcionario");
+
+  if (!validRoles.has(perfilPrincipal)) {
+    return res.status(400).json({ erro: "Perfil principal invalido." });
+  }
+
+  const nextData = {
+    nome: normalizeName(req.body?.nome ?? before.nome),
+    email: String(req.body?.email ?? before.email ?? "").trim().toLowerCase(),
+    telefone: normalizePhone(req.body?.telefone ?? before.telefone ?? ""),
+    cargoInterno: normalizeLookupText(req.body?.cargoInterno ?? req.body?.cargo ?? before.cargoInterno ?? "").slice(0, 80),
+    tipo: perfilPrincipal,
+    perfilPrincipal,
+    funcoesAdicionais: sanitizeAdditionalFunctions(req.body?.funcoesAdicionais ?? before.funcoesAdicionais),
+    permissoes: sanitizePermissionTree(req.body?.permissoes ?? before.permissoes),
+    ativo: parseBooleanValue(req.body?.ativo, before.ativo !== false),
+    empresaId: normalizeLookupText(req.body?.empresaId ?? before.empresaId ?? req.profile?.empresaId ?? process.env.DEFAULT_EMPRESA_ID ?? "default"),
+    lojaId: normalizeLookupText(req.body?.lojaId ?? before.lojaId ?? req.profile?.lojaId ?? process.env.DEFAULT_LOJA_ID ?? "matriz"),
+    atualizadoPor: req.profile?.email || req.user?.email || "admin",
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    atualizadoEm: admin.firestore.FieldValue.serverTimestamp()
+  };
+
+  await profileRef.set(nextData, { merge: true });
+
+  await recordAuditLog({
+    tipo: "permissoes_funcionario_alteradas",
+    origem: "api",
+    actor: req.profile?.email || req.user?.email || "admin",
+    tenant: req.profile,
+    payload: {
+      funcionarioId: userId,
+      funcionarioEmail: nextData.email
+    },
+    before: {
+      perfilPrincipal: before.perfilPrincipal || before.tipo || "",
+      funcoesAdicionais: before.funcoesAdicionais || [],
+      permissoes: before.permissoes || {},
+      ativo: before.ativo !== false
+    },
+    after: {
+      perfilPrincipal: nextData.perfilPrincipal,
+      funcoesAdicionais: nextData.funcoesAdicionais,
+      permissoes: nextData.permissoes,
+      ativo: nextData.ativo
+    }
+  });
+
+  return res.json({
+    ok: true,
+    usuario: {
+      id: userId,
+      ...nextData,
+      updatedAt: undefined,
+      atualizadoEm: undefined
+    }
+  });
 }
 
 async function getBootstrapStatus(req, res) {
@@ -973,6 +1221,7 @@ app.get("/api/bootstrap/status", getBootstrapStatus);
 app.post("/api/bootstrap/register", bootstrapRegister);
 app.get("/api/usuarios", requireAdmin, listUsers);
 app.post("/api/usuarios", requireAdmin, createUser);
+app.patch("/api/usuarios/:userId", requireAdmin, updateUser);
 app.get("/api/barcodes/:barcode", requireAuthenticated, barcodeLookup);
 app.get("/api/saas/context", requireAuthenticated, getSaasContext);
 app.post("/api/operational/interpret", requireAuthenticated, interpretOperationalCommand);

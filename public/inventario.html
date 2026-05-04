@@ -58,7 +58,7 @@ import { bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus, 
 import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
-const { profile } = await requireAuth();
+const { profile } = await requireAuth({ permission: "estoque.historico" });
 document.getElementById("user-info").textContent = describeProfile(profile);
 
 const productSelect = document.getElementById("product");

@@ -217,7 +217,7 @@ import {
   requireAuth
 } from "./app.js";
 
-const { profile } = await requireAuth();
+const { profile } = await requireAuth({ permission: "treinamento.ver" });
 document.getElementById("user-info").textContent = describeProfile(profile);
 bindLogoutButton();
 

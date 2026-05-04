@@ -96,7 +96,7 @@ import { bindLogoutButton, describeProfile, requireAuth, setStatus } from "./app
 import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
-const { profile } = await requireAuth({ adminOnly: true });
+const { profile } = await requireAuth({ permission: "etiquetas.editarModelo" });
 document.getElementById("user-info").textContent = describeProfile(profile);
 
 const existing = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.impressoras), limit(1)));

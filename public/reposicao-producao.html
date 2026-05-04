@@ -523,7 +523,7 @@ novoInsumoForm.addEventListener("submit", async (event) => {
 
 async function init() {
   bindLogoutButton();
-  profileContext = await requireAuth();
+  profileContext = await requireAuth({ permission: "producao.ver" });
   document.getElementById("user-info").textContent = describeProfile(profileContext.profile);
   headerMeta.textContent = `${getHeaderDateLabel()} | Turno atual: ${getTurnoAtual()}`;
   stockLink.hidden = profileContext.profile.tipo !== "admin";
