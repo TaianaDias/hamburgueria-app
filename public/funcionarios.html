@@ -254,7 +254,7 @@ const PERMISSION_GROUPS = [
   },
   {
     key: "cmv",
-    title: "Ficha Técnica/CMV",
+    title: "Ficha Técnica e CMV",
     actions: [
       ["verFicha", "Ver ficha técnica"],
       ["criarFicha", "Criar ficha técnica"],
@@ -381,24 +381,47 @@ function deepClone(value) {
 
 function permissionToObject(permissionList = []) {
   return permissionList.reduce((result, permission) => {
-    const [moduleKey, actionKey] = permission.split(".");
+    const [moduleKey, ...actionParts] = permission.split(".").filter(Boolean);
 
-    if (!moduleKey || !actionKey) {
+    if (!moduleKey || !actionParts.length) {
       return result;
     }
 
     result[moduleKey] ||= {};
-    result[moduleKey][actionKey] = true;
+    let cursor = result[moduleKey];
+
+    actionParts.forEach((actionKey, index) => {
+      const isLast = index === actionParts.length - 1;
+
+      if (isLast) {
+        cursor[actionKey] = true;
+        return;
+      }
+
+      cursor[actionKey] ||= {};
+      cursor = cursor[actionKey];
+    });
+
     return result;
   }, {});
 }
 
 function flattenPermissions(permissoes = {}) {
-  return Object.entries(permissoes).flatMap(([moduleKey, actions]) =>
-    Object.entries(actions || {})
-      .filter(([, allowed]) => allowed === true)
-      .map(([actionKey]) => `${moduleKey}.${actionKey}`)
-  );
+  function walk(value, prefix = "") {
+    if (value === true) {
+      return [prefix];
+    }
+
+    if (!value || typeof value !== "object") {
+      return [];
+    }
+
+    return Object.entries(value).flatMap(([key, nestedValue]) =>
+      walk(nestedValue, prefix ? `${prefix}.${key}` : key)
+    );
+  }
+
+  return walk(permissoes).filter(Boolean);
 }
 
 function getSelectedPermissions() {

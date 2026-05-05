@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#111827">
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="stylesheet" href="style.css">
-<title>Demo Interativo | Carioca's Operacao</title>
+<title>Demo Interativo | Carioca's Operação</title>
 <style>
   body {
     background:
@@ -407,7 +407,7 @@
       <div class="demo-logo-mark">C</div>
       <div>
         <strong>Carioca's</strong>
-        <small class="muted">Operacao de Controle</small>
+        <small class="muted">Operação de Controle</small>
       </div>
     </div>
 
@@ -421,7 +421,7 @@
       <button type="button" data-section="relatórios">Relatórios</button>
       <button type="button" data-section="etiquetas">Etiquetas</button>
       <button type="button" data-section="whatsapp">WhatsApp e IA</button>
-      <button type="button" data-section="funcionarios">Funcionarios</button>
+      <button type="button" data-section="funcionarios">Funcionários</button>
       <button type="button" data-section="configuracoes">Configuracoes</button>
     </nav>
   </aside>
@@ -443,15 +443,15 @@
     <section id="demo-hero" class="demo-hero">
       <article class="panel">
         <p class="eyebrow">SaaS premium para hamburguerias</p>
-        <h1>Controle estoque, producao, compras e etiquetas em uma operação simples.</h1>
-        <p class="muted">A navegacao abaixo e interativa, mas funciona em ambiente isolado: nenhuma acao salva no banco real.</p>
+        <h1>Controle estoque, produção, compras e etiquetas em uma operação simples.</h1>
+        <p class="muted">A navegação abaixo é interativa, mas funciona em ambiente isolado: nenhuma ação salva no banco real.</p>
       </article>
 
       <article class="panel">
         <p class="eyebrow">Resumo IA</p>
         <h3>Seu estoque esta 82% saudavel</h3>
         <p class="muted">Comprar pao brioche amanhã, revisar cheddar por aumento de custo e imprimir etiquetas de molho da casa.</p>
-        <button class="secondary demo-action" type="button">Gerar relatorio demo</button>
+        <button class="secondary demo-action" type="button">Gerar relatório demo</button>
       </article>
     </section>
 
@@ -464,7 +464,7 @@
       <article class="panel demo-kpi">
         <span class="muted">Itens criticos</span>
         <strong>6</strong>
-        <small class="muted">Precisam de atencao</small>
+        <small class="muted">Precisam de atenção</small>
       </article>
       <article class="panel demo-kpi">
         <span class="muted">Produtos vencendo</span>
@@ -492,11 +492,11 @@
 
       <div class="form-grid">
         <div class="field-group">
-          <label for="demo-search">Busca rapida</label>
+          <label for="demo-search">Busca rápida</label>
           <input id="demo-search" type="search" placeholder="Buscar insumo, categoria ou fornecedor">
         </div>
         <div class="field-group">
-          <label for="demo-barcode">Entrada por codigo de barras</label>
+          <label for="demo-barcode">Entrada por código de barras</label>
           <input id="demo-barcode" inputmode="numeric" placeholder="Bipe 789..." autocomplete="off">
         </div>
       </div>
@@ -557,7 +557,7 @@
         <input type="number" value="120">
       </div>
       <div class="field-group">
-        <label>Custo unitario calculado</label>
+        <label>Custo unitário calculado</label>
         <input value="R$ 0,83" readonly>
       </div>
       <div class="field-group">
@@ -622,14 +622,14 @@ const sectionTitles = {
   whatsapp: "WhatsApp e IA",
   funcionarios: "Funcionários e Permissões",
   configuracoes: "Configuracoes",
-  operação: "Modo Operacao Correria"
+  operação: "Modo Operação Correria"
 };
 
 const moduleContent = {
   producao: `
     <div class="demo-module-grid">
       <article class="panel demo-module-card">
-        <p class="eyebrow">Nova producao</p>
+        <p class="eyebrow">Nova produção</p>
         <h3>Molho da casa</h3>
         <div class="form-grid">
           <div class="field-group"><label>Quantidade produzida</label><input value="5 kg"></div>
@@ -637,7 +637,7 @@ const moduleContent = {
           <div class="field-group"><label>Validade</label><input value="3 dias"></div>
           <div class="field-group"><label>Responsável</label><input value="Joao Pedro"></div>
         </div>
-        <button class="demo-action" type="button">Registrar producao e gerar etiqueta</button>
+        <button class="demo-action" type="button">Registrar produção e gerar etiqueta</button>
       </article>
       <article class="panel demo-module-card">
         <p class="eyebrow">Porcionamento</p>
@@ -662,7 +662,7 @@ const moduleContent = {
   compras: `
     <div class="demo-module-grid">
       <article class="panel demo-module-card">
-        <p class="eyebrow">Sugestao de compra</p>
+        <p class="eyebrow">Sugestão de compra</p>
         <h3>Comprar hoje</h3>
         <ul class="demo-module-list">
           <li><span>Cheddar fatiado</span><strong>6 CX</strong></li>
@@ -727,7 +727,7 @@ const moduleContent = {
         <h3>Desperdicio</h3>
         <div class="form-grid">
           <div class="field-group"><label>Produto</label><select><option>Molho da casa</option><option>Pao brioche</option></select></div>
-          <div class="field-group"><label>Motivo</label><select><option>Vencido</option><option>Erro producao</option><option>Quebra</option></select></div>
+          <div class="field-group"><label>Motivo</label><select><option>Vencido</option><option>Erro produção</option><option>Quebra</option></select></div>
           <div class="field-group"><label>Quantidade</label><input value="1 kg"></div>
           <div class="field-group"><label>Custo</label><input value="R$ 24,80"></div>
         </div>
@@ -742,7 +742,7 @@ const moduleContent = {
       <article class="panel demo-module-card">
         <p class="eyebrow">IA</p>
         <h3>Alerta</h3>
-        <p class="muted">A producao de cebola esta 18% acima do consumo medio das ultimas semanas.</p>
+        <p class="muted">A produção de cebola está 18% acima do consumo médio das últimas semanas.</p>
       </article>
     </div>
   `,
@@ -753,7 +753,7 @@ const moduleContent = {
         <h3>Resumo de hoje</h3>
         <ul class="demo-module-list">
           <li><span>Estoque saudavel</span><strong>82%</strong></li>
-          <li><span>Itens de atencao</span><strong>5</strong></li>
+          <li><span>Itens de atenção</span><strong>5</strong></li>
           <li><span>Produtos vencendo</span><strong>3</strong></li>
         </ul>
         <div class="demo-form-actions">
@@ -799,7 +799,7 @@ const moduleContent = {
       <article class="panel demo-module-card">
         <p class="eyebrow">Histórico</p>
         <h3>25 etiquetas</h3>
-        <p class="muted">Todas as impressoes ficam rastreadas por produto, lote e responsavel.</p>
+        <p class="muted">Todas as impressões ficam rastreadas por produto, lote e responsável.</p>
       </article>
     </div>
   `,
@@ -817,13 +817,13 @@ const moduleContent = {
         <ul class="demo-module-list">
           <li><span>Produto</span><strong>Pao brioche</strong></li>
           <li><span>Total</span><strong>192 un</strong></li>
-          <li><span>Custo unitario</span><strong>R$ 0,74</strong></li>
+          <li><span>Custo unitário</span><strong>R$ 0,74</strong></li>
         </ul>
       </article>
       <article class="panel demo-module-card">
-        <p class="eyebrow">Automacao</p>
+        <p class="eyebrow">Automação</p>
         <h3>Fluxo seguro</h3>
-        <p class="muted">Webhook, IA, confirmacao, baixa no sistema, resposta ao usuario e log.</p>
+        <p class="muted">Webhook, IA, confirmação, baixa no sistema, resposta ao usuário e log.</p>
       </article>
     </div>
   `,
@@ -834,8 +834,8 @@ const moduleContent = {
         <h3>Permissoes</h3>
         <ul class="demo-module-list">
           <li><span>Dono/Admin</span><strong>Total</strong></li>
-          <li><span>Gerente</span><strong>Operacao</strong></li>
-          <li><span>Funcionario</span><strong>Entrada/Saida</strong></li>
+          <li><span>Gerente</span><strong>Operação</strong></li>
+          <li><span>Funcionário</span><strong>Entrada/Saída</strong></li>
         </ul>
       </article>
       <article class="panel demo-module-card">
@@ -848,8 +848,8 @@ const moduleContent = {
       </article>
       <article class="panel demo-module-card">
         <p class="eyebrow">Cadastro</p>
-        <h3>Novo usuario</h3>
-        <button class="demo-action" type="button">Convidar funcionario demo</button>
+        <h3>Novo usuário</h3>
+        <button class="demo-action" type="button">Convidar funcionário demo</button>
       </article>
     </div>
   `,
@@ -859,7 +859,7 @@ const moduleContent = {
         <p class="eyebrow">Loja</p>
         <h3>Cariocas Burger</h3>
         <p class="muted">Plano Pro | Matriz | Unidade aberta.</p>
-        <button class="secondary demo-action" type="button">Salvar configuracao demo</button>
+        <button class="secondary demo-action" type="button">Salvar configuração demo</button>
       </article>
       <article class="panel demo-module-card">
         <p class="eyebrow">SaaS</p>
@@ -869,7 +869,7 @@ const moduleContent = {
       <article class="panel demo-module-card">
         <p class="eyebrow">Seguranca</p>
         <h3>Ambiente isolado</h3>
-        <p class="muted">Esta demo nao grava dados reais e nao usa credenciais administrativas.</p>
+        <p class="muted">Esta demo não grava dados reais e não usa credenciais administrativas.</p>
       </article>
     </div>
   `,
@@ -880,7 +880,7 @@ const moduleContent = {
         <h3>Acoes grandes</h3>
         <div class="demo-form-actions">
           <button class="demo-action" type="button">Entrou compra</button>
-          <button class="secondary demo-action" type="button">Saiu producao</button>
+          <button class="secondary demo-action" type="button">Saiu produção</button>
           <button class="secondary demo-action" type="button">Produzir porcoes</button>
           <button class="secondary demo-action" type="button">Imprimir etiqueta</button>
         </div>
@@ -894,7 +894,7 @@ const moduleContent = {
         </ul>
       </article>
       <article class="panel demo-module-card">
-        <p class="eyebrow">Relatorio</p>
+        <p class="eyebrow">Relatório</p>
         <h3>1 clique</h3>
         <button class="demo-action" type="button">Gerar resumo do dia</button>
       </article>
@@ -943,12 +943,12 @@ function renderCards(items) {
       <div class="demo-product-meta">
         <div class="demo-mini"><span>Fornecedor</span><strong>${product.supplier}</strong></div>
         <div class="demo-mini"><span>Estoque</span><strong>${product.stock}</strong></div>
-        <div class="demo-mini"><span>Minimo</span><strong>${product.min}</strong></div>
-        <div class="demo-mini"><span>Custo unitario</span><strong>${product.cost}</strong></div>
+        <div class="demo-mini"><span>Mínimo</span><strong>${product.min}</strong></div>
+        <div class="demo-mini"><span>Custo unitário</span><strong>${product.cost}</strong></div>
       </div>
       <div class="demo-actions">
         <button class="secondary demo-action" type="button">Entrada</button>
-        <button class="secondary demo-action" type="button">Saida</button>
+        <button class="secondary demo-action" type="button">Saída</button>
         <button class="secondary demo-action" type="button">Etiqueta</button>
         <button class="secondary demo-action" type="button">Histórico</button>
       </div>
@@ -968,7 +968,7 @@ function renderTable(items) {
             <th>Categoria</th>
             <th>Fornecedor</th>
             <th>Estoque</th>
-            <th>Minimo</th>
+            <th>Mínimo</th>
             <th>Custo</th>
             <th>Status</th>
           </tr>
@@ -1048,7 +1048,7 @@ categoryRow.addEventListener("click", (event) => {
 
 document.body.addEventListener("click", (event) => {
   if (event.target.closest(".demo-action")) {
-    showToast("Acao simulada. Nenhum dado real foi alterado.");
+    showToast("Ação simulada. Nenhum dado real foi alterado.");
   }
 
   const sectionButton = event.target.closest("button[data-section]");
@@ -1063,7 +1063,7 @@ barcodeInput.addEventListener("input", () => {
   const code = barcodeInput.value.replace(/\D/g, "");
   barcodeInput.value = code;
   if (code.length >= 8) {
-    showToast("Codigo lido na demo. Produto sugerido: Pao brioche.");
+    showToast("Código lido na demo. Produto sugerido: Pão brioche.");
   }
 });
 viewCards.addEventListener("click", () => setView("cards"));

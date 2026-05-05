@@ -34,7 +34,7 @@
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3 id="form-title">Novo fornecedor</h3>
-        <p class="muted">Cadastre, ajuste telefone/CNPJ ou remova fornecedores que nao sao mais usados.</p>
+        <p class="muted">Cadastre, ajuste telefone/CNPJ ou remova fornecedores que não são mais usados.</p>
       </div>
 
       <button id="cancel-edit-button" class="secondary" type="button" hidden>Cancelar edicao</button>
@@ -482,7 +482,7 @@ function renderSuppliers() {
     summary.innerHTML = `
       <div class="supplier-entry-summary-main">
         <span class="supplier-entry-name">${escapeHtml(fornecedor.nome)}</span>
-        <p class="muted supplier-entry-meta">${escapeHtml(fornecedor.telefone || "Telefone nao informado")}${escapeHtml(cnpjInfo)}</p>
+        <p class="muted supplier-entry-meta">${escapeHtml(fornecedor.telefone || "Telefone não informado")}${escapeHtml(cnpjInfo)}</p>
         <p class="supplier-products-preview"><b>Produtos vendidos:</b> ${escapeHtml(soldProductsPreview)}</p>
       </div>
       <div class="supplier-entry-summary-side">
@@ -568,11 +568,11 @@ function renderSuppliers() {
           </div>
           <div>
             <span class="muted">Telefone</span>
-            <strong>${escapeHtml(fornecedor.telefone || "Nao informado")}</strong>
+            <strong>${escapeHtml(fornecedor.telefone || "Não informado")}</strong>
           </div>
           <div>
             <span class="muted">CNPJ</span>
-            <strong>${escapeHtml(formatDocumentNumber(fornecedor.cnpj) || "Nao informado")}</strong>
+            <strong>${escapeHtml(formatDocumentNumber(fornecedor.cnpj) || "Não informado")}</strong>
           </div>
           <div>
             <span class="muted">Produtos vendidos</span>
@@ -657,7 +657,7 @@ form.addEventListener("submit", async (event) => {
       const existingSupplier = fornecedores.find((item) => item.id === editingSupplierId);
 
       if (!existingSupplier) {
-        throw new Error("Fornecedor nao encontrado para edicao.");
+        throw new Error("Fornecedor não encontrado para edição.");
       }
 
       const updatedSupplier = {

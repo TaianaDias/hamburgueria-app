@@ -19,8 +19,8 @@
 <main class="page">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Operacao de cozinha</p>
-      <h1>Reposição para producao</h1>
+      <p class="eyebrow">Operação de cozinha</p>
+      <h1>Reposição para produção</h1>
       <p id="user-info" class="muted"></p>
       <p id="header-meta" class="muted" style="margin-top: 8px;"></p>
     </div>
@@ -37,7 +37,7 @@
     <div class="page-header" style="margin-bottom: 12px;">
       <div>
         <h3>Adicionar insumo</h3>
-        <p class="muted">Cadastre novos itens para usar na reposicao do dia.</p>
+        <p class="muted">Cadastre novos itens para usar na reposição do dia.</p>
       </div>
     </div>
     <form id="novo-insumo-form" class="form-grid">
@@ -61,8 +61,8 @@
     <article class="panel">
       <div class="page-header" style="margin-bottom: 12px;">
         <div>
-          <h3>Insumos para reposicao</h3>
-          <p class="muted">Marque os itens, informe retirada e minimo para o dia.</p>
+          <h3>Insumos para reposição</h3>
+          <p class="muted">Marque os itens, informe retirada e mínimo para o dia.</p>
         </div>
       </div>
       <div id="insumos-lista" class="list"></div>
@@ -72,12 +72,12 @@
     <article class="panel">
       <div class="page-header" style="margin-bottom: 12px;">
         <div>
-          <h3>Resumo da reposicao</h3>
+          <h3>Resumo da reposição</h3>
           <p class="muted">Confirme somente quando tudo estiver valido.</p>
         </div>
       </div>
       <div id="resumo-lista" class="list"></div>
-      <button id="confirmar-reposicao" style="margin-top: 16px;" disabled>Confirmar reposicao</button>
+      <button id="confirmar-reposicao" style="margin-top: 16px;" disabled>Confirmar reposição</button>
 
       <div class="page-header" style="margin: 22px 0 12px;">
         <div>
@@ -264,7 +264,7 @@ function renderInsumos() {
             </select>
           </div>
           <div class="field-group">
-            <label>Minimo para o dia (${item.unidade})</label>
+            <label>Mínimo para o dia (${item.unidade})</label>
             <input data-minimo-id="${item.id}" type="number" min="0" step="0.1" value="${minimum}">
           </div>
         </div>
@@ -276,7 +276,7 @@ function renderInsumos() {
           <div class="replenishment-progress-fill replenishment-progress-${status}" style="width: ${barPercent}%;"></div>
         </div>
         <div class="${getStatusClass(status)}" style="margin-top: 12px;" ${invalid ? "" : "hidden"}>
-          Nao e permitido retirar mais do que o estoque disponivel.
+          Não é permitido retirar mais do que o estoque disponível.
         </div>
       ` : ""}
     `;
@@ -326,7 +326,7 @@ function renderResumo() {
   const resumo = getResumoSelecionados();
 
   if (!resumo.length) {
-    resumoLista.innerHTML = '<div class="empty-state">Selecione ao menos um item para montar a reposicao.</div>';
+    resumoLista.innerHTML = '<div class="empty-state">Selecione ao menos um item para montar a reposição.</div>';
     confirmButton.disabled = true;
     return;
   }
@@ -347,7 +347,7 @@ function renderResumo() {
       </div>
       <p class="muted" style="margin-top: 10px;">
         Retirar ${entry.retirar.toLocaleString("pt-BR")} ${getWithdrawalUnitLabel(entry.unidadeRetirada).toLowerCase()}(s)
-        | Minimo ${entry.minimoDia.toLocaleString("pt-BR")}
+        | Mínimo ${entry.minimoDia.toLocaleString("pt-BR")}
         | Restante ${entry.restante.toLocaleString("pt-BR")}
       </p>
     `;
@@ -363,7 +363,7 @@ function renderHistorico() {
   const todayLogs = historico.filter((entry) => String(entry.timestamp || "").startsWith(today));
 
   if (!todayLogs.length) {
-    historicoLista.innerHTML = '<div class="empty-state">Nenhuma reposicao confirmada hoje.</div>';
+    historicoLista.innerHTML = '<div class="empty-state">Nenhuma reposição confirmada hoje.</div>';
     return;
   }
 
@@ -522,7 +522,7 @@ confirmButton.addEventListener("click", async () => {
     renderAll();
   } catch (error) {
     console.error(error);
-    setStatus("status-reposicao", "Não foi possível confirmar a reposicao no Firestore.", "error");
+    setStatus("status-reposicao", "Não foi possível confirmar a reposição no Firestore.", "error");
   }
 });
 
@@ -621,7 +621,7 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  setStatus("status-reposicao", "Não foi possível carregar a aba de reposicao.", "error");
+  setStatus("status-reposicao", "Não foi possível carregar a aba de reposição.", "error");
 });
 </script>
 </body>

@@ -5,7 +5,7 @@ const NAV_ITEMS = [
   { href: "producao-etiquetas.html", label: "Produ\u00e7\u00e3o", icon: "P", matches: ["producao-etiquetas.html", "producao.html", "reposicao-producao.html"] },
   { href: "compras.html", label: "Compras", icon: "C", matches: ["compras.html", "dashboard-compras.html", "alertas-reposicao.html", "analise-compras.html"] },
   { href: "fornecedores.html", label: "Fornecedores", icon: "F", matches: ["fornecedores.html"] },
-  { href: "desperdício.html", label: "Desperd\u00edcio", icon: "!", matches: ["desperdício.html"] },
+  { href: "desperdicio.html", label: "Desperd\u00edcio", icon: "!", matches: ["desperdicio.html"] },
   { href: "relatorio-diario.html", label: "Relat\u00f3rios", icon: "R", matches: ["relatorio-diario.html", "relatorio.html"] },
   { href: "impressora.html", label: "Etiquetas", icon: "T", matches: ["impressora.html", "etiquetas.html"] },
   { href: "whatsapp-ia.html", label: "WhatsApp e IA", icon: "W", matches: ["whatsapp-ia.html"] },

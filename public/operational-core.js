@@ -96,7 +96,7 @@ function buildConfirmationText(intent, quantity, cost) {
   }
 
   if (intent === "saida_producao") {
-    return `Confirma saída para producao de ${amount}?`;
+    return `Confirma saída para produção de ${amount}?`;
   }
 
   if (intent === "porcionamento") {
@@ -104,11 +104,11 @@ function buildConfirmationText(intent, quantity, cost) {
   }
 
   if (intent === "relatorio_diario") {
-    return "Confirma envio do relatorio diario?";
+    return "Confirma envio do relatório diário?";
   }
 
   if (intent === "sugestao_compra") {
-    return "Confirma geracao de sugestao de compra?";
+    return "Confirma geração de sugestão de compra?";
   }
 
   return "Preciso de mais contexto para confirmar este comando.";
@@ -136,8 +136,8 @@ export function buildDailySummary({ estoque = [], producoes = [], etiquetas = []
     purchaseCost,
     aiSummary: [
       `Seu estoque esta ${healthPercent}% saudavel.`,
-      criticalItems.length ? `${criticalItems.length} item(ns) precisam de atencao.` : "Nenhum item critico no momento.",
-      producoes.length ? `${producoes.length} producao(oes) registradas hoje.` : "Nenhuma producao registrada hoje.",
+      criticalItems.length ? `${criticalItems.length} item(ns) precisam de atenção.` : "Nenhum item crítico no momento.",
+      producoes.length ? `${producoes.length} produção(ões) registradas hoje.` : "Nenhuma produção registrada hoje.",
       purchaseCost > 0 ? `Compras do dia somam ${formatCurrency(purchaseCost)}.` : "Sem compras registradas hoje."
     ].join(" ")
   };

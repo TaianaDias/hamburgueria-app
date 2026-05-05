@@ -9,14 +9,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Relatorio Diario | Hamburgueria</title>
+<title>Relatório Diário | Hamburgueria</title>
 </head>
 <body>
 <main class="page">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Resumo automatico</p>
-      <h1>Relatorio diario</h1>
+      <p class="eyebrow">Resumo automático</p>
+      <h1>Relatório diário</h1>
       <p id="user-info" class="muted"></p>
     </div>
     <div class="actions">
@@ -39,13 +39,13 @@
       <p id="ai-summary" class="operation-note"></p>
     </article>
     <article class="panel">
-      <h3>Sugestao de compra</h3>
+      <h3>Sugestão de compra</h3>
       <div id="purchase-suggestion" class="list" style="margin-top: 16px;"></div>
     </article>
   </section>
 
   <section class="panel" style="margin-top: 20px;">
-    <h3>Itens que precisam de atencao</h3>
+    <h3>Itens que precisam de atenção</h3>
     <div id="critical-list" class="list" style="margin-top: 16px;"></div>
   </section>
 </main>
@@ -87,7 +87,7 @@ criticalList.innerHTML = criticalItems.length ? "" : '<div class="empty-state">N
 criticalItems.forEach((item) => {
   const article = document.createElement("article");
   article.className = "card critical";
-  article.innerHTML = `<h3>${escapeHtml(item.nome)}</h3><p class="muted">Atual: ${toNumber(item.quantidade, 0)} | Minimo: ${toNumber(item.minimo, 0)}</p>`;
+  article.innerHTML = `<h3>${escapeHtml(item.nome)}</h3><p class="muted">Atual: ${toNumber(item.quantidade, 0)} | Mínimo: ${toNumber(item.minimo, 0)}</p>`;
   criticalList.appendChild(article);
 });
 
@@ -98,7 +98,7 @@ criticalItems.slice(0, 6).forEach((item) => {
   const buy = Math.max(0, ideal - toNumber(item.quantidade, 0));
   const article = document.createElement("article");
   article.className = "card";
-  article.innerHTML = `<strong>${escapeHtml(item.nome)}</strong><p class="muted">Sugestao: comprar ${buy} ${escapeHtml(item.unidadeMedida || "un")}.</p>`;
+  article.innerHTML = `<strong>${escapeHtml(item.nome)}</strong><p class="muted">Sugestão: comprar ${buy} ${escapeHtml(item.unidadeMedida || "un")}.</p>`;
   suggestion.appendChild(article);
 });
 

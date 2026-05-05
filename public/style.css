@@ -276,8 +276,8 @@ textarea:focus {
   letter-spacing: 0;
 }
 
-.login-hero-copy h1::after {
-  content: " para operações que performam.";
+.login-hero-copy h1 span {
+  display: block;
   color: var(--brand-soft);
 }
 

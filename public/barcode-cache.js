@@ -82,7 +82,7 @@ export async function saveCachedBarcodeProduct(product) {
   const normalizedBarcode = String(product?.barcode ?? "").replace(/\D/g, "");
 
   if (!normalizedBarcode) {
-    throw new Error("Codigo de barras inválido para salvar no cache local.");
+    throw new Error("Código de barras inválido para salvar no cache local.");
   }
 
   const payload = {

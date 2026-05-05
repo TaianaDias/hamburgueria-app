@@ -349,6 +349,36 @@ function sanitizePermissionTree(source = {}) {
     return {};
   }
 
+  function sanitizeActionTree(actions = {}) {
+    if (!actions || typeof actions !== "object" || Array.isArray(actions)) {
+      return {};
+    }
+
+    return Object.entries(actions).reduce((result, [actionKey, value]) => {
+      const cleanActionKey = String(actionKey ?? "")
+        .trim()
+        .replace(/[^\w]/g, "")
+        .slice(0, 60);
+
+      if (!cleanActionKey) {
+        return result;
+      }
+
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        const nested = sanitizeActionTree(value);
+
+        if (Object.keys(nested).length) {
+          result[cleanActionKey] = nested;
+        }
+
+        return result;
+      }
+
+      result[cleanActionKey] = parseBooleanValue(value, false);
+      return result;
+    }, {});
+  }
+
   return Object.entries(source).reduce((permissions, [moduleKey, actions]) => {
     if (!actions || typeof actions !== "object" || Array.isArray(actions)) {
       return permissions;
@@ -366,37 +396,50 @@ function sanitizePermissionTree(source = {}) {
       return permissions;
     }
 
-    const cleanActions = Object.entries(actions).reduce((result, [actionKey, value]) => {
-      const cleanActionKey = String(actionKey ?? "")
-        .trim()
-        .replace(/[^\w]/g, "")
-        .slice(0, 60);
-
-      if (!cleanActionKey) {
-        return result;
-      }
-
-      result[cleanActionKey] = parseBooleanValue(value, false);
-      return result;
-    }, {});
-
-    permissions[cleanModuleKey] = cleanActions;
+    permissions[cleanModuleKey] = sanitizeActionTree(actions);
     return permissions;
   }, {});
 }
 
 function getPermissionValue(profile = {}, permission = "") {
-  const [moduleKey, actionKey] = String(permission ?? "").split(".");
+  const parts = String(permission ?? "").split(".").filter(Boolean);
+  const [moduleKey, ...actionParts] = parts;
+  const actionKey = actionParts.join(".");
 
   if (!moduleKey || !actionKey) {
     return null;
   }
 
-  const value = profile.permissoes?.[moduleKey]?.[actionKey];
-  return typeof value === "boolean" ? value : null;
+  const modulePermissions = profile.permissoes?.[moduleKey];
+
+  if (!modulePermissions || typeof modulePermissions !== "object") {
+    return null;
+  }
+
+  const directValue = modulePermissions[actionKey];
+
+  if (typeof directValue === "boolean") {
+    return directValue;
+  }
+
+  let nestedValue = modulePermissions;
+
+  for (const key of actionParts) {
+    if (!nestedValue || typeof nestedValue !== "object" || !(key in nestedValue)) {
+      return null;
+    }
+
+    nestedValue = nestedValue[key];
+  }
+
+  return typeof nestedValue === "boolean" ? nestedValue : null;
 }
 
 function hasPermission(profile = {}, permission = "") {
+  if (profile.tipo === "admin" || profile.perfilPrincipal === "admin") {
+    return true;
+  }
+
   const manualValue = getPermissionValue(profile, permission);
 
   if (manualValue === false) {
@@ -407,7 +450,7 @@ function hasPermission(profile = {}, permission = "") {
     return true;
   }
 
-  return profile.tipo === "admin" || profile.perfilPrincipal === "admin";
+  return false;
 }
 
 function clampNumber(value, fallback, minimum, maximum) {
@@ -561,11 +604,11 @@ function buildOperationalConfirmation(intent, entities = {}) {
   }
 
   if (intent === "relatorio_diario") {
-    return "Confirma envio do relatorio diario?";
+    return "Confirma envio do relatório diário?";
   }
 
   if (intent === "sugestao_compra") {
-    return "Confirma geracao de sugestao de compra?";
+    return "Confirma geração de sugestão de compra?";
   }
 
   return "Preciso de mais contexto para confirmar este comando.";
@@ -664,7 +707,7 @@ async function interpretOperationalCommand(req, res) {
     return res.json({ ok: true, comando: command });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Nao foi possivel interpretar o comando." });
+    return res.status(500).json({ erro: "Não foi possível interpretar o comando." });
   }
 }
 
@@ -673,7 +716,7 @@ async function whatsappWebhook(req, res) {
   const receivedToken = String(req.headers["x-webhook-token"] ?? req.query?.token ?? "").trim();
 
   if (expectedToken && receivedToken !== expectedToken) {
-    return res.status(401).json({ erro: "Webhook nao autorizado." });
+    return res.status(401).json({ erro: "Webhook não autorizado." });
   }
 
   const message = normalizeLookupText(req.body?.mensagem ?? req.body?.message ?? req.body?.Body ?? "");
@@ -696,7 +739,7 @@ async function whatsappWebhook(req, res) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Nao foi possivel processar o webhook." });
+    return res.status(500).json({ erro: "Não foi possível processar o webhook." });
   }
 }
 
@@ -767,7 +810,7 @@ async function tryLookupBarcodeSource(sourceName, lookupFn, barcode) {
   try {
     return await lookupFn(barcode);
   } catch (error) {
-    console.warn(`Falha ao consultar codigo de barras em ${sourceName}.`, error);
+    console.warn(`Falha ao consultar código de barras em ${sourceName}.`, error);
     return null;
   }
 }
@@ -776,7 +819,7 @@ async function barcodeLookup(req, res) {
   const barcode = normalizeBarcode(req.params?.barcode);
 
   if (!barcode) {
-    return res.status(400).json({ erro: "Informe um codigo de barras valido." });
+    return res.status(400).json({ erro: "Informe um código de barras válido." });
   }
 
   try {
@@ -816,11 +859,11 @@ async function barcodeLookup(req, res) {
   } catch (error) {
     if (error?.name === "TimeoutError") {
       return res.status(504).json({
-        erro: "A consulta do codigo de barras demorou mais do que o esperado. Tente novamente em instantes."
+        erro: "A consulta do código de barras demorou mais do que o esperado. Tente novamente em instantes."
       });
     }
 
-    return res.status(502).json({ erro: error.message || "Nao foi possivel consultar o codigo de barras." });
+    return res.status(502).json({ erro: error.message || "Não foi possível consultar o código de barras." });
   }
 }
 
@@ -842,7 +885,7 @@ async function requireAuthenticated(req, res, next) {
   const token = extractToken(req.headers.authorization);
 
   if (!token) {
-    return res.status(401).json({ erro: "Token de autenticacao nao enviado." });
+    return res.status(401).json({ erro: "Token de autenticação não enviado." });
   }
 
   try {
@@ -850,21 +893,21 @@ async function requireAuthenticated(req, res, next) {
     const profileSnapshot = await admin.firestore().collection("usuarios").doc(decodedToken.uid).get();
 
     if (!profileSnapshot.exists) {
-      return res.status(403).json({ erro: "Perfil do usuario nao encontrado." });
+      return res.status(403).json({ erro: "Perfil do usuário não encontrado." });
     }
 
     req.user = decodedToken;
     req.profile = profileSnapshot.data();
     return next();
   } catch (error) {
-    return res.status(401).json({ erro: "Token invalido ou expirado." });
+    return res.status(401).json({ erro: "Token inválido ou expirado." });
   }
 }
 
 async function requireAdmin(req, res, next) {
   return requireAuthenticated(req, res, async () => {
     if (!hasPermission(req.profile, "funcionarios.alterarPermissoes")) {
-      return res.status(403).json({ erro: "Somente administradores podem executar esta acao." });
+      return res.status(403).json({ erro: "Somente administradores podem executar esta ação." });
     }
 
     return next();
@@ -883,7 +926,7 @@ async function listUsers(req, res) {
 
     return res.json({ usuarios: users });
   } catch (error) {
-    return res.status(500).json({ erro: "Nao foi possivel listar os funcionarios." });
+    return res.status(500).json({ erro: "Não foi possível listar os funcionários." });
   }
 }
 
@@ -900,11 +943,11 @@ async function createUser(req, res) {
   const ativo = parseBooleanValue(req.body?.ativo, true);
 
   if (!email || !senha || !perfilPrincipal) {
-    return res.status(400).json({ erro: "Email, senha e perfil principal sao obrigatorios." });
+    return res.status(400).json({ erro: "E-mail, senha e perfil principal são obrigatórios." });
   }
 
   if (!validRoles.has(perfilPrincipal)) {
-    return res.status(400).json({ erro: "Perfil principal invalido." });
+    return res.status(400).json({ erro: "Perfil principal inválido." });
   }
 
   if (senha.length < 6) {
@@ -964,10 +1007,10 @@ async function createUser(req, res) {
     });
   } catch (error) {
     if (error.code === "auth/email-already-exists") {
-      return res.status(400).json({ erro: "Ja existe um usuario com esse email." });
+      return res.status(400).json({ erro: "Já existe um usuário com esse e-mail." });
     }
 
-    return res.status(400).json({ erro: error.message || "Nao foi possivel criar o usuario." });
+    return res.status(400).json({ erro: error.message || "Não foi possível criar o usuário." });
   }
 }
 
@@ -975,21 +1018,21 @@ async function updateUser(req, res) {
   const userId = String(req.params?.userId ?? "").trim();
 
   if (!userId) {
-    return res.status(400).json({ erro: "Funcionario nao informado." });
+    return res.status(400).json({ erro: "Funcionário não informado." });
   }
 
   const profileRef = admin.firestore().collection("usuarios").doc(userId);
   const beforeSnapshot = await profileRef.get();
 
   if (!beforeSnapshot.exists) {
-    return res.status(404).json({ erro: "Funcionario nao encontrado." });
+    return res.status(404).json({ erro: "Funcionário não encontrado." });
   }
 
   const before = beforeSnapshot.data();
   const perfilPrincipal = normalizeRole(req.body?.perfilPrincipal ?? req.body?.tipo ?? before.perfilPrincipal ?? before.tipo, "funcionario");
 
   if (!validRoles.has(perfilPrincipal)) {
-    return res.status(400).json({ erro: "Perfil principal invalido." });
+    return res.status(400).json({ erro: "Perfil principal inválido." });
   }
 
   const nextData = {
@@ -1055,7 +1098,7 @@ async function getBootstrapStatus(req, res) {
       canCreateFirstAccount: !initialized
     });
   } catch (error) {
-    return res.status(500).json({ erro: "Nao foi possivel verificar o status inicial do sistema." });
+    return res.status(500).json({ erro: "Não foi possível verificar o status inicial do sistema." });
   }
 }
 
@@ -1065,7 +1108,7 @@ async function bootstrapRegister(req, res) {
   const nome = normalizeName(req.body?.nome);
 
   if (!email || !senha) {
-    return res.status(400).json({ erro: "Email e senha sao obrigatorios." });
+    return res.status(400).json({ erro: "E-mail e senha são obrigatórios." });
   }
 
   if (senha.length < 6) {
@@ -1075,7 +1118,7 @@ async function bootstrapRegister(req, res) {
   try {
     if (await hasRegisteredUsers()) {
       return res.status(403).json({
-        erro: "O sistema ja foi inicializado. Novas contas devem ser criadas por um administrador na area de Funcionarios."
+        erro: "O sistema já foi inicializado. Novas contas devem ser criadas por um administrador na área de Funcionários."
       });
     }
 
@@ -1104,12 +1147,12 @@ async function bootstrapRegister(req, res) {
   } catch (error) {
     if (error.code === "auth/email-already-exists") {
       return res.status(400).json({
-        erro: "Esse email ja existe no Firebase Auth. Use outro email ou ajuste esse usuario manualmente no console."
+        erro: "Esse e-mail já existe no Firebase Auth. Use outro e-mail ou ajuste esse usuário manualmente no console."
       });
     }
 
     return res.status(400).json({
-      erro: error.message || "Nao foi possivel criar a conta inicial."
+      erro: error.message || "Não foi possível criar a conta inicial."
     });
   }
 }
@@ -1127,7 +1170,7 @@ async function getAdminAlertsDashboard(req, res) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Nao foi possivel carregar o painel de alertas de reposicao." });
+    return res.status(500).json({ erro: "Não foi possível carregar o painel de alertas de reposição." });
   }
 }
 
@@ -1145,14 +1188,14 @@ async function evaluateAdminAlerts(req, res) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Nao foi possivel avaliar os alertas de reposicao." });
+    return res.status(500).json({ erro: "Não foi possível avaliar os alertas de reposição." });
   }
 }
 
 async function recordManualAdminSuggestion(req, res) {
   try {
     const notification = await stockAlertService.recordManualAdminSuggestion({
-      reason: normalizeLookupText(req.body?.reason || "Reposicao urgente"),
+      reason: normalizeLookupText(req.body?.reason || "Reposição urgente"),
       recipient: req.body?.recipient,
       message: req.body?.message,
       groups: Array.isArray(req.body?.groups) ? req.body.groups : []
@@ -1164,7 +1207,7 @@ async function recordManualAdminSuggestion(req, res) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Nao foi possivel registrar a sugestao ao admin." });
+    return res.status(500).json({ erro: "Não foi possível registrar a sugestão ao admin." });
   }
 }
 
@@ -1190,7 +1233,7 @@ async function updateAdminAlertConfig(req, res) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Nao foi possivel salvar a configuracao dos alertas de reposicao." });
+    return res.status(500).json({ erro: "Não foi possível salvar a configuração dos alertas de reposição." });
   }
 }
 
@@ -1198,7 +1241,7 @@ async function resolveAdminAlert(req, res) {
   const productId = String(req.params?.productId ?? "").trim();
 
   if (!productId) {
-    return res.status(400).json({ erro: "Produto nao informado." });
+    return res.status(400).json({ erro: "Produto não informado." });
   }
 
   try {
@@ -1209,7 +1252,7 @@ async function resolveAdminAlert(req, res) {
     });
   } catch (error) {
     console.error(error);
-    return res.status(400).json({ erro: error.message || "Nao foi possivel resolver o alerta." });
+    return res.status(400).json({ erro: error.message || "Não foi possível resolver o alerta." });
   }
 }
 
@@ -1270,7 +1313,7 @@ async function postJson(url, body, headers = {}) {
 
 async function sendWhatsAppToProvider(phone, message, config) {
   if (!phone || !message) {
-    throw new Error("Telefone e mensagem sao obrigatorios.");
+    throw new Error("Telefone e mensagem são obrigatórios.");
   }
 
   if (config.provider === "zapi") {
@@ -1391,7 +1434,7 @@ async function futureWhatsAppSend(req, res) {
       providerMessageId: "",
       status: "provider_error",
       provider: config.provider,
-      erro: error.message || "Nao foi possivel enviar WhatsApp pelo backend."
+      erro: error.message || "Não foi possível enviar WhatsApp pelo backend."
     });
   }
 }

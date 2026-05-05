@@ -251,7 +251,7 @@ export function formatWeekdayList(values = [], format = "short") {
   const selectedDays = normalizeWeekdayList(values);
 
   if (!selectedDays.length) {
-    return "Nao definido";
+    return "Não definido";
   }
 
   return selectedDays
@@ -721,6 +721,13 @@ export function can(permission, profile = globalThis.window?.__burgerOpsProfile 
     return false;
   }
 
+  const principalRole = normalizePermissionRole(profile.perfilPrincipal || profile.tipo);
+  const principalPermissions = ROLE_PERMISSION_DEFAULTS[principalRole] || [];
+
+  if (principalPermissions.includes("*")) {
+    return true;
+  }
+
   const manualValue = getManualPermission(profile, permission);
 
   if (manualValue === false) {
@@ -730,9 +737,6 @@ export function can(permission, profile = globalThis.window?.__burgerOpsProfile 
   if (manualValue === true) {
     return true;
   }
-
-  const principalRole = normalizePermissionRole(profile.perfilPrincipal || profile.tipo);
-  const principalPermissions = ROLE_PERMISSION_DEFAULTS[principalRole] || [];
 
   if (permissionListHas(principalPermissions, permission)) {
     return true;
@@ -769,14 +773,14 @@ export async function requireAuth(options = {}) {
 
   if (!context?.user) {
     window.location.href = "login.html";
-    throw new Error("Usuario nao autenticado.");
+    throw new Error("Usuário não autenticado.");
   }
 
   if (!context.profile) {
     await signOut(auth);
-    window.alert("Usuario nao autorizado.");
+    window.alert("Usuário não autorizado.");
     window.location.href = "login.html";
-    throw new Error("Usuario sem perfil.");
+    throw new Error("Usuário sem perfil.");
   }
 
   window.__burgerOpsProfile = context.profile;
@@ -812,7 +816,7 @@ export function bindLogoutButton(buttonId = "logout-button") {
       await logout();
     } catch (error) {
       console.error(error);
-      window.alert("Não foi possível encerrar a sessao.");
+      window.alert("Não foi possível encerrar a sessão.");
     }
   }));
 }
@@ -905,7 +909,7 @@ export async function loadAutomationConfig() {
       }
     };
   } catch (error) {
-    console.warn("Não foi possível carregar configuracao da automacao WhatsApp.", error);
+    console.warn("Não foi possível carregar configuração da automação WhatsApp.", error);
     return defaultConfig;
   }
 }
@@ -1015,7 +1019,7 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
     status = response.status === "sent" ? "enviado" : "pendente_api";
     providerMessageId = response.providerMessageId || "";
   } catch (error) {
-    console.warn("Envio real ainda nao concluido. Log sera salvo como pendente de API.", error);
+    console.warn("Envio real ainda não concluído. Log será salvo como pendente de API.", error);
   }
 
   await registerAutomationLog({
@@ -1085,7 +1089,7 @@ export async function getAuthToken() {
   const user = auth.currentUser ?? (await waitForAuthUser());
 
   if (!user) {
-    throw new Error("Sessao expirada.");
+    throw new Error("Sessão expirada.");
   }
 
   return user.getIdToken();
@@ -1124,12 +1128,12 @@ async function performApiRequest(path, options = {}, settings = {}) {
         : null;
 
       if (isProbablyWrongOrigin(path, response, contentType)) {
-        lastError = new Error(`Base ${baseUrl} nao expoe a API esperada.`);
+        lastError = new Error(`Base ${baseUrl} não expõe a API esperada.`);
         continue;
       }
 
       if (!response.ok) {
-        const error = new Error(payload?.erro || "Não foi possível completar a requisicao.");
+        const error = new Error(payload?.erro || "Não foi possível completar a requisição.");
         error.status = response.status;
         throw error;
       }
@@ -1146,7 +1150,7 @@ async function performApiRequest(path, options = {}, settings = {}) {
   }
 
   throw new Error(
-    "Não foi possível conectar ao backend. Verifique se o servidor desta instalacao esta online ou, em ambiente local, rode npm start."
+    "Não foi possível conectar ao backend. Verifique se o servidor desta instalação está online ou, em ambiente local, rode npm start."
   );
 }
 
@@ -1168,7 +1172,7 @@ export async function triggerReplenishmentEvaluation(reason = "app_event", optio
       })
     });
   } catch (error) {
-    console.warn("Não foi possível reavaliar os alertas de reposicao.", error);
+    console.warn("Não foi possível reavaliar os alertas de reposição.", error);
     return null;
   }
 }
@@ -1188,7 +1192,7 @@ export function getMonthDate(monthKey) {
 
 export function formatMonthLabel(monthKey) {
   if (!monthKey) {
-    return "Mes nao informado";
+    return "Mês não informado";
   }
 
   const parsed = getMonthDate(monthKey);

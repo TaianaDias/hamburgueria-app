@@ -13,14 +13,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Alertas de reposicao | Hamburgueria</title>
+<title>Alertas de reposição | Hamburgueria</title>
 </head>
 <body>
 <main class="page">
   <header class="page-header">
     <div>
       <p class="eyebrow">Inteligencia de estoque</p>
-      <h1>Alertas de reposicao</h1>
+      <h1>Alertas de reposição</h1>
       <p id="user-info" class="muted"></p>
     </div>
 
@@ -38,20 +38,20 @@
       <div>
         <p class="eyebrow" style="color: rgba(255, 255, 255, 0.78);">Painel admin</p>
         <h2>Prevencao de ruptura e decisao de compra</h2>
-        <p class="muted" style="color: rgba(226, 232, 240, 0.88); margin-top: 10px;">Ficam aqui apenas os alertas realmente acionaveis: item no minimo, item critico e lembrete diario ao admin.</p>
+        <p class="muted" style="color: rgba(226, 232, 240, 0.88); margin-top: 10px;">Ficam aqui apenas os alertas realmente acionáveis: item no mínimo, item crítico e lembrete diário ao admin.</p>
       </div>
 
       <div class="purchase-dashboard-badges">
         <span id="hero-next-run" class="purchase-badge">Ultima avaliacao: -</span>
         <span id="hero-provider" class="purchase-badge">Canal: WhatsApp</span>
-        <span id="hero-recipient" class="purchase-badge">Admin: nao configurado</span>
+        <span id="hero-recipient" class="purchase-badge">Admin: não configurado</span>
       </div>
     </div>
   </section>
 
   <section class="stats-grid" style="margin-top: 20px;">
     <article class="card">
-      <span class="muted">Produtos em atencao</span>
+      <span class="muted">Produtos em atenção</span>
       <strong id="metric-attention" class="metric-value">0</strong>
     </article>
 
@@ -71,7 +71,7 @@
     <article class="panel">
       <div class="page-header" style="margin-bottom: 16px;">
         <div>
-          <h3>Configuração automatica</h3>
+          <h3>Configuração automática</h3>
           <p class="muted">Defina apenas o essencial para o disparo diario ao admin.</p>
         </div>
       </div>
@@ -81,12 +81,12 @@
           <span>Modulo ativo</span>
           <label class="inline-choice">
             <input id="config-enabled" type="checkbox">
-            <span>Monitorar reposicao automaticamente</span>
+            <span>Monitorar reposição automaticamente</span>
           </label>
         </div>
 
         <div class="field-group">
-          <span>Avaliacao automatica</span>
+          <span>Avaliação automática</span>
           <label class="inline-choice">
             <input id="config-auto-evaluation" type="checkbox">
             <span>Rodar sem intervencao manual</span>
@@ -116,7 +116,7 @@
           <input id="config-cooldown" type="number" min="1" max="168" step="1" value="24">
         </div>
 
-        <button id="save-config-button" type="submit">Salvar configuracao</button>
+        <button id="save-config-button" type="submit">Salvar configuração</button>
       </form>
 
       <div id="config-status" class="status info" hidden></div>
@@ -132,9 +132,9 @@
 
       <div id="notification-card" class="card"></div>
       <div class="card" style="margin-top: 16px;">
-        <h3>Sugestao antecipada da equipe</h3>
+        <h3>Sugestão antecipada da equipe</h3>
         <p class="muted" style="margin-top: 12px;">
-          Quando o responsavel pelo estoque enxergar necessidade de compra antes do minimo, ele pode usar a aba Compras para abrir o lembrete ao admin com os pedidos sugeridos.
+          Quando o responsável pelo estoque enxergar necessidade de compra antes do mínimo, ele pode usar a aba Compras para abrir o lembrete ao admin com os pedidos sugeridos.
         </p>
       </div>
     </article>
@@ -156,7 +156,7 @@
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Histórico de alertas</h3>
-        <p class="muted">Use este historico para entender recorrencia, escalonamento e resolucao.</p>
+        <p class="muted">Use este histórico para entender recorrência, escalonamento e resolução.</p>
       </div>
     </div>
 
@@ -210,7 +210,7 @@ function formatDateTime(value) {
 
 function formatDayCoverage(value) {
   if (value == null) {
-    return "Nao calculada";
+    return "Não calculada";
   }
 
   return `${toNumber(value, 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dia(s)`;
@@ -222,7 +222,7 @@ function formatAlertLevel(level) {
   }
 
   if (level === "attention") {
-    return "Atencao";
+    return "Atenção";
   }
 
   return "Normal";
@@ -248,7 +248,7 @@ function formatNotificationStatus(notification) {
   }
 
   if (status === "missing_recipient") {
-    return "WhatsApp do admin nao configurado";
+    return "WhatsApp do admin não configurado";
   }
 
   if (status === "opened_in_whatsapp") {
@@ -262,7 +262,7 @@ function formatEventOrigin(entry = {}) {
   const eventType = String(entry.eventType || "").trim();
 
   if (eventType === "manual_purchase_suggestion") {
-    return "Sugestao manual da aba Compras";
+    return "Sugestão manual da aba Compras";
   }
 
   if (eventType === "resolved_manual") {
@@ -270,11 +270,11 @@ function formatEventOrigin(entry = {}) {
   }
 
   if (eventType === "resolved_auto") {
-    return "Avaliacao automatica";
+    return "Avaliação automática";
   }
 
   if (["opened", "updated", "escalated"].includes(eventType)) {
-    return "Avaliacao automatica";
+    return "Avaliação automática";
   }
 
   return "Evento do sistema";
@@ -327,7 +327,7 @@ function renderSummary(data) {
   document.getElementById("hero-provider").textContent = "Canal: WhatsApp";
   document.getElementById("hero-recipient").textContent = data.adminWhatsapp
     ? `Admin: ${data.adminWhatsapp}`
-    : "Admin: nao configurado";
+    : "Admin: não configurado";
 }
 
 function buildSupplierComparisonMarkup(supplier, index) {
@@ -339,7 +339,7 @@ function buildSupplierComparisonMarkup(supplier, index) {
         ${escapeHtml(`${formatCurrency(supplier.custoUnitario)} por ${supplier.unidadeUso || "un"}`)}<br>
         ${supplier.promocaoAtiva ? "Promocao ativa" : "Preco base"}<br>
         ${supplier.frequenciaAtiva ? `Pedir: ${escapeHtml(formatWeekdayList(supplier.diasPedido, "long"))}` : "Sem frequencia definida"}<br>
-        ${supplier.diasEntrega?.length ? `Entrega: ${escapeHtml(formatWeekdayList(supplier.diasEntrega, "long"))}` : "Entrega nao definida"}
+        ${supplier.diasEntrega?.length ? `Entrega: ${escapeHtml(formatWeekdayList(supplier.diasEntrega, "long"))}` : "Entrega não definida"}
       </p>
     </article>
   `;
@@ -349,7 +349,7 @@ function renderAlerts(data) {
   alertsList.innerHTML = "";
 
   if (!data.activeAlerts?.length) {
-    alertsList.innerHTML = '<div class="empty-state">Nenhum produto precisa de reposicao neste momento.</div>';
+    alertsList.innerHTML = '<div class="empty-state">Nenhum produto precisa de reposição neste momento.</div>';
     return;
   }
 
@@ -376,7 +376,7 @@ function renderAlerts(data) {
           </div>
           <p class="muted" style="margin-top: 12px;">
             Estoque atual: ${toNumber(alert.currentStock, 0)} ${escapeHtml(alert.usageUnit || "un")}
-            | Minimo: ${toNumber(alert.minimumStock, 0)}
+            | Mínimo: ${toNumber(alert.minimumStock, 0)}
             | Ideal: ${toNumber(alert.idealStock, 0)}
           </p>
         </div>
@@ -393,7 +393,7 @@ function renderAlerts(data) {
         </div>
         <div>
           <span class="muted">Melhor fornecedor</span>
-          <strong>${escapeHtml(alert.recommendedSupplier?.nome || "Nao definido")}</strong>
+          <strong>${escapeHtml(alert.recommendedSupplier?.nome || "Não definido")}</strong>
         </div>
         <div>
           <span class="muted">Economia estimada</span>
@@ -402,7 +402,7 @@ function renderAlerts(data) {
       </div>
 
       <p class="muted" style="margin-top: 16px;">
-        Acao recomendada: ${escapeHtml(recommendation)}
+        Ação recomendada: ${escapeHtml(recommendation)}
       </p>
 
       <div class="inline-actions" style="margin-top: 16px;">
@@ -444,7 +444,7 @@ function renderNotificationCard(data) {
     </div>
     <p class="muted compact-meta">${escapeHtml([
       formatDateTime(notification.createdAt),
-      notification.type === "manual_purchase_suggestion" ? "Sugestao manual da aba Compras" : notification.provider || "log",
+      notification.type === "manual_purchase_suggestion" ? "Sugestão manual da aba Compras" : notification.provider || "log",
       notification.reason ? `Motivo: ${notification.reason}` : "",
       `${toNumber(notification.itemCount, 0)} item(ns)`
     ].filter(Boolean).join(" | "))}</p>
@@ -467,7 +467,7 @@ function renderHistory(data) {
   historyList.innerHTML = "";
 
   if (!data.history?.length) {
-    historyList.innerHTML = '<div class="empty-state">Ainda nao ha eventos registrados no historico de alertas.</div>';
+    historyList.innerHTML = '<div class="empty-state">Ainda não há eventos registrados no histórico de alertas.</div>';
     return;
   }
 
@@ -563,7 +563,7 @@ alertsList.addEventListener("click", async (event) => {
 
 evaluateButton.addEventListener("click", async () => {
   evaluateButton.disabled = true;
-  setStatus("dashboard-status", "Rodando avaliacao inteligente de reposicao...", "info");
+  setStatus("dashboard-status", "Rodando avaliação inteligente de reposição...", "info");
 
   try {
     const response = await apiFetch("/api/admin-alerts/evaluate", {
@@ -587,7 +587,7 @@ evaluateButton.addEventListener("click", async () => {
 configForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   saveConfigButton.disabled = true;
-  setStatus("config-status", "Salvando configuracao...", "info");
+  setStatus("config-status", "Salvando configuração...", "info");
 
   try {
     const payload = {
@@ -609,7 +609,7 @@ configForm.addEventListener("submit", async (event) => {
     await loadDashboard({ statusMessage: "Configuração atualizada. Recarregando painel..." });
   } catch (error) {
     console.error(error);
-    setStatus("config-status", error.message || "Não foi possível salvar a configuracao.", "error");
+    setStatus("config-status", error.message || "Não foi possível salvar a configuração.", "error");
   } finally {
     saveConfigButton.disabled = false;
   }

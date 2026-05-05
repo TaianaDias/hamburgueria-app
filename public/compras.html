@@ -153,7 +153,7 @@
 
   <section class="panel">
     <h3>Pedidos sugeridos</h3>
-    <p class="muted">Cada grupo abaixo e gerado a partir do nivel mínimo e do maximo configurado no estoque.</p>
+    <p class="muted">Cada grupo abaixo é gerado a partir do nível mínimo e do máximo configurado no estoque.</p>
     <div id="status" class="status info" hidden></div>
     <div id="lista" class="list" style="margin-top: 16px;"></div>
   </section>
@@ -242,7 +242,7 @@ const SYSTEM_SETTINGS_REF = doc(db, "configuracoes", "sistema");
 
 function buildMessage(pedido) {
   const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
-  return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
+  return encodeURIComponent(["Pedido de reposição:", "", ...lines].join("\n"));
 }
 
 function getTodayDateValue(referenceDate = new Date()) {
@@ -511,7 +511,7 @@ function renderOrders(items) {
   updateAdminReminderPreview();
 
   if (!items.length) {
-    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao ou pedido programado neste momento.</div>';
+    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposição ou pedido programado neste momento.</div>';
     return;
   }
 
@@ -521,7 +521,7 @@ function renderOrders(items) {
     const supplierColumns = item.fornecedores.length
       ? item.fornecedores.map((supplier) => `
         <div class="supplier-price-card${supplier.recomendado ? " best" : ""}">
-          <strong>${escapeHtml(supplier.nome || "Fornecedor nao definido")}</strong>
+          <strong>${escapeHtml(supplier.nome || "Fornecedor não definido")}</strong>
           <span class="supplier-price">${formatCurrency(getEffectiveSupplierUnitCost(supplier))}</span>
           <p class="muted">${escapeHtml(`Embalagem ${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))} | ${supplier.conversao} ${supplier.unidadeUso} | ${supplier.qtdCompra} embalagem(ns)`)} </p>
           <p class="muted">${escapeHtml(
@@ -540,7 +540,7 @@ function renderOrders(items) {
 
     article.innerHTML = `
       <h3>${escapeHtml(item.nome)}</h3>
-      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Minimo ${item.minimo} | Maximo ${item.maximo} | Pedido sugerido ${item.qtdCompra} embalagem(ns) | Motivo ${getTriggerLabel(item.gatilhos)}`)}</p>
+      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Mínimo ${item.minimo} | Máximo ${item.maximo} | Pedido sugerido ${item.qtdCompra} embalagem(ns) | Motivo ${getTriggerLabel(item.gatilhos)}`)}</p>
       <div class="supplier-price-grid">${supplierColumns}</div>
     `;
 
@@ -617,7 +617,7 @@ function buildOrderSuggestions() {
 
     if (!grouped.has(key)) {
       grouped.set(key, {
-        fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
+        fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor não informado",
         telefone: supplierChoice?.telefone || "",
         telefoneNormalizado: supplierChoice?.telefoneNormalizado || normalizePhone(supplierChoice?.telefone || ""),
         itens: []
@@ -788,10 +788,10 @@ sendAdminReminderButton.addEventListener("click", async () => {
         groups: pedidos
       })
     });
-    setStatus("admin-reminder-status", "WhatsApp aberto e sugestão registrada no historico.", "success");
+    setStatus("admin-reminder-status", "WhatsApp aberto e sugestão registrada no histórico.", "success");
   } catch (error) {
     console.error(error);
-    setStatus("admin-reminder-status", "WhatsApp aberto, mas nao foi possivel registrar a sugestão no sistema.", "error");
+    setStatus("admin-reminder-status", "WhatsApp aberto, mas não foi possível registrar a sugestão no sistema.", "error");
   } finally {
     sendAdminReminderButton.disabled = false;
     updateAdminReminderPreview();

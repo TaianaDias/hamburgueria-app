@@ -25,8 +25,8 @@
     </div>
 
     <div class="field-group stock-topbar-search">
-      <label for="stock-top-search">Busca rapida</label>
-      <input id="stock-top-search" type="search" placeholder="Buscar por insumo, SKU, marca ou codigo">
+      <label for="stock-top-search">Busca rápida</label>
+      <input id="stock-top-search" type="search" placeholder="Buscar por insumo, SKU, marca ou código">
     </div>
 
     <div class="actions">
@@ -37,13 +37,13 @@
 
   <section class="stock-kpi-grid" aria-label="Indicadores do cadastro de insumos">
     <article class="panel stock-kpi-card warning">
-      <span>Itens abaixo do minimo</span>
+      <span>Itens abaixo do mínimo</span>
       <strong id="stock-kpi-low">0</strong>
-      <small>Precisam de compra ou producao</small>
+      <small>Precisam de compra ou produção</small>
     </article>
 
     <article class="panel stock-kpi-card danger">
-      <span>Proximos do vencimento</span>
+      <span>Próximos do vencimento</span>
       <strong id="stock-kpi-expiring">0</strong>
       <small>Hoje, amanhã ou próximos 3 dias</small>
     </article>
@@ -51,13 +51,13 @@
     <article class="panel stock-kpi-card">
       <span>Sem fornecedor</span>
       <strong id="stock-kpi-no-supplier">0</strong>
-      <small>Impacta compra automatica</small>
+      <small>Impacta compra automática</small>
     </article>
 
     <article class="panel stock-kpi-card">
       <span>Para etiquetar</span>
       <strong id="stock-kpi-labels">0</strong>
-      <small>Itens com validade/producao</small>
+      <small>Itens com validade/produção</small>
     </article>
 
     <article class="panel stock-kpi-card warning">
@@ -71,7 +71,7 @@
     <div>
       <p class="eyebrow">Painel operacional</p>
       <h3>Insumos por categoria</h3>
-      <p class="muted">Filtre rapido e alterne entre cards para operação ou tabela para conferencia.</p>
+      <p class="muted">Filtre rápido e alterne entre cards para operação ou tabela para conferência.</p>
     </div>
 
     <div id="stock-category-filters" class="stock-category-filters" aria-label="Filtros de categoria"></div>
@@ -95,7 +95,7 @@
 
     <div class="stock-view-actions">
       <button id="open-product-drawer" type="button">Novo Insumo</button>
-      <div class="stock-view-toggle" aria-label="Alternar visualizacao">
+      <div class="stock-view-toggle" aria-label="Alternar visualização">
         <button id="stock-view-cards" class="secondary active" type="button">Cards</button>
         <button id="stock-view-table" class="secondary" type="button">Tabela</button>
       </div>
@@ -105,8 +105,8 @@
   <section class="panel quick-box-panel stock-daily-entry-panel">
     <div class="page-header compact-header">
       <div>
-        <p class="eyebrow">Entrada rapida</p>
-        <h3>Registro de mercadorias por codigo de barras</h3>
+        <p class="eyebrow">Entrada rápida</p>
+        <h3>Registro de mercadorias por código de barras</h3>
         <p class="muted">Bipe o produto e o sistema consulta Cosmos/Open Food Facts automaticamente. Depois confirme pacote, caixa, fardo ou unidade.</p>
       </div>
       <span id="quick-lookup-source" class="stock-lookup-chip">Aguardando bipagem</span>
@@ -114,7 +114,7 @@
 
     <div class="quick-box-scan">
       <div class="field-group">
-        <label for="quick_barcode">Bipar ou digitar codigo de barras</label>
+        <label for="quick_barcode">Bipar ou digitar código de barras</label>
         <input id="quick_barcode" inputmode="numeric" placeholder="789..." autocomplete="off" autofocus>
       </div>
       <button id="quick-focus-barcode" class="secondary" type="button">Pronto para bipar</button>
@@ -164,7 +164,7 @@
         </div>
 
         <div class="field-group">
-          <label for="quick_exit_unit">Saida por</label>
+          <label for="quick_exit_unit">Saída por</label>
           <select id="quick_exit_unit">
             <option value="unidade">Unidade</option>
             <option value="pacote">Pacote</option>
@@ -179,7 +179,7 @@
         </div>
 
         <div class="field-group">
-          <label for="quick_min_boxes">Minimo em embalagens</label>
+          <label for="quick_min_boxes">Mínimo em embalagens</label>
           <input id="quick_min_boxes" type="number" min="0" step="1" value="2">
         </div>
 
@@ -189,7 +189,7 @@
         </div>
       </div>
 
-      <p id="quick-unit-cost-preview" class="muted quick-cost-preview">Custo unitario calculado: R$ 0,00</p>
+      <p id="quick-unit-cost-preview" class="muted quick-cost-preview">Custo unitário calculado: R$ 0,00</p>
 
       <div class="quick-box-actions">
         <button id="quick-entry-box" type="button">Registrar entrada</button>
@@ -207,7 +207,7 @@
           <h3>Importar nota fiscal XML</h3>
           <p class="muted">Abra quando precisar dar entrada via nota fiscal.</p>
         </div>
-        <span class="section-accordion-cta">Abrir importacao</span>
+        <span class="section-accordion-cta">Abrir importação</span>
       </summary>
 
       <div class="section-accordion-body">
@@ -223,7 +223,7 @@
           </div>
         </div>
 
-        <p class="muted">Itens novos usam minimo 2, maximo 50 e conversao 1. Itens existentes recebem soma na quantidade e atualizacao automatica do custo por unidade.</p>
+        <p class="muted">Itens novos usam mínimo 2, máximo 50 e conversão 1. Itens existentes recebem soma na quantidade e atualização automática do custo por unidade.</p>
         <div id="xml-status" class="status info" hidden></div>
         <div id="xml-preview" class="list" style="margin-top: 16px;"></div>
       </div>
@@ -235,7 +235,7 @@
       <summary class="section-accordion-summary">
         <div>
           <h3>Novo insumo</h3>
-          <p class="muted">Cadastro rapido com abas para dados, compra, validade, etiqueta e ficha técnica.</p>
+          <p class="muted">Cadastro rápido com abas para dados, compra, validade, etiqueta e ficha técnica.</p>
         </div>
         <span class="section-accordion-cta">Abrir cadastro</span>
       </summary>
@@ -244,16 +244,16 @@
         <nav class="product-drawer-tabs" aria-label="Abas do cadastro de insumo">
           <button class="secondary active" type="button" data-drawer-tab="gerais">Dados Gerais</button>
           <button class="secondary" type="button" data-drawer-tab="estoque">Estoque</button>
-          <button class="secondary" type="button" data-drawer-tab="compra">Compra e Conversao</button>
+          <button class="secondary" type="button" data-drawer-tab="compra">Compra e Conversão</button>
           <button class="secondary" type="button" data-drawer-tab="validade">Validade</button>
           <button class="secondary" type="button" data-drawer-tab="fornecedores">Fornecedores</button>
           <button class="secondary" type="button" data-drawer-tab="etiqueta">Etiqueta</button>
-          <button class="secondary" type="button" data-drawer-tab="ficha">Ficha Tecnica</button>
+          <button class="secondary" type="button" data-drawer-tab="ficha">Ficha Técnica</button>
           <button class="secondary" type="button" data-drawer-tab="historico">Histórico</button>
         </nav>
 
         <div class="page-header" style="margin-bottom: 16px;">
-          <p class="muted">Preencha o básico para cadastro rapido e abra as opcoes quando precisar.</p>
+          <p class="muted">Preencha o básico para cadastro rápido e abra as opções quando precisar.</p>
           <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
         </div>
 
@@ -265,7 +265,7 @@
             </div>
 
             <div class="field-group">
-              <label for="novo_codigo_interno">Codigo interno/SKU</label>
+              <label for="novo_codigo_interno">Código interno/SKU</label>
               <input id="novo_codigo_interno" placeholder="CAR-BLD-001">
             </div>
 
@@ -297,12 +297,12 @@
         </div>
 
         <div class="field-group">
-          <label for="novo_min">Minimo</label>
+          <label for="novo_min">Mínimo</label>
           <input id="novo_min" type="number" min="0" step="1" value="2">
         </div>
 
         <div class="field-group">
-          <label for="novo_max">Maximo</label>
+          <label for="novo_max">Máximo</label>
           <input id="novo_max" type="number" min="1" step="1" value="50">
         </div>
 
@@ -331,16 +331,16 @@
         <summary class="section-accordion-summary">
           <div>
             <span>Configuracoes opcionais</span>
-            <strong>Codigo de barras, fornecedores e frequencia de compra</strong>
+            <strong>Código de barras, fornecedores e frequência de compra</strong>
           </div>
-          <span class="section-accordion-cta">Abrir opcoes</span>
+          <span class="section-accordion-cta">Abrir opções</span>
         </summary>
 
         <div class="section-accordion-body compact-config-body">
           <details class="supplier-section section-accordion compact-inner-accordion">
             <summary class="section-accordion-summary">
               <div>
-                <span>Cadastro por codigo de barras</span>
+                <span>Cadastro por código de barras</span>
                 <strong id="barcode-accordion-summary">Leia pela camera ou digite manualmente.</strong>
               </div>
               <span class="section-accordion-cta">Abrir leitura</span>
@@ -349,7 +349,7 @@
             <div class="section-accordion-body">
               <div class="form-grid">
                 <div class="field-group">
-                  <label for="novo_codigo_barras">Codigo de barras</label>
+                  <label for="novo_codigo_barras">Código de barras</label>
                   <input id="novo_codigo_barras" inputmode="numeric" placeholder="789..." autocomplete="off">
                 </div>
 
@@ -377,14 +377,14 @@
               </div>
 
               <div class="actions" style="margin-top: 16px;">
-                <button id="lookup-barcode-button" class="secondary" type="button">Consultar codigo</button>
+                <button id="lookup-barcode-button" class="secondary" type="button">Consultar código</button>
                 <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
                 <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
               </div>
 
               <label class="inline-choice" style="margin-top: 16px;">
                 <input id="manual-product-toggle" type="checkbox">
-                <span>Item artesanal ou sem codigo de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
+                <span>Item artesanal ou sem código de barras. Nesse caso, o cadastro pode seguir manualmente.</span>
               </label>
 
               <div id="barcode-status" class="status info" hidden></div>
@@ -396,7 +396,7 @@
             <summary class="section-accordion-summary">
               <div>
                 <span>Fornecedores do produto</span>
-                <strong id="suppliers-accordion-summary">Adicione 1 ou mais opcoes e marque o principal.</strong>
+                <strong id="suppliers-accordion-summary">Adicione 1 ou mais opções e marque o principal.</strong>
               </div>
               <span class="section-accordion-cta">Abrir fornecedores</span>
             </summary>
@@ -437,14 +437,14 @@
                   <label for="novo_fornecedor_principal">Fornecedor principal</label>
                   <select id="novo_fornecedor_principal">
                     <option value="sim">Sim, usar como custo padrão</option>
-                    <option value="nao">Nao, deixar como alternativa</option>
+                    <option value="nao">Não, deixar como alternativa</option>
                   </select>
                 </div>
 
                 <div class="field-group">
                   <label for="novo_promocao_ativa">Promocao ativa</label>
                   <select id="novo_promocao_ativa">
-                    <option value="nao">Nao</option>
+                    <option value="nao">Não</option>
                     <option value="sim">Sim</option>
                   </select>
                 </div>
@@ -462,7 +462,7 @@
                 <div class="field-group">
                   <label for="novo_frequencia_ativa">Frequencia de pedido</label>
                   <select id="novo_frequencia_ativa">
-                    <option value="nao">Nao</option>
+                    <option value="nao">Não</option>
                     <option value="sim">Sim</option>
                   </select>
                 </div>
@@ -513,7 +513,7 @@
                 </div>
 
                 <div class="field-group">
-                  <label for="novo_validade_producao">Validade apos producao</label>
+                  <label for="novo_validade_producao">Validade após produção</label>
                   <input id="novo_validade_producao" placeholder="Ex.: 72 horas">
                 </div>
 
@@ -583,7 +583,7 @@
         <div class="inventory-toolbar">
           <div class="field-group">
             <label for="inventory-search">Buscar item no estoque</label>
-            <input id="inventory-search" type="search" placeholder="Nome, marca, categoria ou codigo de barras">
+            <input id="inventory-search" type="search" placeholder="Nome, marca, categoria ou código de barras">
           </div>
           <span id="inventory-filter-meta" class="inventory-filter-meta muted">Sem filtro aplicado</span>
         </div>
@@ -937,7 +937,7 @@ function getQuickBoxUnitCost() {
 function updateQuickBoxCostPreview() {
   const movement = getQuickMovementInputs(true);
   const equivalentBoxes = formatQuantity(movement.stockDeltaBoxes);
-  quickUnitCostPreview.textContent = `Custo unitario calculado: ${formatCurrency(getQuickBoxUnitCost())} | Entrada equivale a ${equivalentBoxes} embalagem(ns)`;
+  quickUnitCostPreview.textContent = `Custo unitário calculado: ${formatCurrency(getQuickBoxUnitCost())} | Entrada equivale a ${equivalentBoxes} embalagem(ns)`;
   quickEntryBoxButton.textContent = `Registrar entrada de ${formatQuantity(movement.quantity)} ${movement.unitLabel}(s)`;
 
   const exitMovement = getQuickMovementInputs(false);
@@ -984,7 +984,7 @@ async function lookupQuickBoxProduct() {
   const barcode = normalizeBarcode(quickBarcodeInput.value);
 
   if (!barcode) {
-    setStatus("quick-box-status", "Bipe ou digite um codigo de barras valido.", "error");
+    setStatus("quick-box-status", "Bipe ou digite um código de barras válido.", "error");
     quickBarcodeInput.focus();
     return null;
   }
@@ -993,8 +993,8 @@ async function lookupQuickBoxProduct() {
   quickBoxState.barcode = barcode;
   quickLookupInFlight = barcode;
   quickLookupBarcodeButton.disabled = true;
-  setQuickLookupSource("Consultando codigo...", "info");
-  setStatus("quick-box-status", "Buscando produto pelo codigo de barras...", "info");
+  setQuickLookupSource("Consultando código...", "info");
+  setStatus("quick-box-status", "Buscando produto pelo código de barras...", "info");
 
   try {
     let product = findProductByBarcode(barcode);
@@ -1032,7 +1032,7 @@ async function lookupQuickBoxProduct() {
           fonte: response?.source || "codigo-barras"
         }))
         .catch((error) => {
-          console.warn("Não foi possível consultar codigo externo.", error);
+          console.warn("Não foi possível consultar código externo.", error);
           return {
             barcode,
             nome: "",
@@ -1051,7 +1051,7 @@ async function lookupQuickBoxProduct() {
       "quick-box-status",
       externalProduct.nome
         ? `Produto identificado via ${formatLookupSource(externalProduct.fonte)}. Confira quantidade por caixa e valor pago.`
-        : "Produto nao encontrado. Preencha nome, marca, categoria e quantidade por caixa.",
+        : "Produto não encontrado. Preencha nome, marca, categoria e quantidade por caixa.",
       externalProduct.nome ? "success" : "info"
     );
     return null;
@@ -1077,8 +1077,8 @@ function scheduleQuickBarcodeLookup() {
   }
 
   if (barcode.length < 8) {
-    setQuickLookupSource("Lendo codigo...", "info");
-    setStatus("quick-box-status", "Continue bipando ou digitando o codigo.", "info");
+    setQuickLookupSource("Lendo código...", "info");
+    setStatus("quick-box-status", "Continue bipando ou digitando o código.", "info");
     return;
   }
 
@@ -1086,7 +1086,7 @@ function scheduleQuickBarcodeLookup() {
     return;
   }
 
-  setQuickLookupSource("Busca automatica em instantes", "info");
+  setQuickLookupSource("Busca automática em instantes", "info");
   quickBarcodeLookupTimer = window.setTimeout(async () => {
     lastQuickLookupBarcode = barcode;
     await lookupQuickBoxProduct();
@@ -1112,7 +1112,7 @@ function buildQuickBoxProductPayload(nextStockBoxes, movement) {
   const unitCost = entryTotalCost > 0 ? getQuickBoxUnitCost() : currentUnitCost;
 
   if (!barcode) {
-    throw new Error("Bipe ou digite o codigo de barras antes de movimentar.");
+    throw new Error("Bipe ou digite o código de barras antes de movimentar.");
   }
 
   if (!nome) {
@@ -1162,7 +1162,7 @@ async function recordQuickBoxMovement(type) {
   const movement = getQuickMovementInputs(isEntry);
 
   if (!isEntry && !currentProduct) {
-    setStatus("quick-box-status", "Produto ainda nao cadastrado. Faca uma entrada para criar o cadastro antes da saída.", "error");
+    setStatus("quick-box-status", "Produto ainda não cadastrado. Faça uma entrada para criar o cadastro antes da saída.", "error");
     return;
   }
 
@@ -1179,7 +1179,7 @@ async function recordQuickBoxMovement(type) {
   }
 
   if (isEntry && toNumber(quickBoxPriceInput.value, 0) <= 0) {
-    setStatus("quick-box-status", "Informe o custo total dessa entrada para calcular o custo unitario.", "error");
+    setStatus("quick-box-status", "Informe o custo total dessa entrada para calcular o custo unitário.", "error");
     quickBoxPriceInput.focus();
     return;
   }
@@ -1302,7 +1302,7 @@ async function updateBarcodeModeState() {
     await stopBarcodeScanner();
     setStatus(
       "barcode-status",
-      "Cadastro manual ativo. O codigo de barras fica opcional para este item artesanal ou interno.",
+      "Cadastro manual ativo. O código de barras fica opcional para este item artesanal ou interno.",
       "info"
     );
     return;
@@ -1311,7 +1311,7 @@ async function updateBarcodeModeState() {
   if (!barcodeStatus.textContent.trim() || barcodeStatus.textContent.includes("Cadastro manual ativo")) {
     setStatus(
       "barcode-status",
-      "Leia pela camera ou consulte o codigo para preencher nome, marca e categoria automaticamente.",
+      "Leia pela câmera ou consulte o código para preencher nome, marca e categoria automaticamente.",
       "info"
     );
   }
@@ -1321,8 +1321,8 @@ async function updateBarcodeModeState() {
 
 function formatProductBarcodeLabel(item) {
   return item.codigoBarras
-    ? `Codigo ${item.codigoBarras}`
-    : "Sem codigo de barras (cadastro manual)";
+    ? `Código ${item.codigoBarras}`
+    : "Sem código de barras (cadastro manual)";
 }
 
 function formatSupplierScheduleDescription(supplier) {
@@ -1344,7 +1344,7 @@ function getOperationalWeekdaySummary(productSuppliers, fieldName) {
     normalizeWeekdayList(supplier?.[fieldName]).forEach((day) => selectedDays.add(day));
   });
 
-  return selectedDays.size ? formatWeekdayList([...selectedDays]) : "Nao definido";
+  return selectedDays.size ? formatWeekdayList([...selectedDays]) : "Não definido";
 }
 
 function getSupplierNamesSummary(productSuppliers) {
@@ -1517,7 +1517,7 @@ function applyBarcodeLookupProduct(product, options = {}) {
     "barcode-status",
     nextName
       ? `Produto localizado via ${source}. Revise os dados e salve quando estiver tudo certo.`
-      : "Produto nao encontrado nas bases automaticas. Continue com o cadastro manual.",
+      : "Produto não encontrado nas bases automáticas. Continue com o cadastro manual.",
     nextName ? "success" : "info"
   );
   updateBarcodeAccordionSummary();
@@ -1574,12 +1574,12 @@ async function lookupBarcodeProduct(barcode) {
   const normalizedBarcode = normalizeBarcode(barcode);
 
   if (!normalizedBarcode) {
-    setStatus("barcode-status", "Informe ou leia um codigo de barras valido.", "error");
+    setStatus("barcode-status", "Informe ou leia um código de barras válido.", "error");
     return null;
   }
 
   barcodeInput.value = normalizedBarcode;
-  setStatus("barcode-status", "Consultando codigo de barras...", "info");
+  setStatus("barcode-status", "Consultando código de barras...", "info");
 
   const cachedProduct = await getCachedBarcodeProduct(normalizedBarcode).catch(() => null);
 
@@ -1607,7 +1607,7 @@ async function lookupBarcodeProduct(barcode) {
     return product;
   } catch (error) {
     console.error(error);
-    setStatus("barcode-status", error.message || "Não foi possível consultar o codigo de barras.", "error");
+    setStatus("barcode-status", error.message || "Não foi possível consultar o código de barras.", "error");
     return null;
   }
 }
@@ -1693,7 +1693,7 @@ async function startBarcodeScanner() {
       }
     );
 
-    setStatus("barcode-status", "Camera ativa. Aponte para o codigo de barras.", "info");
+    setStatus("barcode-status", "Câmera ativa. Aponte para o código de barras.", "info");
   } catch (error) {
     console.error(error);
     await stopBarcodeScanner();
@@ -1758,7 +1758,7 @@ function updateSuppliersAccordionSummary() {
   const supplierCards = Array.from(newSuppliersList.querySelectorAll(".supplier-entry"));
 
   if (!supplierCards.length) {
-    suppliersAccordionSummary.textContent = "Adicione 1 ou mais opcoes e marque o principal.";
+    suppliersAccordionSummary.textContent = "Adicione 1 ou mais opções e marque o principal.";
     return;
   }
 
@@ -1782,7 +1782,7 @@ function updateRegisteredItemsSummary(items = []) {
 
   const lowStockItems = items.filter((item) => toNumber(item.quantidade, 0) <= toNumber(item.minimo, 0)).length;
   registeredItemsSummary.textContent = lowStockItems
-    ? `${items.length} item(ns) | ${lowStockItems} em atencao`
+    ? `${items.length} item(ns) | ${lowStockItems} em atenção`
     : `${items.length} item(ns) cadastrados`;
 }
 
@@ -2755,7 +2755,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   const promotionActiveField = document.createElement("select");
   promotionActiveField.className = "supplier-promotion-active";
   promotionActiveField.innerHTML = `
-    <option value="nao">Nao</option>
+    <option value="nao">Não</option>
     <option value="sim">Sim</option>
   `;
   promotionActiveField.value = entry.promocaoAtiva ? "sim" : "nao";
@@ -2786,7 +2786,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   const frequencyActiveField = document.createElement("select");
   frequencyActiveField.className = "supplier-frequency-active";
   frequencyActiveField.innerHTML = `
-    <option value="nao">Nao</option>
+    <option value="nao">Não</option>
     <option value="sim">Sim</option>
   `;
   frequencyActiveField.value = entry.frequenciaAtiva ? "sim" : "nao";
@@ -3101,7 +3101,7 @@ function handleProductQuickAction(action, item, collapsible = null) {
   }
 
   if (action === "etiqueta") {
-    setStatus("status", "Abra a aba de validade/etiqueta para conferir lote, validade e responsavel.", "info");
+    setStatus("status", "Abra a aba de validade/etiqueta para conferir lote, validade e responsável.", "info");
     return;
   }
 
@@ -3117,7 +3117,7 @@ function renderTableActionButtons(item) {
   return `
     <button class="secondary" type="button" data-table-action="editar" data-product-id="${escapeHtml(item.id)}">Editar</button>
     <button class="secondary" type="button" data-table-action="entrada" data-product-id="${escapeHtml(item.id)}">Entrada</button>
-    <button class="secondary" type="button" data-table-action="saida" data-product-id="${escapeHtml(item.id)}">Saida</button>
+    <button class="secondary" type="button" data-table-action="saida" data-product-id="${escapeHtml(item.id)}">Saída</button>
     <button class="secondary" type="button" data-table-action="etiqueta" data-product-id="${escapeHtml(item.id)}">Etiqueta</button>
   `;
 }
@@ -3168,8 +3168,8 @@ function renderProductsTable(items) {
             <th>Fornecedor</th>
             <th>Unidade de compra</th>
             <th>Estoque atual</th>
-            <th>Minimo</th>
-            <th>Custo unitario</th>
+            <th>Mínimo</th>
+            <th>Custo unitário</th>
             <th>Validade</th>
             <th>Status</th>
             <th>Acoes</th>
@@ -3222,10 +3222,10 @@ function renderProducts(items) {
     fields.className = "form-grid";
     fields.style.marginTop = "16px";
 
-    fields.appendChild(createField(`barcode_${item.id}`, "Codigo de barras", item.codigoBarras || "", {
+    fields.appendChild(createField(`barcode_${item.id}`, "Código de barras", item.codigoBarras || "", {
       type: "text"
     }));
-    fields.appendChild(createField(`sku_${item.id}`, "Codigo interno/SKU", item.codigoInterno || item.sku || "", {
+    fields.appendChild(createField(`sku_${item.id}`, "Código interno/SKU", item.codigoInterno || item.sku || "", {
       type: "text"
     }));
     fields.appendChild(createField(`brand_${item.id}`, "Marca", item.marca || "", {
@@ -3241,8 +3241,8 @@ function renderProducts(items) {
       type: "text"
     }));
     fields.appendChild(createField(`qtd_${item.id}`, "Quantidade", item.quantidade));
-    fields.appendChild(createField(`min_${item.id}`, "Minimo", item.minimo));
-    fields.appendChild(createField(`max_${item.id}`, "Maximo", item.maximo));
+    fields.appendChild(createField(`min_${item.id}`, "Mínimo", item.minimo));
+    fields.appendChild(createField(`max_${item.id}`, "Máximo", item.maximo));
     fields.appendChild(createField(`storage_${item.id}`, "Local de armazenamento", item.localArmazenamento || "", {
       type: "text"
     }));
@@ -3295,7 +3295,7 @@ function renderProducts(items) {
     supplierOverviewSection.style.marginTop = "16px";
 
     if (!productSuppliers.length) {
-      supplierOverviewSection.innerHTML = '<div class="empty-state">Nenhum fornecedor vinculado. Esse produto ainda nao vai aparecer bem sugerido na tela de compras.</div>';
+      supplierOverviewSection.innerHTML = '<div class="empty-state">Nenhum fornecedor vinculado. Esse produto ainda não vai aparecer bem sugerido na tela de compras.</div>';
     } else {
       const supplierCards = [...productSuppliers].sort((left, right) => {
         if (left.fornecedorId === cheapestSupplier?.fornecedorId) {
@@ -3330,7 +3330,7 @@ function renderProducts(items) {
             <span>${formatCurrency(getEffectiveSupplierUnitCost(supplier))} por ${escapeHtml(supplier.unidadeUso)}</span>
           </div>
           <span class="supplier-price">${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))}</span>
-          <p class="muted">Embalagem com ${supplier.conversao} ${escapeHtml(supplier.unidadeUso)} | CNPJ ${escapeHtml(formatDocumentNumber(supplier.cnpj) || "Nao informado")}</p>
+          <p class="muted">Embalagem com ${supplier.conversao} ${escapeHtml(supplier.unidadeUso)} | CNPJ ${escapeHtml(formatDocumentNumber(supplier.cnpj) || "Não informado")}</p>
           <p class="muted">${escapeHtml(formatSupplierScheduleDescription(supplier))}</p>
           <div class="product-tag-row">
             ${badges.map((badge) => `<span class="product-tag">${escapeHtml(badge)}</span>`).join("")}
@@ -3434,11 +3434,11 @@ function renderProducts(items) {
         }));
 
         if (maximo < minimo) {
-          throw new Error(`O maximo do item ${item.nome} precisa ser maior ou igual ao minimo.`);
+          throw new Error(`O máximo do item ${item.nome} precisa ser maior ou igual ao mínimo.`);
         }
 
         if (duplicateBarcode) {
-          throw new Error(`Já existe outro produto cadastrado com o codigo de barras ${codigoBarras}.`);
+          throw new Error(`Já existe outro produto cadastrado com o código de barras ${codigoBarras}.`);
         }
 
         if (!nextSuppliers.length) {
@@ -3559,13 +3559,13 @@ function renderProducts(items) {
     cardQuickActions.innerHTML = `
       <button class="secondary" type="button" data-product-action="editar">Editar</button>
       <button class="secondary" type="button" data-product-action="entrada">Entrada</button>
-      <button class="secondary" type="button" data-product-action="saida">Saida</button>
+      <button class="secondary" type="button" data-product-action="saida">Saída</button>
       <button class="secondary" type="button" data-product-action="etiqueta">Etiqueta</button>
       <button class="secondary" type="button" data-product-action="historico">Histórico</button>
     `;
 
     const advancedOverview = createDetailAccordion({
-      title: "Fornecedores alternativos e historico de custo",
+      title: "Fornecedores alternativos e histórico de custo",
       helperText: productSuppliers.length > 1 ? supplierCountLabel : "Compare custo entre fornecedores.",
       summaryEntries: [
         { label: "Melhor custo", value: currentCostLabel },
@@ -3579,8 +3579,8 @@ function renderProducts(items) {
     const productConfigSection = createDetailAccordion({
       title: "Descricao completa",
       summaryEntries: [
-        { label: "Qtd. maxima", value: String(toNumber(item.maximo, 0)) },
-        { label: "Estoque minimo", value: String(toNumber(item.minimo, 0)) },
+        { label: "Qtd. máxima", value: String(toNumber(item.maximo, 0)) },
+        { label: "Estoque mínimo", value: String(toNumber(item.minimo, 0)) },
         { label: "Dia de pedido", value: orderDaysSummary },
         { label: "Dia de entrega", value: deliveryDaysSummary }
       ],
@@ -3691,7 +3691,7 @@ function formatQuantity(value) {
 
 function formatInvoiceDate(value) {
   if (!value) {
-    return "Data nao informada";
+    return "Data não informada";
   }
 
   const candidate = value.includes("T") ? value : `${value}T00:00:00`;
@@ -3731,13 +3731,13 @@ function parseInvoiceXml(fileName, xmlContent) {
   const parserError = xmlDocument.getElementsByTagName("parsererror")[0];
 
   if (parserError) {
-    throw new Error("O arquivo nao parece ser um XML valido.");
+    throw new Error("O arquivo não parece ser um XML válido.");
   }
 
   const infNFe = Array.from(xmlDocument.getElementsByTagName("*")).find((node) => node.localName === "infNFe");
 
   if (!infNFe) {
-    throw new Error("Nao encontrei a estrutura infNFe no XML.");
+    throw new Error("Não encontrei a estrutura infNFe no XML.");
   }
 
   const ide = getDirectChildByLocalName(infNFe, "ide") || getDescendantByLocalName(infNFe, "ide");
@@ -3791,7 +3791,7 @@ function parseInvoiceXml(fileName, xmlContent) {
     emissaoFormatada: formatInvoiceDate(readXmlText(ide, "dhEmi") || readXmlText(ide, "dEmi")),
     totalNota: Math.max(0, parseXmlNumber(readXmlText(totals, "vNF"))),
     fornecedor: {
-      nome: readXmlText(emit, "xFant") || readXmlText(emit, "xNome") || "Fornecedor nao identificado",
+      nome: readXmlText(emit, "xFant") || readXmlText(emit, "xNome") || "Fornecedor não identificado",
       cnpj: normalizeDocumentNumber(readXmlText(emit, "CNPJ") || readXmlText(emit, "CPF")),
       telefone: readXmlText(emitterAddress, "fone")
     },
@@ -3827,10 +3827,10 @@ function renderXmlPreview(notes) {
     const supplierMatch = findSupplierMatch(note.fornecedor);
     const supplierStatus = supplierMatch
       ? `Fornecedor encontrado: ${supplierMatch.nome}`
-      : "Fornecedor sera criado automaticamente ao importar";
+      : "Fornecedor será criado automaticamente ao importar";
     const cnpjInfo = note.fornecedor.cnpj
       ? `CNPJ ${formatDocumentNumber(note.fornecedor.cnpj)}`
-      : "CNPJ nao informado";
+      : "CNPJ não informado";
     const itemLines = note.itens.map((item) => `
       <li>
         <div class="xml-item-main">
@@ -4019,7 +4019,7 @@ async function handleXmlSelection() {
   importXmlButton.disabled = !xmlImports.length;
 
   if (imports.length && !errors.length) {
-    setStatus("xml-status", `${imports.length} XML(s) lido(s) com sucesso. Revise a pre-visualizacao e clique em importar.`, "success");
+    setStatus("xml-status", `${imports.length} XML(s) lido(s) com sucesso. Revise a pré-visualização e clique em importar.`, "success");
     return;
   }
 
@@ -4581,7 +4581,7 @@ form.addEventListener("submit", async (event) => {
   const cadastroManual = isManualProductModeEnabled();
 
   if (!codigoBarras && !cadastroManual) {
-    setStatus("status", "Leia ou informe um codigo de barras. Se o item for artesanal ou interno, ative o cadastro manual.", "error");
+    setStatus("status", "Leia ou informe um código de barras. Se o item for artesanal ou interno, ative o cadastro manual.", "error");
     return;
   }
 
@@ -4591,7 +4591,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   if (maximo < minimo) {
-    setStatus("status", "O valor maximo precisa ser maior ou igual ao minimo.", "error");
+    setStatus("status", "O valor máximo precisa ser maior ou igual ao mínimo.", "error");
     return;
   }
 
@@ -4621,7 +4621,7 @@ form.addEventListener("submit", async (event) => {
     }
 
     if (duplicatedBarcode) {
-      throw new Error(`Já existe um produto cadastrado com o codigo de barras ${codigoBarras}.`);
+      throw new Error(`Já existe um produto cadastrado com o código de barras ${codigoBarras}.`);
     }
 
     const productSuppliers = collectSupplierEntries(newSuppliersList).map((supplierEntry) => ({

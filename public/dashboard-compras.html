@@ -157,7 +157,7 @@ function renderPurchaseChart(monthlySummaries, maxPaid) {
   const chartContainer = document.getElementById("purchase-chart");
 
   if (!monthlySummaries.length) {
-    chartContainer.innerHTML = '<div class="empty-state">Ainda nao ha compras registradas para montar o grafico.</div>';
+    chartContainer.innerHTML = '<div class="empty-state">Ainda não há compras registradas para montar o gráfico.</div>';
     return;
   }
 
@@ -269,8 +269,8 @@ const monthList = document.getElementById("dashboard-month-list");
 const monthlyAnalysisList = document.getElementById("monthly-analysis-list");
 
 if (!monthlySummaries.length) {
-  monthList.innerHTML = '<div class="empty-state">Ainda nao ha compras registradas para montar o dashboard visual.</div>';
-  monthlyAnalysisList.innerHTML = '<div class="empty-state">Ainda nao ha compras registradas para analisar.</div>';
+  monthList.innerHTML = '<div class="empty-state">Ainda não há compras registradas para montar o dashboard visual.</div>';
+  monthlyAnalysisList.innerHTML = '<div class="empty-state">Ainda não há compras registradas para analisar.</div>';
 } else {
   const sortedSummaries = monthlySummaries
     .slice()

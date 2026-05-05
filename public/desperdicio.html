@@ -59,7 +59,7 @@
     <div class="inventory-toolbar waste-toolbar">
       <div class="field-group">
         <label for="waste-search">Buscar produto</label>
-        <input id="waste-search" type="search" placeholder="Digite nome, marca ou codigo de barras">
+        <input id="waste-search" type="search" placeholder="Digite nome, marca ou código de barras">
       </div>
       <span id="waste-selected-summary" class="inventory-filter-meta muted">Nenhum item selecionado</span>
     </div>
@@ -99,22 +99,22 @@
       </div>
 
       <div class="field-group">
-        <label for="waste-note">Observacao rapida</label>
+        <label for="waste-note">Observação rápida</label>
         <input id="waste-note" placeholder="Opcional">
       </div>
 
       <div class="form-grid waste-employee-grid">
         <div class="field-group">
-          <label for="waste-employee">Funcionario responsavel</label>
+          <label for="waste-employee">Funcionário responsável</label>
           <select id="waste-employee"></select>
         </div>
 
         <div id="new-employee-field" class="field-group" hidden>
-          <label for="new-employee-name">Novo funcionario</label>
+          <label for="new-employee-name">Novo funcionário</label>
           <input id="new-employee-name" placeholder="Nome para desconto">
         </div>
 
-        <button id="add-employee-button" class="secondary" type="button" hidden>Cadastrar funcionario</button>
+        <button id="add-employee-button" class="secondary" type="button" hidden>Cadastrar funcionário</button>
       </div>
 
       <button id="save-waste-button" type="button">Registrar desperdício</button>
@@ -380,7 +380,7 @@ function renderEmployeeOptions(preferredId = "") {
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = "Selecione o funcionario";
+  placeholder.textContent = "Selecione o funcionário";
   employeeSelect.appendChild(placeholder);
 
   wasteEmployees.forEach((employee) => {
@@ -399,7 +399,7 @@ function renderEmployeeOptions(preferredId = "") {
 
   const newOption = document.createElement("option");
   newOption.value = "__new__";
-  newOption.textContent = "Cadastrar novo funcionario";
+  newOption.textContent = "Cadastrar novo funcionário";
   employeeSelect.appendChild(newOption);
 
   syncNewEmployeeFields();
@@ -419,7 +419,7 @@ async function createWasteEmployee() {
   const name = newEmployeeNameInput.value.trim();
 
   if (!name) {
-    setStatus("waste-status", "Informe o nome do funcionario.", "error");
+    setStatus("waste-status", "Informe o nome do funcionário.", "error");
     return null;
   }
 
@@ -428,7 +428,7 @@ async function createWasteEmployee() {
 
   if (existing) {
     renderEmployeeOptions(existing.id);
-    setStatus("waste-status", "Funcionario ja estava na lista.", "info");
+    setStatus("waste-status", "Funcionário já estava na lista.", "info");
     return existing;
   }
 
@@ -453,11 +453,11 @@ async function createWasteEmployee() {
     wasteEmployees.sort((left, right) => getEmployeeDisplayName(left).localeCompare(getEmployeeDisplayName(right), "pt-BR"));
     newEmployeeNameInput.value = "";
     renderEmployeeOptions(createdEmployee.id);
-    setStatus("waste-status", "Funcionario cadastrado para lancamentos de desperdício.", "success");
+    setStatus("waste-status", "Funcionário cadastrado para lançamentos de desperdício.", "success");
     return createdEmployee;
   } catch (error) {
     console.error(error);
-    setStatus("waste-status", error.message || "Não foi possível cadastrar o funcionario.", "error");
+    setStatus("waste-status", error.message || "Não foi possível cadastrar o funcionário.", "error");
     return null;
   } finally {
     addEmployeeButton.disabled = false;
@@ -472,7 +472,7 @@ async function getSelectedWasteEmployee() {
   const employee = wasteEmployees.find((item) => item.id === employeeSelect.value) || null;
 
   if (!employee) {
-    setStatus("waste-status", "Selecione o funcionario responsavel pelo desperdício.", "error");
+    setStatus("waste-status", "Selecione o funcionário responsável pelo desperdício.", "error");
     employeeSelect.focus();
     return null;
   }
@@ -655,7 +655,7 @@ function renderWasteHistory() {
         <span>${escapeHtml(event.productName || "Produto")}</span>
         <strong>${escapeHtml(getWasteEventDisplayQuantity(event))}</strong>
       </div>
-      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | Responsável: ${escapeHtml(event.responsibleEmployeeName || event.employeeName || event.responsible || "nao informado")} | Lancado por: ${escapeHtml(event.registeredBy || event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
+      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | Responsável: ${escapeHtml(event.responsibleEmployeeName || event.employeeName || event.responsible || "não informado")} | Lançado por: ${escapeHtml(event.registeredBy || event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
       ${event.note ? `<p class="muted compact-meta">${escapeHtml(event.note)}</p>` : ""}
       <div class="waste-history-actions">
         <input type="number" min="0.001" step="0.001" value="${formatQuantity(event.inputQuantity ?? event.quantity, 3).replace(/\./g, "").replace(",", ".")}" aria-label="Quantidade desperdicada" data-waste-quantity="${escapeHtml(event.id)}">
@@ -680,7 +680,7 @@ async function adjustProductWasteTotals(event, quantityDelta, costDelta) {
     desperdicioTotalCusto: increment(costDelta),
     ultimoDesperdicioEm: serverTimestamp()
   }).catch((error) => {
-    console.warn("Registro atualizado, mas o agregado do produto nao foi ajustado.", error);
+    console.warn("Registro atualizado, mas o agregado do produto não foi ajustado.", error);
   });
 }
 
@@ -688,7 +688,7 @@ async function updateWasteQuantity(wasteId, nextQuantityValue, nextUnitValue) {
   const event = wasteEvents.find((item) => item.id === wasteId);
 
   if (!event) {
-    setStatus("waste-status", "Registro de desperdício nao encontrado.", "error");
+    setStatus("waste-status", "Registro de desperdício não encontrado.", "error");
     return;
   }
 
@@ -747,7 +747,7 @@ async function deleteWasteEvent(wasteId) {
   const event = wasteEvents.find((item) => item.id === wasteId);
 
   if (!event) {
-    setStatus("waste-status", "Registro de desperdício nao encontrado.", "error");
+    setStatus("waste-status", "Registro de desperdício não encontrado.", "error");
     return;
   }
 
@@ -883,7 +883,7 @@ async function saveWaste() {
       desperdicioTotalCusto: increment(payload.estimatedCost),
       ultimoDesperdicioEm: serverTimestamp()
     }).catch((error) => {
-      console.warn("Desperdicio registrado, mas o agregado do produto nao foi atualizado.", error);
+      console.warn("Desperdício registrado, mas o agregado do produto não foi atualizado.", error);
     });
 
     setStatus("waste-status", "Desperdicio registrado.", "success");
