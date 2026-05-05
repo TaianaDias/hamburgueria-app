@@ -45,13 +45,7 @@
       <a href="saas.html"><span>S</span> Configurações</a>
     </nav>
 
-    <div class="premium-user-card">
-      <span class="premium-avatar">JP</span>
-      <span>
-        <strong id="user-info">Carregando...</strong>
-        <small>Administrador</small>
-      </span>
-    </div>
+    <span id="user-info" hidden></span>
   </aside>
 
   <header class="dashboard-mobile-topbar" aria-label="Topo mobile">
@@ -61,7 +55,6 @@
       <small>Operação Food Service</small>
     </a>
     <div class="dashboard-mobile-topbar-actions">
-      <button type="button" aria-label="Notificações">!</button>
       <button type="button" aria-label="Perfil">JP</button>
     </div>
   </header>
@@ -84,7 +77,6 @@
           <option value="week" selected>7 dias</option>
           <option value="month">30 dias</option>
         </select>
-        <button class="premium-icon-button" type="button" aria-label="Notificações">!</button>
         <button id="logout-button" class="secondary premium-logout" type="button">Sair</button>
       </div>
     </header>

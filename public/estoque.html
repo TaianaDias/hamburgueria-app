@@ -209,7 +209,7 @@
     <div id="quick-box-status" class="status info" hidden></div>
   </section>
 
-  <section class="panel">
+  <section id="invoice-import-section" class="panel" hidden>
     <details id="invoice-import-details" class="section-accordion">
       <summary class="section-accordion-summary">
         <div>
@@ -239,7 +239,7 @@
     </details>
   </section>
 
-  <section id="product-drawer" class="panel product-create-panel">
+  <section id="product-drawer" class="panel product-create-panel" hidden>
     <details id="product-create-details" class="section-accordion">
       <summary class="section-accordion-summary">
         <div>
@@ -659,10 +659,12 @@ const DEFAULT_IMPORTED_PRODUCT = Object.freeze({
 const form = document.getElementById("product-form");
 const resetButton = document.getElementById("reset-button");
 const createButton = document.getElementById("create-button");
+const productDrawer = document.getElementById("product-drawer");
 const productCreateDetails = document.getElementById("product-create-details");
 const openProductDrawerButton = document.getElementById("open-product-drawer");
 const stockHeaderNewInsumoButton = document.getElementById("stock-header-new-insumo");
 const stockHeaderImportInvoiceButton = document.getElementById("stock-header-import-invoice");
+const invoiceImportSection = document.getElementById("invoice-import-section");
 const invoiceImportDetails = document.getElementById("invoice-import-details");
 const stockTopSearchInput = document.getElementById("stock-top-search");
 const stockCategoryFilters = document.getElementById("stock-category-filters");
@@ -4337,6 +4339,7 @@ async function importXmlInvoices() {
 xmlInput.addEventListener("change", handleXmlSelection);
 importXmlButton.addEventListener("click", importXmlInvoices);
 function openProductCreatePanel() {
+  productDrawer.hidden = false;
   productCreateDetails.open = true;
   productCreateDetails.scrollIntoView({
     behavior: "smooth",
@@ -4346,6 +4349,7 @@ function openProductCreatePanel() {
 }
 
 function openInvoiceImportPanel() {
+  invoiceImportSection.hidden = false;
   invoiceImportDetails.open = true;
   invoiceImportDetails.scrollIntoView({
     behavior: "smooth",
