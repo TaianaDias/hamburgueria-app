@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "desperdicio.html", label: "Desperd\u00edcio", icon: "!", matches: ["desperdicio.html"] },
   { href: "relatorio-diario.html", label: "Relat\u00f3rios", icon: "R", matches: ["relatorio-diario.html", "relatorio.html"] },
   { href: "impressora.html", label: "Etiquetas", icon: "T", matches: ["impressora.html", "etiquetas.html"] },
+  { href: "whatsapp-ia.html", label: "WhatsApp & IA", icon: "W", matches: ["whatsapp-ia.html"] },
   { href: "funcionarios.html", label: "Funcion\u00e1rios", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
   { href: "saas.html", label: "Configura\u00e7\u00f5es", icon: "S", matches: ["saas.html", "configuracoes.html"] }
 ];
