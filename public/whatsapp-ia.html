@@ -50,6 +50,90 @@
     </article>
   </section>
 
+  <section class="panel automation-config-panel" style="margin-top: 20px;">
+    <div class="page-header compact-header">
+      <div>
+        <p class="eyebrow">API/Webhook futuro</p>
+        <h3>Configuração da automação WhatsApp</h3>
+        <p class="muted">Prepare a integração com Z-API, Evolution API, Twilio ou Meta Cloud API sem expor tokens no navegador.</p>
+      </div>
+      <span id="automation-status-badge" class="status info">Automação desligada</span>
+    </div>
+
+    <form id="automation-config-form" class="form-grid" style="margin-top: 16px;">
+      <div class="field-group">
+        <span>Ativar automação</span>
+        <label class="inline-choice">
+          <input id="automation-enabled" type="checkbox">
+          <span>Sim, deixar pronta para API/Webhook</span>
+        </label>
+      </div>
+
+      <div class="field-group">
+        <label for="automation-provider">Provedor WhatsApp</label>
+        <select id="automation-provider">
+          <option value="">Selecione</option>
+          <option value="zapi">Z-API</option>
+          <option value="evolution">Evolution API</option>
+          <option value="twilio">Twilio</option>
+          <option value="meta">Meta Cloud API</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="automation-webhook">URL do Webhook</label>
+        <input id="automation-webhook" type="url" placeholder="https://seu-backend.com/api/webhooks/whatsapp">
+      </div>
+
+      <div class="field-group">
+        <label for="automation-admin-phone">Número principal do administrador</label>
+        <input id="automation-admin-phone" type="tel" placeholder="5521999999999">
+      </div>
+
+      <div class="field-group">
+        <label for="automation-secondary-phone">Número secundário</label>
+        <input id="automation-secondary-phone" type="tel" placeholder="5521988888888">
+      </div>
+
+      <div class="field-group">
+        <label for="automation-send-time">Horário dos alertas</label>
+        <input id="automation-send-time" type="time" value="08:00">
+      </div>
+
+      <div class="field-group">
+        <label for="automation-send-mode">Frequência</label>
+        <select id="automation-send-mode">
+          <option value="immediate">Imediato</option>
+          <option value="daily">Resumo diário</option>
+          <option value="shift">Resumo por turno</option>
+        </select>
+      </div>
+
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <span>Tipos de alerta</span>
+        <div id="automation-alert-types" class="automation-alert-grid"></div>
+      </div>
+
+      <div class="actions compact-actions" style="grid-column: 1 / -1;">
+        <button type="submit">Salvar configuração</button>
+        <button id="automation-test-button" class="secondary" type="button">Testar conexão</button>
+      </div>
+    </form>
+
+    <div id="automation-config-status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel" style="margin-top: 20px;">
+    <div class="page-header compact-header">
+      <div>
+        <h3>Logs de Automação</h3>
+        <p class="muted">Eventos simulados, pendentes de API ou enviados futuramente pelo backend.</p>
+      </div>
+      <button id="simulate-alert-button" class="secondary" type="button">Simular alerta de estoque mínimo</button>
+    </div>
+    <div id="automation-logs-list" class="list" style="margin-top: 16px;"></div>
+  </section>
+
   <section class="panel" style="margin-top: 20px;">
     <h3>Comandos recentes</h3>
     <div id="commands-list" class="list" style="margin-top: 16px;"></div>
@@ -58,13 +142,244 @@
 
 <script type="module">
 import { db } from "./firebase.js";
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { apiFetch, bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus } from "./app.js";
+import { addDoc, collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { apiFetch, bindLogoutButton, describeProfile, escapeHtml, normalizePhone, requireAuth, setStatus } from "./app.js";
 import { inferOperationalCommand, OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
 const { profile } = await requireAuth({ adminOnly: true });
 document.getElementById("user-info").textContent = describeProfile(profile);
+
+const AUTOMATION_CONFIG_REF = doc(db, "configuracoes", "whatsappAutomation");
+const AUTOMATION_LOG_COLLECTION = "automacaoLogs";
+const automationAlertTypes = Object.freeze([
+  ["stockIn", "Entrada de estoque"],
+  ["stockOut", "Saída de estoque"],
+  ["lowStock", "Estoque mínimo"],
+  ["expiring", "Produto vencendo"],
+  ["expired", "Produto vencido"],
+  ["purchaseSuggestion", "Compra sugerida"],
+  ["productionPending", "Produção pendente"],
+  ["labelPrinted", "Etiqueta gerada"]
+]);
+const automationConfigForm = document.getElementById("automation-config-form");
+const automationAlertTypesContainer = document.getElementById("automation-alert-types");
+const automationStatusBadge = document.getElementById("automation-status-badge");
+const automationTestButton = document.getElementById("automation-test-button");
+const automationLogsList = document.getElementById("automation-logs-list");
+let automationConfig = {
+  enabled: false,
+  provider: "",
+  webhookUrl: "",
+  adminPhone: "",
+  secondaryPhone: "",
+  sendTime: "08:00",
+  sendMode: "immediate",
+  alertTypes: {
+    stockIn: true,
+    stockOut: true,
+    lowStock: true,
+    expiring: true,
+    expired: true,
+    purchaseSuggestion: true,
+    productionPending: true,
+    labelPrinted: true
+  },
+  createdAt: "",
+  updatedAt: ""
+};
+
+function getAutomationStatus(config = automationConfig) {
+  if (!config.enabled) {
+    return { label: "Automação desligada", type: "info" };
+  }
+
+  if (!config.provider || !config.webhookUrl || !config.adminPhone) {
+    return { label: "Configuração incompleta", type: "error" };
+  }
+
+  return { label: "Pronto para API/Webhook", type: "success" };
+}
+
+function renderAutomationStatus() {
+  const status = getAutomationStatus();
+  automationStatusBadge.textContent = status.label;
+  automationStatusBadge.className = `status ${status.type}`;
+}
+
+function renderAutomationAlertTypes() {
+  automationAlertTypesContainer.innerHTML = automationAlertTypes.map(([key, label]) => `
+    <label class="inline-choice automation-alert-choice">
+      <input type="checkbox" data-alert-type="${escapeHtml(key)}" ${automationConfig.alertTypes?.[key] !== false ? "checked" : ""}>
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `).join("");
+}
+
+function fillAutomationForm(config = automationConfig) {
+  document.getElementById("automation-enabled").checked = Boolean(config.enabled);
+  document.getElementById("automation-provider").value = config.provider || "";
+  document.getElementById("automation-webhook").value = config.webhookUrl || "";
+  document.getElementById("automation-admin-phone").value = config.adminPhone || "";
+  document.getElementById("automation-secondary-phone").value = config.secondaryPhone || "";
+  document.getElementById("automation-send-time").value = config.sendTime || "08:00";
+  document.getElementById("automation-send-mode").value = config.sendMode || "immediate";
+  renderAutomationAlertTypes();
+  renderAutomationStatus();
+}
+
+function readAutomationForm() {
+  const alertTypes = {};
+  automationAlertTypesContainer.querySelectorAll("[data-alert-type]").forEach((input) => {
+    alertTypes[input.dataset.alertType] = input.checked;
+  });
+
+  return {
+    enabled: document.getElementById("automation-enabled").checked,
+    provider: document.getElementById("automation-provider").value,
+    webhookUrl: document.getElementById("automation-webhook").value.trim(),
+    adminPhone: normalizePhone(document.getElementById("automation-admin-phone").value),
+    secondaryPhone: normalizePhone(document.getElementById("automation-secondary-phone").value),
+    sendTime: document.getElementById("automation-send-time").value || "08:00",
+    sendMode: document.getElementById("automation-send-mode").value || "immediate",
+    alertTypes
+  };
+}
+
+async function loadAutomationConfig() {
+  const snapshot = await getDoc(AUTOMATION_CONFIG_REF);
+
+  if (snapshot.exists()) {
+    automationConfig = {
+      ...automationConfig,
+      ...snapshot.data(),
+      alertTypes: {
+        ...automationConfig.alertTypes,
+        ...(snapshot.data().alertTypes || {})
+      }
+    };
+  }
+
+  fillAutomationForm(automationConfig);
+  return automationConfig;
+}
+
+async function saveAutomationConfig() {
+  const nextConfig = {
+    ...automationConfig,
+    ...readAutomationForm(),
+    updatedAt: new Date().toISOString(),
+    updatedBy: profile.email || ""
+  };
+
+  if (!automationConfig.createdAt) {
+    nextConfig.createdAt = new Date().toISOString();
+  }
+
+  await setDoc(AUTOMATION_CONFIG_REF, {
+    ...nextConfig,
+    atualizadoEm: serverTimestamp()
+  }, { merge: true });
+  automationConfig = nextConfig;
+  fillAutomationForm(automationConfig);
+  return automationConfig;
+}
+
+function buildWhatsAppMessage(alert = {}) {
+  const typeLabels = {
+    stockIn: "Entrada de estoque",
+    stockOut: "Saída de estoque",
+    lowStock: "Estoque mínimo",
+    expiring: "Produto vencendo",
+    expired: "Produto vencido",
+    purchaseSuggestion: "Compra sugerida",
+    productionPending: "Produção pendente",
+    labelPrinted: "Etiqueta gerada"
+  };
+
+  return [
+    "⚠️ Alerta Operacional",
+    "",
+    `Tipo: ${typeLabels[alert.type] || alert.type || "Alerta"}`,
+    `Produto: ${alert.productName || "-"}`,
+    `Estoque atual: ${alert.currentStock ?? "-"}`,
+    `Estoque mínimo: ${alert.minStock ?? "-"}`,
+    `Fornecedor: ${alert.supplier || "-"}`,
+    `Ação recomendada: ${alert.recommendation || "Verificar no sistema"}`
+  ].join("\n");
+}
+
+async function registerAutomationLog(log = {}) {
+  const payload = {
+    empresaId: profile.empresaId || "",
+    usuarioId: profile.userId || profile.id || "",
+    destinatario: log.destinatario || automationConfig.adminPhone || "",
+    tipo: log.type || "lowStock",
+    produto: log.productName || "",
+    status: log.status || "Simulado",
+    mensagem: log.message || "",
+    criadoEm: serverTimestamp()
+  };
+
+  await addDoc(collection(db, AUTOMATION_LOG_COLLECTION), payload);
+  return payload;
+}
+
+async function triggerOperationalAlert(alert) {
+  const message = buildWhatsAppMessage(alert);
+
+  // FUTURO:
+  // Enviar mensagem via backend seguro:
+  // POST /api/whatsapp/send
+  // O token da API deve ficar apenas no servidor.
+  // Nunca expor token no front-end.
+  console.log("[WhatsApp simulado]", message);
+
+  await registerAutomationLog({
+    ...alert,
+    destinatario: automationConfig.adminPhone,
+    status: "Simulado",
+    message
+  });
+  await loadAutomationLogs();
+  return message;
+}
+
+async function testAutomationConnection() {
+  await saveAutomationConfig();
+  await registerAutomationLog({
+    type: "test",
+    productName: "Teste de conexão",
+    destinatario: automationConfig.adminPhone,
+    status: "Pendente API",
+    message: "Configuração salva. Integração pronta para receber API/Webhook."
+  });
+  await loadAutomationLogs();
+  setStatus("automation-config-status", "Configuração salva. Integração pronta para receber API/Webhook.", "success");
+}
+
+async function loadAutomationLogs() {
+  const snapshot = await getDocs(collection(db, AUTOMATION_LOG_COLLECTION));
+  const logs = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => String(right.criadoEm?.seconds || "").localeCompare(String(left.criadoEm?.seconds || "")))
+    .slice(0, 12);
+
+  automationLogsList.innerHTML = logs.length ? "" : '<div class="empty-state">Nenhum log de automação registrado ainda.</div>';
+  logs.forEach((log) => {
+    const article = document.createElement("article");
+    article.className = "card automation-log-card";
+    article.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(log.produto || "Automação")}</strong>
+        <span>${escapeHtml(log.status || "Simulado")}</span>
+      </div>
+      <p class="muted">${escapeHtml(`${log.tipo || "-"} | Destinatário: ${log.destinatario || "não configurado"}`)}</p>
+      <pre>${escapeHtml(log.mensagem || "")}</pre>
+    `;
+    automationLogsList.appendChild(article);
+  });
+}
 
 async function loadCommands() {
   const snapshot = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.whatsapp), orderBy("criadoEm", "desc")));
@@ -124,6 +439,54 @@ document.getElementById("ai-form").addEventListener("submit", async (event) => {
   await loadCommands();
 });
 
+automationConfigForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  try {
+    await saveAutomationConfig();
+    setStatus("automation-config-status", "Configuração de automação salva com sucesso.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus("automation-config-status", "Não foi possível salvar a configuração de automação.", "error");
+  }
+});
+
+automationConfigForm.addEventListener("change", () => {
+  automationConfig = {
+    ...automationConfig,
+    ...readAutomationForm()
+  };
+  renderAutomationStatus();
+});
+
+automationTestButton.addEventListener("click", async () => {
+  try {
+    await testAutomationConnection();
+  } catch (error) {
+    console.error(error);
+    setStatus("automation-config-status", "Não foi possível simular o teste da integração.", "error");
+  }
+});
+
+document.getElementById("simulate-alert-button").addEventListener("click", async () => {
+  try {
+    await triggerOperationalAlert({
+      type: "lowStock",
+      productName: "Pão Brioche",
+      currentStock: 4,
+      minStock: 10,
+      supplier: "Fornecedor X",
+      recommendation: "Comprar hoje"
+    });
+    setStatus("automation-config-status", "Alerta simulado e registrado nos logs.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus("automation-config-status", "Não foi possível simular o alerta operacional.", "error");
+  }
+});
+
+await loadAutomationConfig();
+await loadAutomationLogs();
 await loadCommands();
 </script>
 </body>

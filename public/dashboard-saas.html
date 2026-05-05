@@ -18,10 +18,10 @@
 <main class="premium-app-shell">
   <aside class="premium-sidebar">
     <a class="premium-brand" href="dashboard-saas.html" aria-label="Copiloto Operacional">
-      <span class="premium-brand-mark">C</span>
+      <span id="dashboard-user-initials" class="premium-brand-mark">--</span>
       <span>
-        <strong>Copiloto</strong>
-        <small>Operacional Inteligente</small>
+        <strong id="dashboard-user-name">Carregando...</strong>
+        <small id="dashboard-user-role">Perfil</small>
       </span>
     </a>
 
@@ -100,19 +100,22 @@
           </span>
         </div>
       </article>
-      <article class="premium-kpi-card amber">
+      <article class="premium-kpi-card amber dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=criticos" role="link" tabindex="0" aria-label="Abrir itens críticos no estoque">
         <span>Itens Críticos</span>
         <strong id="kpi-risk">0</strong>
         <small id="kpi-risk-note">Precisam de atenção</small>
       </article>
-      <article class="premium-kpi-card red">
+      <article class="premium-kpi-card red dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=vencendo" role="link" tabindex="0" aria-label="Abrir produtos vencendo no estoque">
         <span>Produtos Vencendo</span>
         <strong id="kpi-warning">0</strong>
         <small id="kpi-warning-note">Produtos abaixo ou perto do mínimo</small>
       </article>
-      <article class="premium-kpi-card violet">
+      <article class="premium-kpi-card violet sensitive-dashboard-kpi">
         <span>Custo Total em Estoque</span>
-        <strong id="kpi-stock-value">R$ 0,00</strong>
+        <div class="sensitive-value-row">
+          <strong id="kpi-stock-value">R$ 0,00</strong>
+          <button id="kpi-stock-value-toggle" class="sensitive-value-toggle" type="button" title="Mostrar/Ocultar valor" aria-label="Mostrar ou ocultar custo total em estoque" hidden>Ver</button>
+        </div>
         <small id="kpi-stock-note">Valor atualizado</small>
       </article>
     </section>
@@ -210,6 +213,11 @@
           <a href="whatsapp-ia.html">Abrir central</a>
         </div>
         <div id="ai-insight" class="prototype-ai-bubble">Carregando resumo inteligente...</div>
+        <ul class="automation-watch-list">
+          <li>Entrada e saída de estoque</li>
+          <li>Estoque mínimo e compras sugeridas</li>
+          <li>Produção, vencimentos e etiquetas geradas</li>
+        </ul>
         <div class="actions compact-actions">
           <button id="generate-report" type="button">Gerar resumo</button>
           <button id="prepare-whatsapp" class="secondary" type="button">Preparar WhatsApp</button>
@@ -270,6 +278,7 @@ import { db } from "./firebase.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
+  can,
   describeProfile,
   escapeHtml,
   formatCurrency,
@@ -282,6 +291,26 @@ import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 bindLogoutButton();
 const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = profile.nome || profile.email || describeProfile(profile);
+const dashboardUserName = document.getElementById("dashboard-user-name");
+const dashboardUserRole = document.getElementById("dashboard-user-role");
+const dashboardUserInitials = document.getElementById("dashboard-user-initials");
+const canViewStockValue = can("estoque.valorTotal.ver", profile);
+let stockValueVisible = true;
+let currentStockValue = 0;
+
+function getUserInitials(value) {
+  return String(value || "U")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "U";
+}
+
+dashboardUserName.textContent = profile.nome || profile.email || "Usuário";
+dashboardUserRole.textContent = profile.perfilPrincipal || profile.tipo || "Operação";
+dashboardUserInitials.textContent = getUserInitials(profile.nome || profile.email);
 
 const mobileProfileButton = document.querySelector(".dashboard-mobile-topbar-actions button[aria-label='Perfil']");
 if (mobileProfileButton) {
@@ -416,6 +445,22 @@ function getCriticalItems(estoque) {
 
 function getStockValue(estoque) {
   return estoque.reduce((total, item) => total + toNumber(item.quantidade, 0) * getUnitCost(item), 0);
+}
+
+function renderDashboardStockValue() {
+  const valueElement = document.getElementById("kpi-stock-value");
+  const toggleButton = document.getElementById("kpi-stock-value-toggle");
+
+  if (!canViewStockValue) {
+    valueElement.textContent = "Valor restrito ao administrador";
+    toggleButton.hidden = true;
+    return;
+  }
+
+  toggleButton.hidden = false;
+  valueElement.textContent = stockValueVisible ? formatCurrency(currentStockValue) : "R$ ••••••";
+  toggleButton.textContent = stockValueVisible ? "Ocultar" : "Ver";
+  toggleButton.setAttribute("aria-pressed", String(stockValueVisible));
 }
 
 function getPurchaseValue(compras) {
@@ -633,7 +678,8 @@ function renderDashboard() {
   document.getElementById("kpi-warning-note").textContent = `${Math.max(0, attention.length - critical.length)} perto do mínimo`;
   document.getElementById("kpi-risk").textContent = String(critical.length);
   document.getElementById("kpi-risk-note").textContent = critical.length ? "ação recomendada hoje" : "sem ruptura imediata";
-  document.getElementById("kpi-stock-value").textContent = formatCurrency(stockValue);
+  currentStockValue = stockValue;
+  renderDashboardStockValue();
   document.getElementById("mini-purchases").textContent = formatCurrency(purchaseValue);
   document.getElementById("mini-labels").textContent = String(labelCount);
   document.getElementById("mini-waste").textContent = formatCurrency(wasteValue);
@@ -691,6 +737,47 @@ document.getElementById("prepare-whatsapp").addEventListener("click", () => {
 
 document.getElementById("store-filter").addEventListener("change", renderDashboard);
 document.getElementById("period-filter").addEventListener("change", renderDashboard);
+document.getElementById("kpi-stock-value-toggle").addEventListener("click", (event) => {
+  event.stopPropagation();
+
+  if (!canViewStockValue) {
+    return;
+  }
+
+  stockValueVisible = !stockValueVisible;
+  renderDashboardStockValue();
+});
+
+document.querySelectorAll("[data-dashboard-target]").forEach((card) => {
+  const target = card.dataset.dashboardTarget;
+  card.addEventListener("click", () => {
+    window.location.href = target;
+  });
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      window.location.href = target;
+    }
+  });
+});
+
+const productionCard = document.getElementById("action-production")?.closest(".premium-action-card");
+if (productionCard && !productionCard.dataset.dashboardTarget) {
+  productionCard.classList.add("dashboard-clickable-card");
+  productionCard.dataset.dashboardTarget = "producao-etiquetas.html";
+  productionCard.setAttribute("role", "link");
+  productionCard.tabIndex = 0;
+  productionCard.setAttribute("aria-label", "Abrir produção e etiquetas");
+  productionCard.addEventListener("click", () => {
+    window.location.href = "producao-etiquetas.html";
+  });
+  productionCard.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      window.location.href = "producao-etiquetas.html";
+    }
+  });
+}
 
 await loadDashboard();
 </script>

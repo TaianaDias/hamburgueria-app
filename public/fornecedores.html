@@ -56,6 +56,12 @@
         <input id="telefone" placeholder="(11) 99999-9999">
       </div>
 
+      <div class="field-group supplier-products-field" style="grid-column: 1 / -1;">
+        <span>Produtos que este fornecedor vende</span>
+        <p class="muted">Selecione apenas insumos já cadastrados no estoque.</p>
+        <div id="supplier-products-list" class="supplier-product-picker"></div>
+      </div>
+
       <button id="save-button" type="submit">Salvar fornecedor</button>
     </form>
 
@@ -88,6 +94,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
+  can,
   describeProfile,
   escapeHtml,
   formatDocumentNumber,
@@ -111,12 +118,15 @@ const saveButton = document.getElementById("save-button");
 const nameInput = document.getElementById("nome");
 const cnpjInput = document.getElementById("cnpj");
 const phoneInput = document.getElementById("telefone");
+const supplierProductsList = document.getElementById("supplier-products-list");
 const list = document.getElementById("lista");
 const userInfo = document.getElementById("user-info");
 
 let profile;
 let fornecedores = [];
+let produtosEstoque = [];
 let editingSupplierId = "";
+let canEditSuppliers = false;
 
 function supplierEntryMatchesSupplier(entry, supplier) {
   if (entry?.fornecedorId && supplier?.id && entry.fornecedorId === supplier.id) {
@@ -187,6 +197,84 @@ function buildStockSupplierFields(productSuppliers, fallbackProduct = {}) {
   };
 }
 
+function buildSoldProductEntry(product) {
+  return {
+    produtoId: product.id,
+    nome: product.nome || "Insumo sem nome",
+    categoria: product.categoria || "",
+    unidadeCompra: product.unidadeCompra || product.purchase_unit || "Caixa"
+  };
+}
+
+function getSupplierSoldProducts(supplier = {}) {
+  if (Array.isArray(supplier.produtosVendidos) && supplier.produtosVendidos.length) {
+    return supplier.produtosVendidos;
+  }
+
+  return produtosEstoque
+    .filter((product) => isProductLinkedToSupplier(product, supplier))
+    .map(buildSoldProductEntry);
+}
+
+function getSelectedProductIds() {
+  return Array.from(supplierProductsList.querySelectorAll("input[type='checkbox']:checked"))
+    .map((input) => input.value)
+    .filter(Boolean);
+}
+
+function renderSupplierProductPicker(selectedIds = []) {
+  const selected = new Set(selectedIds);
+
+  if (!produtosEstoque.length) {
+    supplierProductsList.innerHTML = '<div class="empty-state">Cadastre insumos no estoque antes de vincular produtos ao fornecedor.</div>';
+    return;
+  }
+
+  supplierProductsList.innerHTML = produtosEstoque
+    .slice()
+    .sort((left, right) => left.nome.localeCompare(right.nome, "pt-BR"))
+    .map((product) => `
+      <label class="supplier-product-choice">
+        <input type="checkbox" value="${escapeHtml(product.id)}" ${selected.has(product.id) ? "checked" : ""}>
+        <span>
+          <strong>${escapeHtml(product.nome || "Insumo sem nome")}</strong>
+          <small>${escapeHtml(product.categoria || "Sem categoria")} | ${escapeHtml(product.unidadeCompra || product.purchase_unit || "Caixa")}</small>
+        </span>
+      </label>
+    `).join("");
+}
+
+function buildSupplierEntryForProduct(supplier, product, existingSuppliers = []) {
+  return {
+    fornecedorId: supplier.id,
+    nome: supplier.nome,
+    cnpj: supplier.cnpj || "",
+    telefone: supplier.telefone || "",
+    telefoneNormalizado: normalizePhone(supplier.telefone || ""),
+    conversao: getPackageQuantity(product),
+    custoCompra: getPurchaseCost(product),
+    custoUnitario: getUnitCost(product),
+    unidadeUso: getUsageUnit(product),
+    principal: !existingSuppliers.length
+  };
+}
+
+async function registerSupplierAudit(action, payload = {}) {
+  try {
+    await addDoc(collection(db, "auditoriaOperacional"), {
+      modulo: "Fornecedores",
+      acao: action,
+      usuario: profile?.email || "",
+      perfil: profile?.perfilPrincipal || profile?.tipo || "",
+      empresaId: profile?.empresaId || "",
+      ...payload,
+      criadoEm: serverTimestamp()
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel registrar auditoria de fornecedor.", error);
+  }
+}
+
 function isProductLinkedToSupplier(product, supplier) {
   const productSuppliers = normalizeProductSuppliers(product, fornecedores);
   return productSuppliers.some((entry) => supplierEntryMatchesSupplier(entry, supplier));
@@ -198,6 +286,7 @@ function resetForm() {
   formTitle.textContent = "Novo fornecedor";
   saveButton.textContent = "Salvar fornecedor";
   cancelEditButton.hidden = true;
+  renderSupplierProductPicker();
 }
 
 function startEditingSupplier(fornecedor) {
@@ -208,6 +297,7 @@ function startEditingSupplier(fornecedor) {
   nameInput.value = fornecedor.nome || "";
   cnpjInput.value = formatDocumentNumber(fornecedor.cnpj || "");
   phoneInput.value = fornecedor.telefone || "";
+  renderSupplierProductPicker(getSupplierSoldProducts(fornecedor).map((product) => product.produtoId));
   nameInput.focus();
 }
 
@@ -280,6 +370,96 @@ async function clearLinkedProducts(supplier) {
   return linkedProducts.length;
 }
 
+async function syncSupplierProductsSelection(supplier, selectedProductIds = []) {
+  const selected = new Set(selectedProductIds);
+  const batch = writeBatch(db);
+  const soldProducts = [];
+  const auditEvents = [];
+
+  produtosEstoque.forEach((product) => {
+    const productRef = doc(db, "estoque", product.id);
+    const currentSuppliers = normalizeProductSuppliers(product, fornecedores);
+    const hasSupplier = currentSuppliers.some((entry) => supplierEntryMatchesSupplier(entry, supplier));
+    const shouldLink = selected.has(product.id);
+    let nextSuppliers = currentSuppliers;
+
+    if (shouldLink) {
+      soldProducts.push(buildSoldProductEntry(product));
+
+      if (hasSupplier) {
+        nextSuppliers = currentSuppliers.map((entry) => (
+          supplierEntryMatchesSupplier(entry, supplier)
+            ? {
+              ...entry,
+              fornecedorId: supplier.id,
+              nome: supplier.nome,
+              cnpj: supplier.cnpj || "",
+              telefone: supplier.telefone || "",
+              telefoneNormalizado: normalizePhone(supplier.telefone || "")
+            }
+            : entry
+        ));
+      } else {
+        nextSuppliers = [
+          ...currentSuppliers,
+          buildSupplierEntryForProduct(supplier, product, currentSuppliers)
+        ];
+        auditEvents.push({
+          acao: "produto_vinculado_fornecedor",
+          produtoId: product.id,
+          produtoNome: product.nome,
+          fornecedorId: supplier.id,
+          fornecedorNome: supplier.nome
+        });
+      }
+    }
+
+    if (!shouldLink && hasSupplier) {
+      nextSuppliers = currentSuppliers
+        .filter((entry) => !supplierEntryMatchesSupplier(entry, supplier))
+        .map((entry, index, entries) => ({
+          ...entry,
+          principal: entries.some((candidate) => candidate.principal)
+            ? entry.principal
+            : index === 0
+        }));
+      auditEvents.push({
+        acao: "produto_removido_fornecedor",
+        produtoId: product.id,
+        produtoNome: product.nome,
+        fornecedorId: supplier.id,
+        fornecedorNome: supplier.nome
+      });
+    }
+
+    if (shouldLink !== hasSupplier || (shouldLink && hasSupplier)) {
+      const stockFields = buildStockSupplierFields(nextSuppliers, product);
+      batch.update(productRef, {
+        ...stockFields,
+        fornecedoresDisponiveis: nextSuppliers.map((entry) => ({
+          fornecedorId: entry.fornecedorId,
+          nome: entry.nome
+        })),
+        atualizadoEm: serverTimestamp()
+      });
+    }
+  });
+
+  batch.update(doc(db, "fornecedores", supplier.id), {
+    produtosVendidos: soldProducts,
+    atualizadoEm: serverTimestamp()
+  });
+
+  await batch.commit();
+
+  await Promise.all(auditEvents.map((event) => registerSupplierAudit(event.acao, event)));
+
+  return {
+    linkedCount: soldProducts.length,
+    changedCount: auditEvents.length
+  };
+}
+
 function renderSuppliers() {
   list.innerHTML = "";
 
@@ -293,12 +473,17 @@ function renderSuppliers() {
     card.className = "card supplier-entry";
     card.open = false;
     const cnpjInfo = fornecedor.cnpj ? ` | CNPJ ${formatDocumentNumber(fornecedor.cnpj)}` : "";
+    const soldProducts = getSupplierSoldProducts(fornecedor);
+    const soldProductsPreview = soldProducts.length
+      ? `${soldProducts.slice(0, 3).map((product) => product.nome).join(" | ")}${soldProducts.length > 3 ? ` | +${soldProducts.length - 3} ver todos` : ""}`
+      : "Nenhum produto vinculado";
     const summary = document.createElement("summary");
     summary.className = "supplier-entry-summary summary-line";
     summary.innerHTML = `
       <div class="supplier-entry-summary-main">
         <span class="supplier-entry-name">${escapeHtml(fornecedor.nome)}</span>
         <p class="muted supplier-entry-meta">${escapeHtml(fornecedor.telefone || "Telefone nao informado")}${escapeHtml(cnpjInfo)}</p>
+        <p class="supplier-products-preview"><b>Produtos vendidos:</b> ${escapeHtml(soldProductsPreview)}</p>
       </div>
       <div class="supplier-entry-summary-side">
         <strong>Fornecedor</strong>
@@ -314,12 +499,16 @@ function renderSuppliers() {
     editButton.type = "button";
     editButton.className = "secondary";
     editButton.textContent = "Editar";
+    editButton.disabled = !canEditSuppliers;
+    editButton.title = canEditSuppliers ? "" : "Seu perfil não possui permissão para editar fornecedores.";
     editButton.addEventListener("click", () => startEditingSupplier(fornecedor));
 
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "secondary";
     deleteButton.textContent = "Excluir";
+    deleteButton.disabled = !canEditSuppliers;
+    deleteButton.title = canEditSuppliers ? "" : "Seu perfil não possui permissão para editar fornecedores.";
     deleteButton.addEventListener("click", async () => {
       const linkedProducts = await getLinkedProducts(fornecedor);
       const message = linkedProducts.length
@@ -385,7 +574,12 @@ function renderSuppliers() {
             <span class="muted">CNPJ</span>
             <strong>${escapeHtml(formatDocumentNumber(fornecedor.cnpj) || "Nao informado")}</strong>
           </div>
+          <div>
+            <span class="muted">Produtos vendidos</span>
+            <strong>${soldProducts.length}</strong>
+          </div>
         </div>
+        <p class="muted" style="margin-top: 14px;">${escapeHtml(soldProducts.length ? soldProducts.map((product) => product.nome).join(" | ") : "Nenhum produto do estoque vinculado a este fornecedor.")}</p>
       </div>
     `;
     body.appendChild(actions);
@@ -405,6 +599,16 @@ async function loadSuppliers() {
   return fornecedores;
 }
 
+async function loadStockProducts() {
+  const snapshot = await getDocs(collection(db, "estoque"));
+  produtosEstoque = snapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
+    nome: document.data().nome || "Insumo sem nome"
+  }));
+  renderSupplierProductPicker();
+}
+
 cancelEditButton.addEventListener("click", () => {
   setStatus("status", "", "info");
   resetForm();
@@ -414,10 +618,16 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus("status", "", "info");
 
+  if (!canEditSuppliers) {
+    setStatus("status", "Seu perfil não possui permissão para editar fornecedores.", "error");
+    return;
+  }
+
   const nome = nameInput.value.trim();
   const cnpj = normalizeDocumentNumber(cnpjInput.value);
   const telefone = phoneInput.value.trim();
   const nomeNormalizado = normalizeText(nome);
+  const selectedProductIds = getSelectedProductIds();
 
   if (!nome) {
     setStatus("status", "Informe o nome do fornecedor.", "error");
@@ -467,17 +677,18 @@ form.addEventListener("submit", async (event) => {
       });
 
       const syncedProducts = await syncLinkedProducts(updatedSupplier);
+      const productSync = await syncSupplierProductsSelection(updatedSupplier, selectedProductIds);
       resetForm();
       setStatus(
         "status",
-        syncedProducts
-          ? `Fornecedor atualizado com sucesso. ${syncedProducts} item(ns) do estoque tambem foram atualizados.`
+        syncedProducts || productSync.changedCount
+          ? `Fornecedor atualizado com sucesso. ${productSync.linkedCount} produto(s) vinculado(s) e ${Math.max(syncedProducts, productSync.changedCount)} ajuste(s) sincronizado(s) no estoque.`
           : "Fornecedor atualizado com sucesso.",
         "success"
       );
       triggerReplenishmentEvaluation("fornecedor_atualizado").catch(() => null);
     } else {
-      await addDoc(collection(db, "fornecedores"), {
+      const supplierRef = await addDoc(collection(db, "fornecedores"), {
         nome,
         cnpj,
         telefone,
@@ -485,6 +696,12 @@ form.addEventListener("submit", async (event) => {
         nomeNormalizado,
         criadoEm: serverTimestamp()
       });
+      await syncSupplierProductsSelection({
+        id: supplierRef.id,
+        nome,
+        cnpj,
+        telefone
+      }, selectedProductIds);
 
       resetForm();
       setStatus("status", "Fornecedor salvo com sucesso.", "success");
@@ -511,6 +728,10 @@ async function init() {
   }
 
   userInfo.textContent = describeProfile(profile);
+  canEditSuppliers = can("fornecedores.editar", profile);
+  saveButton.disabled = !canEditSuppliers;
+  saveButton.title = canEditSuppliers ? "" : "Seu perfil não possui permissão para editar fornecedores.";
+  await loadStockProducts();
   resetForm();
   await loadSuppliers();
 }

@@ -713,6 +713,42 @@ h3 {
   color: #cbd5e1;
 }
 
+.premium-global-logout {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 0.48rem 0.56rem;
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  border-radius: 13px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+  box-shadow: none;
+  text-align: left;
+}
+
+.premium-global-logout span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.premium-global-logout strong {
+  overflow: hidden;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .premium-global-nav a span {
   display: grid;
   place-items: center;
@@ -1208,8 +1244,18 @@ h3 {
 }
 
 .stock-topbar-search {
-  min-width: min(360px, 100%);
+  min-width: min(420px, 100%);
   margin: 0;
+}
+
+.stock-page-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1fr) auto;
+  align-items: end;
+}
+
+.stock-page-header .actions {
+  justify-content: flex-end;
 }
 
 .stock-kpi-grid {
@@ -1221,12 +1267,22 @@ h3 {
 
 .stock-kpi-card {
   display: grid;
-  gap: 8px;
-  min-height: 128px;
+  grid-template-rows: auto minmax(42px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 136px;
+  overflow: hidden;
   padding: 16px;
   border-color: rgba(148, 163, 184, 0.14);
   background:
     linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(2, 6, 23, 0.42)),
+    rgba(15, 23, 42, 0.78);
+}
+
+.stock-kpi-card:first-child {
+  border-color: rgba(249, 115, 22, 0.26);
+  background:
+    linear-gradient(145deg, rgba(249, 115, 22, 0.16), rgba(15, 23, 42, 0.76)),
     rgba(15, 23, 42, 0.78);
 }
 
@@ -1236,13 +1292,50 @@ h3 {
 }
 
 .stock-kpi-card span {
+  align-self: start;
   font-size: 0.82rem;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .stock-kpi-card strong {
-  font-size: clamp(1.35rem, 2.2vw, 2rem);
-  line-height: 1;
+  align-self: center;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: clamp(1.15rem, 1.7vw, 1.72rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
+}
+
+.stock-kpi-card small {
+  align-self: end;
+  min-width: 0;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.sensitive-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sensitive-value-row strong {
+  min-width: 0;
+}
+
+.sensitive-value-toggle {
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 .stock-kpi-card.warning {
@@ -1991,6 +2084,32 @@ button.active,
   display: block;
   margin-top: 8px;
   color: rgba(255, 255, 255, 0.78);
+}
+
+.sensitive-dashboard-kpi .sensitive-value-row {
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+
+.sensitive-dashboard-kpi .sensitive-value-row strong {
+  display: block;
+  font-size: clamp(1.25rem, 2.3vw, 2.2rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-clickable-card {
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.dashboard-clickable-card:hover,
+.dashboard-clickable-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 20px 56px rgba(249, 115, 22, 0.16), 0 18px 50px rgba(0, 0, 0, 0.28);
+  filter: brightness(1.04);
+  outline: none;
 }
 
 .premium-health-row {
@@ -2749,7 +2868,8 @@ pre {
 .inventory-product-card {
   position: relative;
   display: grid;
-  gap: 14px;
+  align-content: start;
+  gap: 12px;
   padding: 16px;
   border-radius: 18px;
   border-color: rgba(148, 163, 184, 0.14);
@@ -2899,6 +3019,34 @@ pre {
   margin-top: 5px;
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.inventory-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 9px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.22);
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.inventory-summary-line span {
+  min-width: 0;
+}
+
+.inventory-summary-line b {
+  color: #cbd5e1;
+}
+
+.inventory-summary-line i {
+  color: rgba(148, 163, 184, 0.46);
+  font-style: normal;
 }
 
 .inventory-quick-grid {
@@ -3327,6 +3475,34 @@ pre {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
 }
 
+.premium-confirm-dialog {
+  width: min(460px, calc(100vw - 32px));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 22px;
+  padding: 0;
+  color: var(--text);
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.92)),
+    var(--card);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.44);
+}
+
+.premium-confirm-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.74);
+  backdrop-filter: blur(8px);
+}
+
+.premium-confirm-dialog form {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.danger-button {
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+}
+
 .training-toast {
   position: fixed;
   right: 18px;
@@ -3544,6 +3720,51 @@ pre {
 .supplier-entry-meta {
   margin-top: 8px;
   line-height: 1.5;
+}
+
+.supplier-products-field {
+  gap: 10px;
+}
+
+.supplier-product-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.28);
+}
+
+.supplier-product-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.supplier-product-choice input {
+  width: auto;
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+
+.supplier-product-choice strong,
+.supplier-product-choice small,
+.supplier-products-preview {
+  display: block;
+}
+
+.supplier-product-choice small,
+.supplier-products-preview {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 
 .supplier-entry-summary-side {
@@ -4810,4 +5031,53 @@ pre {
   .stock-product-table {
     min-width: 920px;
   }
+}
+
+.automation-config-panel .status {
+  justify-self: end;
+  margin: 0;
+}
+
+.automation-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.automation-alert-choice {
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.automation-log-card pre {
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(2, 6, 23, 0.42);
+  white-space: pre-wrap;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.automation-watch-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.automation-watch-list li {
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(2, 6, 23, 0.24);
+  font-size: 0.84rem;
 }

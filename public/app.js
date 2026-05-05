@@ -668,14 +668,37 @@ function normalizePermissionRole(value) {
 }
 
 function getManualPermission(profile = {}, permission = "") {
-  const [moduleKey, actionKey] = String(permission).split(".");
+  const parts = String(permission).split(".").filter(Boolean);
+  const [moduleKey, ...actionParts] = parts;
+  const actionKey = actionParts.join(".");
 
   if (!moduleKey || !actionKey) {
     return null;
   }
 
-  const value = profile.permissoes?.[moduleKey]?.[actionKey];
-  return typeof value === "boolean" ? value : null;
+  const modulePermissions = profile.permissoes?.[moduleKey];
+
+  if (!modulePermissions || typeof modulePermissions !== "object") {
+    return null;
+  }
+
+  const directValue = modulePermissions[actionKey];
+
+  if (typeof directValue === "boolean") {
+    return directValue;
+  }
+
+  let nestedValue = modulePermissions;
+
+  for (const key of actionParts) {
+    if (!nestedValue || typeof nestedValue !== "object" || !(key in nestedValue)) {
+      return null;
+    }
+
+    nestedValue = nestedValue[key];
+  }
+
+  return typeof nestedValue === "boolean" ? nestedValue : null;
 }
 
 function permissionListHas(permissionList = [], permission = "") {
@@ -769,20 +792,23 @@ export async function logout() {
 }
 
 export function bindLogoutButton(buttonId = "logout-button") {
-  const button = document.getElementById(buttonId);
+  const targets = [
+    document.getElementById(buttonId),
+    ...document.querySelectorAll("[data-logout-button]")
+  ].filter(Boolean);
 
-  if (!button) {
+  if (!targets.length) {
     return;
   }
 
-  button.addEventListener("click", async () => {
+  targets.forEach((button) => button.addEventListener("click", async () => {
     try {
       await logout();
     } catch (error) {
       console.error(error);
       window.alert("Nao foi possivel encerrar a sessao.");
     }
-  });
+  }));
 }
 
 export function setStatus(targetId, message, type = "info") {

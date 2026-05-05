@@ -54,6 +54,10 @@ function buildSidebar() {
           </a>
         `;
       }).join("")}
+      <button class="premium-global-logout" type="button" data-logout-button>
+        <span>X</span>
+        <strong>Sair</strong>
+      </button>
     </nav>
   `;
   document.body.prepend(sidebar);

@@ -1213,6 +1213,38 @@ async function resolveAdminAlert(req, res) {
   }
 }
 
+async function futureWhatsAppSend(req, res) {
+  const {
+    empresaId,
+    phone,
+    message,
+    alertType,
+    metadata
+  } = req.body || {};
+
+  // FUTURO:
+  // Enviar mensagem via backend seguro usando Z-API, Evolution API, Twilio ou Meta Cloud API.
+  // O token da API deve ficar apenas no servidor.
+  // Nunca expor token no front-end.
+  if (!phone || !message) {
+    return res.status(400).json({
+      success: false,
+      status: "missing_payload",
+      erro: "Informe phone e message para envio futuro."
+    });
+  }
+
+  return res.status(501).json({
+    success: false,
+    providerMessageId: "",
+    status: "pending_api",
+    empresaId: empresaId || req.profile?.empresaId || "",
+    alertType: alertType || "",
+    metadata: metadata || {},
+    erro: "Endpoint preparado. Conecte um provedor WhatsApp no backend para ativar envio real."
+  });
+}
+
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
@@ -1231,6 +1263,7 @@ app.post("/api/admin-alerts/evaluate", requireAuthenticated, evaluateAdminAlerts
 app.post("/api/admin-alerts/manual-suggestion", requireAuthenticated, recordManualAdminSuggestion);
 app.post("/api/admin-alerts/config", requireAdmin, updateAdminAlertConfig);
 app.post("/api/admin-alerts/:productId/resolve", requireAdmin, resolveAdminAlert);
+app.post("/api/whatsapp/send", requireAuthenticated, futureWhatsAppSend);
 app.post("/criar-usuario", requireAdmin, createUser);
 
 app.get("/", (req, res) => {

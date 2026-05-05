@@ -63,6 +63,20 @@
       </div>
 
       <div class="field-group">
+        <label for="purchase-unit">Unidade de compra</label>
+        <select id="purchase-unit">
+          <option value="Caixa">Caixa</option>
+          <option value="Unidade">Unidade</option>
+          <option value="Fardo">Fardo</option>
+          <option value="Pacote">Pacote</option>
+          <option value="Kg">Kg</option>
+          <option value="Litro">Litro</option>
+          <option value="Galão">Galão</option>
+          <option value="Grade">Grade</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label for="purchase-price">Valor por embalagem</label>
         <input id="purchase-price" type="number" min="0" step="0.01" value="0">
       </div>
@@ -89,6 +103,16 @@
     </form>
 
     <div id="purchase-status" class="status info" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header compact-header">
+      <div>
+        <h3>Histórico mensal de compras</h3>
+        <p class="muted">Últimos lançamentos com produto, quantidade, unidade, fornecedor e valor total.</p>
+      </div>
+    </div>
+    <div id="purchase-history-list" class="list purchase-history-list"></div>
   </section>
 
   <section class="panel">
@@ -178,6 +202,7 @@ const purchaseProductSelect = document.getElementById("purchase-product");
 const purchaseSupplierSelect = document.getElementById("purchase-supplier");
 const purchaseDateInput = document.getElementById("purchase-date");
 const purchasePackagesInput = document.getElementById("purchase-packages");
+const purchaseUnitSelect = document.getElementById("purchase-unit");
 const purchasePriceInput = document.getElementById("purchase-price");
 const purchaseTotalInput = document.getElementById("purchase-total");
 const purchaseNoteInput = document.getElementById("purchase-note");
@@ -190,6 +215,7 @@ const sendAdminReminderButton = document.getElementById("send-admin-reminder");
 const adminReminderStatus = document.getElementById("admin-reminder-status");
 const alertsLink = document.getElementById("alerts-link");
 const purchaseRegisterSection = document.getElementById("purchase-register-section");
+const purchaseHistoryList = document.getElementById("purchase-history-list");
 const dashboardLink = document.getElementById("dashboard-link");
 const adminReminderDescription = document.getElementById("admin-reminder-description");
 
@@ -229,6 +255,43 @@ function getTodayDateValue(referenceDate = new Date()) {
 function getMonthKey(value) {
   const raw = String(value ?? "").trim();
   return raw.length >= 7 ? raw.slice(0, 7) : "";
+}
+
+function normalizePurchaseUnit(value) {
+  const normalized = String(value || "Caixa").trim().toLowerCase();
+  const units = {
+    caixa: "Caixa",
+    unidade: "Unidade",
+    un: "Unidade",
+    fardo: "Fardo",
+    pacote: "Pacote",
+    kg: "Kg",
+    quilo: "Kg",
+    litro: "Litro",
+    l: "Litro",
+    galao: "Galão",
+    "galão": "Galão",
+    grade: "Grade"
+  };
+
+  return units[normalized] || "Caixa";
+}
+
+function pluralizePurchaseUnit(unit, quantity) {
+  const label = normalizePurchaseUnit(unit);
+  const singular = Math.abs(toNumber(quantity, 0)) <= 1;
+  const plurals = {
+    Caixa: "caixas",
+    Unidade: "unidades",
+    Fardo: "fardos",
+    Pacote: "pacotes",
+    Kg: "kg",
+    Litro: "litros",
+    "Galão": "galões",
+    Grade: "grades"
+  };
+
+  return singular ? label.toLowerCase() : (plurals[label] || `${label.toLowerCase()}s`);
 }
 
 function getStoredAdminWhatsapp() {
@@ -377,9 +440,16 @@ function updatePurchaseTotalPreview() {
 
 function applySelectedSupplierPrice() {
   const selectedSupplier = getSelectedPurchaseSupplier();
+  const selectedProduct = getProductById(purchaseProductSelect.value);
   purchasePriceInput.value = selectedSupplier
     ? String(getEffectiveSupplierPurchaseCost(selectedSupplier).toFixed(2))
     : "0";
+  purchaseUnitSelect.value = normalizePurchaseUnit(
+    selectedSupplier?.unidadeCompra
+      || selectedProduct?.unidadeCompra
+      || selectedProduct?.purchase_unit
+      || "Caixa"
+  );
   updatePurchaseTotalPreview();
 }
 
@@ -583,6 +653,43 @@ function buildOrderSuggestions() {
   renderOrders(sugestoes);
 }
 
+function renderMonthlyPurchaseHistory(purchases = []) {
+  purchaseHistoryList.innerHTML = "";
+
+  if (!purchases.length) {
+    purchaseHistoryList.innerHTML = '<div class="empty-state">Nenhuma compra mensal registrada ainda.</div>';
+    return;
+  }
+
+  purchases.slice(0, 12).forEach((purchase) => {
+    const quantity = Math.max(0, toNumber(purchase.quantidadeEmbalagens, 0));
+    const unit = purchase.unidadeCompra || "Caixa";
+    const article = document.createElement("article");
+    article.className = "card purchase-history-item";
+    article.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(purchase.produtoNome || "Produto")}</strong>
+        <span>${formatCurrency(toNumber(purchase.valorTotal, 0))}</span>
+      </div>
+      <p class="muted">${escapeHtml(`${quantity.toLocaleString("pt-BR")} ${pluralizePurchaseUnit(unit, quantity)} | ${purchase.fornecedorNome || "Fornecedor não informado"} | ${purchase.dataCompra || "-"}`)}</p>
+    `;
+    purchaseHistoryList.appendChild(article);
+  });
+}
+
+async function loadMonthlyPurchaseHistory() {
+  const snapshot = await getDocs(collection(db, "comprasMensais"));
+  const purchases = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => {
+      const leftDate = String(left.criadoEm?.seconds || left.dataCompra || "");
+      const rightDate = String(right.criadoEm?.seconds || right.dataCompra || "");
+      return rightDate.localeCompare(leftDate);
+    });
+
+  renderMonthlyPurchaseHistory(purchases);
+}
+
 async function loadPageData(options = {}) {
   const { preserveProduct = true, preserveSupplier = true } = options;
   const previousProductId = preserveProduct ? purchaseProductSelect.value : "";
@@ -608,6 +715,7 @@ async function loadPageData(options = {}) {
   populatePurchaseProductOptions(previousProductId);
   syncPurchaseSupplierOptions(previousSupplierId);
   buildOrderSuggestions();
+  await loadMonthlyPurchaseHistory();
 }
 
 sendButton.addEventListener("click", () => {
@@ -705,6 +813,7 @@ purchaseForm.addEventListener("submit", async (event) => {
   const supplier = getSelectedPurchaseSupplier();
   const dataCompra = purchaseDateInput.value || getTodayDateValue();
   const quantidadeEmbalagens = Math.max(1, toNumber(purchasePackagesInput.value, 1));
+  const unidadeCompra = normalizePurchaseUnit(purchaseUnitSelect.value);
   const valorEmbalagem = Math.max(0, toNumber(purchasePriceInput.value, 0));
   const observacao = purchaseNoteInput.value.trim();
 
@@ -734,6 +843,7 @@ purchaseForm.addEventListener("submit", async (event) => {
       dataCompra,
       mesReferencia: getMonthKey(dataCompra),
       quantidadeEmbalagens,
+      unidadeCompra,
       quantidadeUnidades,
       conversao: supplier.conversao,
       unidadeUso: supplier.unidadeUso,
@@ -765,6 +875,7 @@ purchaseForm.addEventListener("submit", async (event) => {
       itemNome: product.nome,
       fornecedorNome: supplier.nome,
       totalCompra: valorTotal,
+      unidadeCompra,
       responsavel: profile.email,
       data: serverTimestamp()
     });

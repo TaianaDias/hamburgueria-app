@@ -84,17 +84,35 @@
           <h3>Historico do dia</h3>
           <p class="muted">Reposicoes ja confirmadas neste dia.</p>
         </div>
+        <button id="clear-production-history" class="secondary danger-button" type="button" hidden>Zerar Histórico</button>
       </div>
       <div id="historico-lista" class="list"></div>
     </article>
   </section>
 </main>
 
+<dialog id="clear-history-dialog" class="premium-confirm-dialog">
+  <form method="dialog">
+    <p class="eyebrow">Ação sensível</p>
+    <h3>Zerar histórico de produção?</h3>
+    <p class="muted">Essa ação apagará apenas o histórico de reposição para produção e não poderá ser desfeita.</p>
+    <div class="field-group">
+      <label for="clear-history-confirmation">Digite ZERAR para confirmar</label>
+      <input id="clear-history-confirmation" autocomplete="off" placeholder="ZERAR">
+    </div>
+    <div class="actions compact-actions">
+      <button id="cancel-clear-history" class="secondary" value="cancel" type="submit">Cancelar</button>
+      <button id="confirm-clear-history" value="confirm" type="submit" disabled>Zerar histórico</button>
+    </div>
+  </form>
+</dialog>
+
 <script type="module">
 import { db } from "./firebase.js";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   serverTimestamp,
@@ -103,6 +121,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   bindLogoutButton,
+  can,
   describeProfile,
   normalizeText,
   requireAuth,
@@ -121,6 +140,10 @@ const novoUnidadeInput = document.getElementById("novo-unidade-insumo");
 const novoEstoqueInput = document.getElementById("novo-estoque-insumo");
 const headerMeta = document.getElementById("header-meta");
 const stockLink = document.getElementById("stock-link");
+const clearHistoryButton = document.getElementById("clear-production-history");
+const clearHistoryDialog = document.getElementById("clear-history-dialog");
+const clearHistoryConfirmationInput = document.getElementById("clear-history-confirmation");
+const confirmClearHistoryButton = document.getElementById("confirm-clear-history");
 
 let insumos = [];
 let selecionados = {};
@@ -396,6 +419,41 @@ async function loadHistoricoFromFirestore() {
     .sort((left, right) => String(right.timestamp).localeCompare(String(left.timestamp)));
 }
 
+async function clearProductionHistory() {
+  if (!can("producao.historico.zerar", profileContext?.profile)) {
+    setStatus("status-reposicao", "Seu perfil não possui permissão para zerar o histórico.", "error");
+    return;
+  }
+
+  const snapshot = await getDocs(collection(db, "historico"));
+  const productionHistoryDocs = snapshot.docs.filter((document) => document.data()?.tipo === "reposicao_producao");
+  const removedCount = productionHistoryDocs.length;
+
+  if (!removedCount) {
+    setStatus("status-reposicao", "Não há histórico de produção para zerar.", "info");
+    return;
+  }
+
+  const batch = writeBatch(db);
+  productionHistoryDocs.forEach((document) => {
+    batch.delete(doc(db, "historico", document.id));
+  });
+  batch.set(doc(collection(db, "auditoriaOperacional")), {
+    empresaId: profileContext?.profile?.empresaId || "",
+    usuario: profileContext?.profile?.email || "",
+    perfil: profileContext?.profile?.perfilPrincipal || profileContext?.profile?.tipo || "",
+    quantidadeRegistrosApagados: removedCount,
+    modulo: "Produção",
+    acao: "Zerar histórico",
+    criadoEm: serverTimestamp()
+  });
+
+  await batch.commit();
+  historico = [];
+  renderHistorico();
+  setStatus("status-reposicao", `Histórico de produção zerado com segurança. ${removedCount} registro(s) apagado(s).`, "success");
+}
+
 confirmButton.addEventListener("click", async () => {
   const resumo = getResumoSelecionados();
   if (!resumo.length) {
@@ -521,12 +579,40 @@ novoInsumoForm.addEventListener("submit", async (event) => {
   }
 });
 
+clearHistoryConfirmationInput.addEventListener("input", () => {
+  confirmClearHistoryButton.disabled = clearHistoryConfirmationInput.value.trim().toUpperCase() !== "ZERAR";
+});
+
+clearHistoryButton.addEventListener("click", () => {
+  clearHistoryConfirmationInput.value = "";
+  confirmClearHistoryButton.disabled = true;
+  clearHistoryDialog.showModal();
+});
+
+clearHistoryDialog.addEventListener("close", async () => {
+  if (clearHistoryDialog.returnValue !== "confirm") {
+    return;
+  }
+
+  try {
+    clearHistoryButton.disabled = true;
+    await clearProductionHistory();
+  } catch (error) {
+    console.error(error);
+    setStatus("status-reposicao", "Não foi possível zerar o histórico de produção.", "error");
+  } finally {
+    clearHistoryButton.disabled = false;
+  }
+});
+
 async function init() {
   bindLogoutButton();
   profileContext = await requireAuth({ permission: "producao.ver" });
   document.getElementById("user-info").textContent = describeProfile(profileContext.profile);
   headerMeta.textContent = `${getHeaderDateLabel()} | Turno atual: ${getTurnoAtual()}`;
   stockLink.hidden = profileContext.profile.tipo !== "admin";
+  clearHistoryButton.hidden = !can("producao.historico.zerar", profileContext.profile);
+  clearHistoryButton.title = clearHistoryButton.hidden ? "Seu perfil não possui permissão para zerar o histórico." : "";
 
   await loadInsumosFromFirestore();
   await loadHistoricoFromFirestore();
