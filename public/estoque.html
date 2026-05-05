@@ -638,6 +638,7 @@ import {
   getPrimaryProductSupplier,
   getUnitCost,
   getUsageUnit,
+  handleStockAutomationEvent,
   isSupplierPromotionActive,
   normalizeProductSuppliers,
   normalizeWeekdayList,
@@ -1239,6 +1240,44 @@ async function recordQuickBoxMovement(type) {
       data: serverTimestamp()
     });
 
+    const primarySupplier = getPrimaryProductSupplier({ ...currentProduct, ...payload }, fornecedores);
+    const responsibleUser = profile.nome || profile.email || "Usuário";
+    const automationBase = {
+      productName: payload.nome,
+      quantity: movement.quantity,
+      unit: movement.unitLabel || movement.unit,
+      previousStock: currentStockBoxes,
+      currentStock: nextStockBoxes,
+      supplier: primarySupplier?.nome || payload.fornecedorNome || payload.fornecedor || "",
+      responsibleUser,
+      userId: profile.id || "",
+      empresaId: profile.empresaId || "",
+      date: new Date()
+    };
+    const automationEvents = [
+      handleStockAutomationEvent({
+        ...automationBase,
+        type: isEntry ? "stockIn" : "stockOut",
+        reason: isEntry ? "Entrada de estoque" : "Saída de estoque"
+      })
+    ];
+
+    if (nextStockBoxes <= Math.max(0, toNumber(payload.minimo, 0))) {
+      automationEvents.push(handleStockAutomationEvent({
+        type: "lowStock",
+        productName: payload.nome,
+        currentStock: nextStockBoxes,
+        minStock: payload.minimo,
+        supplier: primarySupplier?.nome || payload.fornecedorNome || payload.fornecedor || "",
+        recommendation: "Comprar hoje",
+        responsibleUser,
+        userId: profile.id || "",
+        empresaId: profile.empresaId || "",
+        date: new Date()
+      }));
+    }
+
+    await Promise.allSettled(automationEvents);
     triggerReplenishmentEvaluation(isEntry ? "entrada_estoque" : "saida_estoque").catch(() => null);
     setStatus(
       "quick-box-status",

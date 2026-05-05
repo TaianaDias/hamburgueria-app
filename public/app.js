@@ -3,7 +3,13 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 function resolveApiBaseUrl() {
   if (window.location.protocol === "file:") {
@@ -821,6 +827,211 @@ export function setStatus(targetId, message, type = "info") {
   target.textContent = message ?? "";
   target.className = `status ${type}`;
   target.hidden = !message;
+}
+
+const AUTOMATION_CONFIG_REF = doc(db, "configuracoes", "whatsappAutomation");
+const AUTOMATION_LOG_COLLECTION = "automacaoLogs";
+
+function formatAutomationDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  return new Intl.DateTimeFormat("pt-BR").format(safeDate);
+}
+
+function formatAutomationQuantity(value) {
+  return toNumber(value, 0).toLocaleString("pt-BR", {
+    maximumFractionDigits: 3
+  });
+}
+
+function getAutomationAlertKey(type = "") {
+  const map = {
+    entrada: "stockIn",
+    saida: "stockOut",
+    stockIn: "stockIn",
+    stockOut: "stockOut",
+    lowStock: "lowStock"
+  };
+
+  return map[type] || type;
+}
+
+function getAutomationLogStatusLabel(status = "") {
+  const labels = {
+    simulado: "Simulado",
+    pendente_api: "Pendente API",
+    enviado_futuro: "Enviado futuramente",
+    erro_futuro: "Erro futuramente"
+  };
+
+  return labels[status] || status || "Pendente API";
+}
+
+export async function loadAutomationConfig() {
+  const defaultConfig = {
+    enabled: false,
+    provider: "",
+    webhookUrl: "",
+    adminPhone: "",
+    secondaryPhone: "",
+    sendMode: "immediate",
+    alertTypes: {
+      stockIn: true,
+      stockOut: true,
+      lowStock: true,
+      expiring: true,
+      expired: true,
+      purchaseSuggestion: true,
+      productionPending: true,
+      labelPrinted: true
+    }
+  };
+
+  try {
+    const snapshot = await getDoc(AUTOMATION_CONFIG_REF);
+
+    if (!snapshot.exists()) {
+      return defaultConfig;
+    }
+
+    const data = snapshot.data() || {};
+    return {
+      ...defaultConfig,
+      ...data,
+      alertTypes: {
+        ...defaultConfig.alertTypes,
+        ...(data.alertTypes || {})
+      }
+    };
+  } catch (error) {
+    console.warn("Nao foi possivel carregar configuracao da automacao WhatsApp.", error);
+    return defaultConfig;
+  }
+}
+
+export function buildStockWhatsAppMessage(event = {}) {
+  const dateLabel = formatAutomationDate(event.date || new Date());
+
+  if (event.type === "stockIn") {
+    return [
+      "📦 Entrada de Estoque",
+      "",
+      `Produto: ${event.productName || "-"}`,
+      `Quantidade adicionada: ${formatAutomationQuantity(event.quantity)} ${event.unit || "unidade"}(s)`,
+      `Estoque anterior: ${formatAutomationQuantity(event.previousStock)}`,
+      `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+      `Fornecedor: ${event.supplier || "-"}`,
+      `Responsável: ${event.responsibleUser || "-"}`,
+      `Data: ${dateLabel}`
+    ].join("\n");
+  }
+
+  if (event.type === "stockOut") {
+    return [
+      "📤 Saída de Estoque",
+      "",
+      `Produto: ${event.productName || "-"}`,
+      `Quantidade retirada: ${formatAutomationQuantity(event.quantity)} ${event.unit || "unidade"}(s)`,
+      `Estoque anterior: ${formatAutomationQuantity(event.previousStock)}`,
+      `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+      `Motivo: ${event.reason || "Movimentação de estoque"}`,
+      `Responsável: ${event.responsibleUser || "-"}`,
+      `Data: ${dateLabel}`
+    ].join("\n");
+  }
+
+  return [
+    "⚠️ Alerta de Reposição",
+    "",
+    `Produto: ${event.productName || "-"}`,
+    `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+    `Estoque mínimo: ${formatAutomationQuantity(event.minStock)}`,
+    `Fornecedor: ${event.supplier || "-"}`,
+    `Ação recomendada: ${event.recommendation || "Comprar hoje"}`
+  ].join("\n");
+}
+
+export async function registerAutomationLog({
+  type,
+  productName,
+  message,
+  status = "pendente_api",
+  createdAt = new Date(),
+  userId = "",
+  empresaId = "",
+  recipient = ""
+} = {}) {
+  const profile = globalThis.window?.__burgerOpsProfile || {};
+  const payload = {
+    type,
+    tipo: type,
+    productName,
+    produto: productName,
+    message,
+    mensagem: message,
+    status,
+    statusLabel: getAutomationLogStatusLabel(status),
+    destinatario: recipient,
+    userId: userId || profile.userId || profile.id || "",
+    empresaId: empresaId || profile.empresaId || "",
+    createdAt: createdAt instanceof Date ? createdAt.toISOString() : String(createdAt || new Date().toISOString()),
+    criadoEm: serverTimestamp()
+  };
+
+  await addDoc(collection(db, AUTOMATION_LOG_COLLECTION), payload);
+  return payload;
+}
+
+export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) {
+  // FUTURO:
+  // Aqui será chamado o backend seguro:
+  // POST /api/whatsapp/send
+  // O token da API ficará apenas no servidor.
+  console.log("[WhatsApp pendente API]", message);
+
+  await registerAutomationLog({
+    type: event.type,
+    productName: event.productName,
+    message,
+    status: "pendente_api",
+    createdAt: event.date || new Date(),
+    userId: event.userId || "",
+    empresaId: event.empresaId || "",
+    recipient: config.adminPhone || ""
+  });
+
+  return {
+    status: "pendente_api",
+    message
+  };
+}
+
+export async function handleStockAutomationEvent(event = {}) {
+  const alertKey = getAutomationAlertKey(event.type);
+  const config = await loadAutomationConfig();
+
+  if (!config.enabled) {
+    return {
+      skipped: true,
+      reason: "automation_disabled"
+    };
+  }
+
+  if (config.alertTypes?.[alertKey] === false) {
+    return {
+      skipped: true,
+      reason: "alert_type_disabled"
+    };
+  }
+
+  const normalizedEvent = {
+    ...event,
+    type: alertKey,
+    date: event.date || new Date()
+  };
+  const message = buildStockWhatsAppMessage(normalizedEvent);
+
+  return sendWhatsAppPlaceholder(message, config, normalizedEvent);
 }
 
 export function registerServiceWorker() {
