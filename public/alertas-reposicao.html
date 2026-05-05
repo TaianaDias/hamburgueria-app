@@ -71,7 +71,7 @@
     <article class="panel">
       <div class="page-header" style="margin-bottom: 16px;">
         <div>
-          <h3>Configuracao automatica</h3>
+          <h3>Configuração automatica</h3>
           <p class="muted">Defina apenas o essencial para o disparo diario ao admin.</p>
         </div>
       </div>
@@ -155,7 +155,7 @@
   <section class="panel" style="margin-top: 20px;">
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
-        <h3>Historico de alertas</h3>
+        <h3>Histórico de alertas</h3>
         <p class="muted">Use este historico para entender recorrencia, escalonamento e resolucao.</p>
       </div>
     </div>
@@ -244,7 +244,7 @@ function formatNotificationStatus(notification) {
   }
 
   if (status === "pending_configuration") {
-    return "Configuracao pendente";
+    return "Configuração pendente";
   }
 
   if (status === "missing_recipient") {
@@ -554,7 +554,7 @@ alertsList.addEventListener("click", async (event) => {
       await loadDashboard();
     } catch (error) {
       console.error(error);
-      setStatus("dashboard-status", error.message || "Nao foi possivel resolver o alerta.", "error");
+      setStatus("dashboard-status", error.message || "Não foi possível resolver o alerta.", "error");
     } finally {
       button.disabled = false;
     }
@@ -578,7 +578,7 @@ evaluateButton.addEventListener("click", async () => {
     setStatus("dashboard-status", "Avaliacao concluida com sucesso.", "success");
   } catch (error) {
     console.error(error);
-    setStatus("dashboard-status", error.message || "Nao foi possivel avaliar os alertas.", "error");
+    setStatus("dashboard-status", error.message || "Não foi possível avaliar os alertas.", "error");
   } finally {
     evaluateButton.disabled = false;
   }
@@ -605,11 +605,11 @@ configForm.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload)
     });
 
-    setStatus("config-status", "Configuracao salva com sucesso.", "success");
-    await loadDashboard({ statusMessage: "Configuracao atualizada. Recarregando painel..." });
+    setStatus("config-status", "Configuração salva com sucesso.", "success");
+    await loadDashboard({ statusMessage: "Configuração atualizada. Recarregando painel..." });
   } catch (error) {
     console.error(error);
-    setStatus("config-status", error.message || "Nao foi possivel salvar a configuracao.", "error");
+    setStatus("config-status", error.message || "Não foi possível salvar a configuracao.", "error");
   } finally {
     saveConfigButton.disabled = false;
   }
@@ -619,8 +619,8 @@ try {
   await loadDashboard();
 } catch (error) {
   console.error(error);
-  setStatus("dashboard-status", error.message || "Nao foi possivel carregar o painel de alertas.", "error");
-  alertsList.innerHTML = '<div class="empty-state">Nao foi possivel carregar os alertas agora.</div>';
+  setStatus("dashboard-status", error.message || "Não foi possível carregar o painel de alertas.", "error");
+  alertsList.innerHTML = '<div class="empty-state">Não foi possível carregar os alertas agora.</div>';
 }
 </script>
 </body>

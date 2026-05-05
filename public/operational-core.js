@@ -96,7 +96,7 @@ function buildConfirmationText(intent, quantity, cost) {
   }
 
   if (intent === "saida_producao") {
-    return `Confirma saida para producao de ${amount}?`;
+    return `Confirma saída para producao de ${amount}?`;
   }
 
   if (intent === "porcionamento") {

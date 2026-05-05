@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -39,17 +39,17 @@
       </article>
       <article>
         <span>P</span>
-        <strong>Producao e Etiquetas</strong>
+        <strong>Produção e Etiquetas</strong>
         <small>Pre-preparo, validade e etiquetas termicas.</small>
       </article>
       <article>
         <span>C</span>
         <strong>Compras e Fornecedores</strong>
-        <small>Pedidos inteligentes e comparacao de precos.</small>
+        <small>Pedidos inteligentes e comparacao de preços.</small>
       </article>
       <article>
         <span>D</span>
-        <strong>Dashboard & Relatorios</strong>
+        <strong>Dashboard e Relatórios</strong>
         <small>Indicadores completos para melhores decisoes.</small>
       </article>
     </div>
@@ -101,7 +101,7 @@
             <input id="remember-me" type="checkbox">
             <span>Lembrar-me</span>
           </label>
-          <a href="mailto:suporte@cariocasoperacao.com?subject=Recuperar%20senha">Esqueci minha senha</a>
+          <a href="mailto:suporte@cariocasoperação.com?subject=Recuperar%20senha">Esqueci minha senha</a>
         </div>
 
         <button id="submit-button" type="submit" style="grid-column: 1 / -1;">Entrar <span aria-hidden="true">→</span></button>
@@ -207,7 +207,7 @@ async function init() {
     document.getElementById("register-confirmar-senha").disabled = !canCreate;
 
     if (bootstrapStatus.unknown) {
-      registerNote.textContent = "Nao foi possivel verificar automaticamente o status inicial. Voce ainda pode tentar criar a primeira conta e o backend vai validar isso.";
+      registerNote.textContent = "Não foi possível verificar automaticamente o status inicial. Voce ainda pode tentar criar a primeira conta e o backend vai validar isso.";
       return;
     }
 
@@ -232,7 +232,7 @@ async function init() {
         canCreateFirstAccount: false,
         unknown: true
       };
-      setStatus("status", error.message || "Nao foi possivel verificar se o sistema ja tem conta inicial.", "info");
+      setStatus("status", error.message || "Não foi possível verificar se o sistema ja tem conta inicial.", "info");
     }
 
     updateRegisterState();
@@ -285,7 +285,7 @@ async function init() {
       window.location.href = "dashboard-saas.html";
     } catch (error) {
       console.error(error);
-      setStatus("status", "Login invalido. Confira email e senha.", "error");
+      setStatus("status", "Login inválido. Confira email e senha.", "error");
     } finally {
       loginButton.disabled = false;
     }
@@ -337,7 +337,7 @@ async function init() {
       window.location.href = "dashboard-saas.html";
     } catch (error) {
       console.error(error);
-      setStatus("status", error.message || "Nao foi possivel criar a conta inicial.", "error");
+      setStatus("status", error.message || "Não foi possível criar a conta inicial.", "error");
     } finally {
       registerButton.disabled = false;
       await loadBootstrapStatus();
@@ -350,7 +350,7 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  setStatus("status", "Nao foi possivel inicializar a tela de acesso.", "error");
+  setStatus("status", "Não foi possível inicializar a tela de acesso.", "error");
 });
 </script>
 </body>

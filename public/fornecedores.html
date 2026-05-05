@@ -271,7 +271,7 @@ async function registerSupplierAudit(action, payload = {}) {
       criadoEm: serverTimestamp()
     });
   } catch (error) {
-    console.warn("Nao foi possivel registrar auditoria de fornecedor.", error);
+    console.warn("Não foi possível registrar auditoria de fornecedor.", error);
   }
 }
 
@@ -541,7 +541,7 @@ function renderSuppliers() {
         await loadSuppliers();
       } catch (error) {
         console.error(error);
-        setStatus("status", error.message || "Nao foi possivel excluir o fornecedor.", "error");
+        setStatus("status", error.message || "Não foi possível excluir o fornecedor.", "error");
       } finally {
         deleteButton.disabled = false;
         editButton.disabled = false;
@@ -646,11 +646,11 @@ form.addEventListener("submit", async (event) => {
       : false;
 
     if (fornecedorExistente) {
-      throw new Error("Ja existe um fornecedor com esse nome.");
+      throw new Error("Já existe um fornecedor com esse nome.");
     }
 
     if (cnpjExistente) {
-      throw new Error("Ja existe um fornecedor com esse CNPJ.");
+      throw new Error("Já existe um fornecedor com esse CNPJ.");
     }
 
     if (editingSupplierId) {
@@ -711,7 +711,7 @@ form.addEventListener("submit", async (event) => {
     await loadSuppliers();
   } catch (error) {
     console.error(error);
-    setStatus("status", error.message || "Nao foi possivel salvar o fornecedor.", "error");
+    setStatus("status", error.message || "Não foi possível salvar o fornecedor.", "error");
   } finally {
     saveButton.disabled = false;
   }
@@ -738,7 +738,7 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  setStatus("status", "Nao foi possivel carregar a tela de fornecedores.", "error");
+  setStatus("status", "Não foi possível carregar a tela de fornecedores.", "error");
 });
 </script>
 </body>

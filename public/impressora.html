@@ -27,7 +27,7 @@
 
   <section class="layout-grid">
     <article class="panel">
-      <h3>Impressora padrao</h3>
+      <h3>Impressora padrão</h3>
       <form id="printer-form" class="form-grid" style="margin-top: 16px;">
         <div class="field-group">
           <label for="printer-name">Nome da impressora</label>
@@ -55,7 +55,7 @@
         <div class="field-group">
           <label for="printer-language">Linguagem</label>
           <select id="printer-language">
-            <option value="html">Impressao padrao</option>
+            <option value="html">Impressao padrão</option>
             <option value="escpos">ESC/POS</option>
             <option value="zpl">ZPL</option>
             <option value="tspl">TSPL</option>
@@ -63,7 +63,7 @@
         </div>
         <label class="inline-choice" style="grid-column: 1 / -1;">
           <input id="printer-default" type="checkbox" checked>
-          <span>Usar como impressora padrao da loja</span>
+          <span>Usar como impressora padrão da loja</span>
         </label>
         <button type="submit">Salvar configuracao</button>
         <button id="test-print-button" class="secondary" type="button">Imprimir etiqueta teste</button>
@@ -79,7 +79,7 @@
           <h3>Molho da casa</h3>
           <p>Produzido em: hoje 14:30</p>
           <p>Validade: +72h</p>
-          <p>Responsavel: Operador</p>
+          <p>Responsável: Operador</p>
           <p>Lote: MOL-TESTE-001</p>
           <p>Armazenamento: Refrigerado</p>
         </div>
@@ -106,7 +106,7 @@ if (!existing.empty) {
   document.getElementById("printer-size").value = data.tipo || "40x30";
   document.getElementById("printer-connection").value = data.conexao || "browser";
   document.getElementById("printer-language").value = data.linguagem || "html";
-  document.getElementById("printer-default").checked = data.padrao !== false;
+  document.getElementById("printer-default").checked = data.padrão !== false;
 }
 
 document.getElementById("printer-form").addEventListener("submit", async (event) => {
@@ -116,11 +116,11 @@ document.getElementById("printer-form").addEventListener("submit", async (event)
     tipo: document.getElementById("printer-size").value,
     conexao: document.getElementById("printer-connection").value,
     linguagem: document.getElementById("printer-language").value,
-    padrao: document.getElementById("printer-default").checked,
+    padrão: document.getElementById("printer-default").checked,
     responsavel: profile.email,
     criadoEm: serverTimestamp()
   });
-  setStatus("status", "Configuracao salva.", "success");
+  setStatus("status", "Configuração salva.", "success");
 });
 
 document.getElementById("test-print-button").addEventListener("click", () => {

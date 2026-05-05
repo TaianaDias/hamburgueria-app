@@ -78,7 +78,7 @@ async function loadRuntimeConfig() {
 
         return await response.json();
       } catch (error) {
-        console.warn("Nao foi possivel carregar runtime-config.json.", error);
+        console.warn("Não foi possível carregar runtime-config.json.", error);
         return {};
       }
     })();
@@ -812,7 +812,7 @@ export function bindLogoutButton(buttonId = "logout-button") {
       await logout();
     } catch (error) {
       console.error(error);
-      window.alert("Nao foi possivel encerrar a sessao.");
+      window.alert("Não foi possível encerrar a sessao.");
     }
   }));
 }
@@ -905,7 +905,7 @@ export async function loadAutomationConfig() {
       }
     };
   } catch (error) {
-    console.warn("Nao foi possivel carregar configuracao da automacao WhatsApp.", error);
+    console.warn("Não foi possível carregar configuracao da automacao WhatsApp.", error);
     return defaultConfig;
   }
 }
@@ -1129,7 +1129,7 @@ async function performApiRequest(path, options = {}, settings = {}) {
       }
 
       if (!response.ok) {
-        const error = new Error(payload?.erro || "Nao foi possivel completar a requisicao.");
+        const error = new Error(payload?.erro || "Não foi possível completar a requisicao.");
         error.status = response.status;
         throw error;
       }
@@ -1146,7 +1146,7 @@ async function performApiRequest(path, options = {}, settings = {}) {
   }
 
   throw new Error(
-    "Nao foi possivel conectar ao backend. Verifique se o servidor desta instalacao esta online ou, em ambiente local, rode npm start."
+    "Não foi possível conectar ao backend. Verifique se o servidor desta instalacao esta online ou, em ambiente local, rode npm start."
   );
 }
 
@@ -1168,7 +1168,7 @@ export async function triggerReplenishmentEvaluation(reason = "app_event", optio
       })
     });
   } catch (error) {
-    console.warn("Nao foi possivel reavaliar os alertas de reposicao.", error);
+    console.warn("Não foi possível reavaliar os alertas de reposicao.", error);
     return null;
   }
 }

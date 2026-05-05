@@ -20,7 +20,7 @@
   <header class="page-header">
     <div>
       <p class="eyebrow">Administração</p>
-      <h1>Funcionários & Permissões</h1>
+      <h1>Funcionários e Permissões</h1>
       <p id="user-info" class="muted"></p>
     </div>
 
@@ -306,7 +306,8 @@ const PERMISSION_GROUPS = [
     actions: [
       ["ver", "Ver configurações"],
       ["editar", "Editar configurações"],
-      ["gerenciarPlano", "Gerenciar plano"]
+      ["gerenciarPlano", "Gerenciar plano"],
+      ["zerarHistoricoProducao", "Zerar histórico de produção", "producao.historico.zerar"]
     ]
   }
 ];
@@ -447,8 +448,8 @@ function renderStaticControls() {
       <article class="employee-permission-group">
         <h4>${group.title}</h4>
         <div>
-          ${group.actions.map(([actionKey, label]) => {
-            const permission = `${group.key}.${actionKey}`;
+          ${group.actions.map(([actionKey, label, fullPermission]) => {
+            const permission = fullPermission || `${group.key}.${actionKey}`;
             return `
               <label>
                 <input type="checkbox" data-permission="${permission}">

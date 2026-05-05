@@ -34,7 +34,7 @@
   <section class="training-hero panel">
     <div>
       <span class="training-pill">Para equipe, gerente e novos clientes SaaS</span>
-      <h2>Aprenda o sistema em passos curtos, simples e focados na operacao.</h2>
+      <h2>Aprenda o sistema em passos curtos, simples e focados na operação.</h2>
       <p class="muted">Use esta area para treinar funcionarios, padronizar a rotina e apresentar o sistema para novas lojas sem depender de suporte o tempo todo.</p>
       <div class="training-hero-actions">
         <a class="button" href="#primeiros-passos">Comecar treinamento</a>
@@ -43,7 +43,7 @@
     </div>
 
     <article class="training-progress-card">
-      <span>Treinamento basico</span>
+      <span>Treinamento básico</span>
       <strong id="training-progress-percent">0%</strong>
       <div class="training-progress-track">
         <span id="training-progress-fill"></span>
@@ -57,17 +57,17 @@
     <article class="panel training-start-card">
       <p class="eyebrow">Comece por aqui</p>
       <h3>O que e o sistema?</h3>
-      <p class="muted">E uma central operacional para controlar insumos, compras, producao, etiquetas, desperdicio, fornecedores e relatorios em uma rotina simples.</p>
+      <p class="muted">E uma central operacional para controlar insumos, compras, producao, etiquetas, desperdício, fornecedores e relatórios em uma rotina simples.</p>
     </article>
     <article class="panel training-start-card">
       <p class="eyebrow">Para que serve?</p>
       <h3>Menos erro na correria</h3>
-      <p class="muted">Ajuda a saber o que tem em estoque, o que precisa comprar, o que esta vencendo e quanto cada item custa na operacao.</p>
+      <p class="muted">Ajuda a saber o que tem em estoque, o que precisa comprar, o que esta vencendo e quanto cada item custa na operação.</p>
     </article>
     <article class="panel training-start-card">
       <p class="eyebrow">Ordem ideal</p>
-      <h3>Fornecedor, insumo, entrada, saida</h3>
-      <p class="muted">Cadastre fornecedores, depois insumos, configure minimo, registre entradas/saidas, gere etiquetas e acompanhe o dashboard.</p>
+      <h3>Fornecedor, insumo, entrada, saída</h3>
+      <p class="muted">Cadastre fornecedores, depois insumos, configure minimo, registre entradas/saídas, gere etiquetas e acompanhe o dashboard.</p>
     </article>
   </section>
 
@@ -90,9 +90,9 @@
       </div>
       <div class="training-filter-row">
         <button class="secondary active" type="button" data-video-filter="todos">Todos</button>
-        <button class="secondary" type="button" data-video-filter="basico">Basico</button>
-        <button class="secondary" type="button" data-video-filter="intermediario">Intermediario</button>
-        <button class="secondary" type="button" data-video-filter="avancado">Avancado</button>
+        <button class="secondary" type="button" data-video-filter="básico">Basico</button>
+        <button class="secondary" type="button" data-video-filter="intermediário">Intermediario</button>
+        <button class="secondary" type="button" data-video-filter="avançado">Avancado</button>
       </div>
     </div>
     <div id="training-video-grid" class="training-video-grid"></div>
@@ -226,25 +226,25 @@ const TRAINING_STORAGE_KEY = "cariocas-training-progress";
 const firstSteps = [
   { title: "Cadastrar fornecedores", text: "Registre nome, WhatsApp, dias de compra e dias de entrega." },
   { title: "Cadastrar insumos", text: "Crie os itens usados na hamburgueria: paes, carnes, molhos, embalagens e bebidas." },
-  { title: "Configurar estoque minimo", text: "Defina o ponto de alerta para evitar ruptura na operacao." },
+  { title: "Configurar estoque minimo", text: "Defina o ponto de alerta para evitar ruptura na operação." },
   { title: "Fazer entrada de estoque", text: "Registre compras por caixa, pacote, fardo ou unidade." },
-  { title: "Fazer saida de estoque", text: "Baixe itens usados na producao ou na rotina da loja." },
+  { title: "Fazer saída de estoque", text: "Baixe itens usados na producao ou na rotina da loja." },
   { title: "Gerar etiqueta", text: "Imprima validade, lote, responsavel e armazenamento." },
-  { title: "Criar ficha tecnica", text: "Vincule insumos ao cardapio para calcular custo e CMV." },
-  { title: "Acompanhar dashboard", text: "Veja alertas, itens criticos, custo e sugestoes de compra." }
+  { title: "Criar ficha técnica", text: "Vincule insumos ao cardápio para calcular custo e CMV." },
+  { title: "Acompanhar dashboard", text: "Veja alertas, itens criticos, custo e sugestões de compra." }
 ];
 
 const lessons = [
-  { id: "insumo", titulo: "Como cadastrar um insumo", descricao: "Aprenda o cadastro basico com categoria, fornecedor, unidade e custo.", modulo: "Estoque", duracao: "4 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Funcionario", ordem: 1 },
-  { id: "entrada", titulo: "Como dar entrada no estoque", descricao: "Registre compras por caixa, pacote, fardo ou unidade sem errar custo.", modulo: "Estoque", duracao: "3 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Funcionario", ordem: 2 },
-  { id: "saida", titulo: "Como registrar saida de estoque", descricao: "Baixe insumos usados na producao e mantenha o saldo atualizado.", modulo: "Estoque", duracao: "3 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Producao", ordem: 3 },
-  { id: "minimo", titulo: "Como configurar estoque minimo", descricao: "Entenda quando o sistema deve avisar que precisa comprar.", modulo: "Estoque", duracao: "5 min", nivel: "intermediario", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Gerente", ordem: 4 },
-  { id: "etiqueta", titulo: "Como gerar etiqueta de validade", descricao: "Use lote, validade, responsavel e armazenamento para padronizar a loja.", modulo: "Etiquetas", duracao: "4 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Producao", ordem: 5 },
-  { id: "fornecedor", titulo: "Como cadastrar fornecedor", descricao: "Configure contatos, entrega, dias de pedido e produtos fornecidos.", modulo: "Fornecedores", duracao: "4 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Compras", ordem: 6 },
-  { id: "ficha", titulo: "Como criar ficha tecnica", descricao: "Monte receitas, insumos e custo por item do cardapio.", modulo: "Ficha tecnica", duracao: "7 min", nivel: "intermediario", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Admin", ordem: 7 },
-  { id: "cmv", titulo: "Como entender o CMV", descricao: "Veja como custo, venda e margem conversam na operacao.", modulo: "Relatorios", duracao: "8 min", nivel: "avancado", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Admin", ordem: 8 },
-  { id: "dashboard", titulo: "Como usar o dashboard", descricao: "Leia indicadores, alertas e sugestoes de compra do dia.", modulo: "Dashboard", duracao: "5 min", nivel: "basico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Gerente", ordem: 9 },
-  { id: "vencimento", titulo: "Como acompanhar produtos vencendo", descricao: "Saiba o que vence hoje, amanha e nos proximos dias.", modulo: "Validade", duracao: "4 min", nivel: "intermediario", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Producao", ordem: 10 }
+  { id: "insumo", titulo: "Como cadastrar um insumo", descricao: "Aprenda o cadastro básico com categoria, fornecedor, unidade e custo.", modulo: "Estoque", duracao: "4 min", nivel: "básico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Funcionario", ordem: 1 },
+  { id: "entrada", titulo: "Como dar entrada no estoque", descricao: "Registre compras por caixa, pacote, fardo ou unidade sem errar custo.", modulo: "Estoque", duracao: "3 min", nivel: "básico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Funcionario", ordem: 2 },
+  { id: "saída", titulo: "Como registrar saída de estoque", descricao: "Baixe insumos usados na producao e mantenha o saldo atualizado.", modulo: "Estoque", duracao: "3 min", nivel: "básico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Produção", ordem: 3 },
+  { id: "minimo", titulo: "Como configurar estoque minimo", descricao: "Entenda quando o sistema deve avisar que precisa comprar.", modulo: "Estoque", duracao: "5 min", nivel: "intermediário", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Gerente", ordem: 4 },
+  { id: "etiqueta", titulo: "Como gerar etiqueta de validade", descricao: "Use lote, validade, responsavel e armazenamento para padronizar a loja.", modulo: "Etiquetas", duracao: "4 min", nivel: "básico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Produção", ordem: 5 },
+  { id: "fornecedor", titulo: "Como cadastrar fornecedor", descricao: "Configure contatos, entrega, dias de pedido e produtos fornecidos.", modulo: "Fornecedores", duracao: "4 min", nivel: "básico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Compras", ordem: 6 },
+  { id: "ficha", titulo: "Como criar ficha técnica", descricao: "Monte receitas, insumos e custo por item do cardápio.", modulo: "Ficha técnica", duracao: "7 min", nivel: "intermediário", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Admin", ordem: 7 },
+  { id: "cmv", titulo: "Como entender o CMV", descricao: "Veja como custo, venda e margem conversam na operação.", modulo: "Relatórios", duracao: "8 min", nivel: "avançado", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Admin", ordem: 8 },
+  { id: "dashboard", titulo: "Como usar o dashboard", descricao: "Leia indicadores, alertas e sugestões de compra do dia.", modulo: "Dashboard", duracao: "5 min", nivel: "básico", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Gerente", ordem: 9 },
+  { id: "vencimento", titulo: "Como acompanhar produtos vencendo", descricao: "Saiba o que vence hoje, amanhã e nos próximos dias.", modulo: "Validade", duracao: "4 min", nivel: "intermediário", videoUrl: "", thumbnail: "", status: "pendente", perfilIndicado: "Produção", ordem: 10 }
 ];
 
 const guidedChecklist = [
@@ -265,8 +265,8 @@ const faqs = [
   { question: "Como calcular caixa com unidades?", answer: "Informe a unidade de compra como caixa, a quantidade por embalagem e o custo total. O sistema calcula o custo unitario." },
   { question: "O que significa CMV?", answer: "CMV e o custo da mercadoria vendida. Ele mostra quanto os insumos pesam sobre as vendas." },
   { question: "Quando gerar etiqueta?", answer: "Sempre que houver producao, abertura de embalagem, porcionamento ou item com validade controlada." },
-  { question: "Como saber o que comprar hoje?", answer: "Acesse Dashboard ou Compras e veja itens abaixo do minimo e sugestoes de reposicao." },
-  { question: "O que fazer com produto vencido?", answer: "Separe o produto, registre desperdicio com motivo vencido e nunca use na producao." }
+  { question: "Como saber o que comprar hoje?", answer: "Acesse Dashboard ou Compras e veja itens abaixo do minimo e sugestões de reposicao." },
+  { question: "O que fazer com produto vencido?", answer: "Separe o produto, registre desperdício com motivo vencido e nunca use na producao." }
 ];
 
 const aiSuggestions = [
@@ -279,21 +279,21 @@ const aiSuggestions = [
 ];
 
 const profileTraining = [
-  { title: "Admin", items: ["Configurar sistema", "Cadastrar usuarios", "Ver relatorios", "Acompanhar CMV"] },
-  { title: "Gerente", items: ["Acompanhar estoque", "Aprovar compras", "Ver alertas", "Conferir desperdicio"] },
-  { title: "Producao", items: ["Registrar producao", "Gerar etiqueta", "Conferir validade", "Dar baixa nos insumos"] },
-  { title: "Compras", items: ["Ver lista de reposicao", "Comparar fornecedores", "Registrar entrada", "Acompanhar precos"] },
-  { title: "Funcionario", items: ["Fazer entrada simples", "Fazer saida simples", "Consultar produto", "Seguir checklist"] }
+  { title: "Admin", items: ["Configurar sistema", "Cadastrar usuários", "Ver relatórios", "Acompanhar CMV"] },
+  { title: "Gerente", items: ["Acompanhar estoque", "Aprovar compras", "Ver alertas", "Conferir desperdício"] },
+  { title: "Produção", items: ["Registrar producao", "Gerar etiqueta", "Conferir validade", "Dar baixa nos insumos"] },
+  { title: "Compras", items: ["Ver lista de reposicao", "Comparar fornecedores", "Registrar entrada", "Acompanhar preços"] },
+  { title: "Funcionario", items: ["Fazer entrada simples", "Fazer saída simples", "Consultar produto", "Seguir checklist"] }
 ];
 
 const tourSteps = [
   { title: "Dashboard", description: "Mostra saude do estoque, itens criticos, produtos vencendo, custo total, movimentacoes e alertas inteligentes." },
-  { title: "Estoque", description: "Central para cadastrar insumos, controlar minimo, entrada, saida, fornecedores, custo e validade." },
+  { title: "Estoque", description: "Central para cadastrar insumos, controlar minimo, entrada, saída, fornecedores, custo e validade." },
   { title: "Compras", description: "Ajuda a decidir o que comprar, comparar fornecedores e montar pedido para WhatsApp." },
-  { title: "Producao", description: "Registra pre-preparo, porcionamento, rendimento, lote e baixa dos insumos utilizados." },
+  { title: "Produção", description: "Registra pré-preparo, porcionamento, rendimento, lote e baixa dos insumos utilizados." },
   { title: "Etiquetas", description: "Gera etiqueta termica com validade, lote, responsavel, armazenamento e dados de rastreio." },
-  { title: "Ficha tecnica", description: "Liga insumos aos produtos do cardapio para calcular custo, margem e CMV." },
-  { title: "Relatorios", description: "Resume entradas, saidas, desperdicio, produtos vencendo, compras e sugestoes da IA." }
+  { title: "Ficha técnica", description: "Liga insumos aos produtos do cardápio para calcular custo, margem e CMV." },
+  { title: "Relatórios", description: "Resume entradas, saídas, desperdício, produtos vencendo, compras e sugestões da IA." }
 ];
 
 let completedLessons = readProgress();
@@ -401,18 +401,18 @@ function answerTrainingQuestion(question) {
   }
 
   if (normalized.includes("comprar") || normalized.includes("compra")) {
-    return "Para ver o que precisa comprar, acesse Dashboard ou Compras. O sistema destaca itens abaixo do minimo, produtos criticos e sugestoes de reposicao.";
+    return "Para ver o que precisa comprar, acesse Dashboard ou Compras. O sistema destaca itens abaixo do minimo, produtos criticos e sugestões de reposicao.";
   }
 
   if (normalized.includes("cmv")) {
-    return "CMV e o custo da mercadoria vendida. Ele mostra quanto os insumos custam em relacao ao preco de venda. Use ficha tecnica e relatorios para acompanhar.";
+    return "CMV e o custo da mercadoria vendida. Ele mostra quanto os insumos custam em relação ao preço de venda. Use ficha técnica e relatórios para acompanhar.";
   }
 
   if (normalized.includes("fornecedor")) {
     return "Para configurar fornecedor, acesse Fornecedores, cadastre nome, WhatsApp, dias de pedido, dias de entrega e vincule os produtos fornecidos.";
   }
 
-  return "Comece pelo fluxo principal: cadastre fornecedor, cadastre insumo, configure minimo, registre entrada, registre saida e acompanhe o dashboard.";
+  return "Comece pelo fluxo principal: cadastre fornecedor, cadastre insumo, configure minimo, registre entrada, registre saída e acompanhe o dashboard.";
 }
 
 function renderProfiles() {

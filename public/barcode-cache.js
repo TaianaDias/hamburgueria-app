@@ -18,7 +18,7 @@ function openDatabase() {
     });
 
     request.addEventListener("success", () => resolve(request.result));
-    request.addEventListener("error", () => reject(request.error || new Error("Nao foi possivel abrir o cache local.")));
+    request.addEventListener("error", () => reject(request.error || new Error("Não foi possível abrir o cache local.")));
   });
 }
 
@@ -43,11 +43,11 @@ async function withStore(mode, callback) {
     transaction.addEventListener("complete", () => database.close());
     transaction.addEventListener("error", () => {
       database.close();
-      reject(transaction.error || new Error("Nao foi possivel concluir a operacao no cache local."));
+      reject(transaction.error || new Error("Não foi possível concluir a operação no cache local."));
     });
     transaction.addEventListener("abort", () => {
       database.close();
-      reject(transaction.error || new Error("A operacao no cache local foi abortada."));
+      reject(transaction.error || new Error("A operação no cache local foi abortada."));
     });
   });
 }
@@ -82,7 +82,7 @@ export async function saveCachedBarcodeProduct(product) {
   const normalizedBarcode = String(product?.barcode ?? "").replace(/\D/g, "");
 
   if (!normalizedBarcode) {
-    throw new Error("Codigo de barras invalido para salvar no cache local.");
+    throw new Error("Codigo de barras inválido para salvar no cache local.");
   }
 
   const payload = {

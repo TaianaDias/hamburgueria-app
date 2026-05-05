@@ -13,14 +13,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Reposicao para Producao | Hamburgueria</title>
+<title>Reposição para Produção | Hamburgueria</title>
 </head>
 <body>
 <main class="page">
   <header class="page-header">
     <div>
       <p class="eyebrow">Operacao de cozinha</p>
-      <h1>Reposicao para producao</h1>
+      <h1>Reposição para producao</h1>
       <p id="user-info" class="muted"></p>
       <p id="header-meta" class="muted" style="margin-top: 8px;"></p>
     </div>
@@ -81,7 +81,7 @@
 
       <div class="page-header" style="margin: 22px 0 12px;">
         <div>
-          <h3>Historico do dia</h3>
+          <h3>Histórico do dia</h3>
           <p class="muted">Reposicoes ja confirmadas neste dia.</p>
         </div>
         <button id="clear-production-history" class="secondary danger-button" type="button" hidden>Zerar Histórico</button>
@@ -462,7 +462,7 @@ confirmButton.addEventListener("click", async () => {
 
   const hasInvalid = resumo.some((item) => item.invalido);
   if (hasInvalid) {
-    setStatus("status-reposicao", "Corrija os itens invalidos antes de confirmar.", "error");
+    setStatus("status-reposicao", "Corrija os itens inválidos antes de confirmar.", "error");
     return;
   }
 
@@ -518,11 +518,11 @@ confirmButton.addEventListener("click", async () => {
     });
 
     selecionados = {};
-    setStatus("status-reposicao", "Reposicao confirmada com sucesso. Estoque atualizado no Firestore.", "success");
+    setStatus("status-reposicao", "Reposição confirmada com sucesso. Estoque atualizado no Firestore.", "success");
     renderAll();
   } catch (error) {
     console.error(error);
-    setStatus("status-reposicao", "Nao foi possivel confirmar a reposicao no Firestore.", "error");
+    setStatus("status-reposicao", "Não foi possível confirmar a reposicao no Firestore.", "error");
   }
 });
 
@@ -541,7 +541,7 @@ novoInsumoForm.addEventListener("submit", async (event) => {
   }
 
   if (alreadyExists) {
-    setStatus("status-reposicao", "Ja existe um insumo com esse nome.", "error");
+    setStatus("status-reposicao", "Já existe um insumo com esse nome.", "error");
     return;
   }
 
@@ -575,7 +575,7 @@ novoInsumoForm.addEventListener("submit", async (event) => {
     renderAll();
   } catch (error) {
     console.error(error);
-    setStatus("status-reposicao", "Nao foi possivel adicionar o insumo no Firestore.", "error");
+    setStatus("status-reposicao", "Não foi possível adicionar o insumo no Firestore.", "error");
   }
 });
 
@@ -621,7 +621,7 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  setStatus("status-reposicao", "Nao foi possivel carregar a aba de reposicao.", "error");
+  setStatus("status-reposicao", "Não foi possível carregar a aba de reposicao.", "error");
 });
 </script>
 </body>

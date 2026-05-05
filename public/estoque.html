@@ -54,7 +54,7 @@
     <article class="panel stock-kpi-card danger">
       <span>Proximos do vencimento</span>
       <strong id="stock-kpi-expiring">0</strong>
-      <small>Hoje, amanha ou proximos 3 dias</small>
+      <small>Hoje, amanhã ou próximos 3 dias</small>
     </article>
 
     <article class="panel stock-kpi-card">
@@ -80,7 +80,7 @@
     <div>
       <p class="eyebrow">Painel operacional</p>
       <h3>Insumos por categoria</h3>
-      <p class="muted">Filtre rapido e alterne entre cards para operacao ou tabela para conferencia.</p>
+      <p class="muted">Filtre rapido e alterne entre cards para operação ou tabela para conferencia.</p>
     </div>
 
     <div id="stock-category-filters" class="stock-category-filters" aria-label="Filtros de categoria"></div>
@@ -183,7 +183,7 @@
         </div>
 
         <div class="field-group">
-          <label for="quick_exit_quantity">Quantidade da saida</label>
+          <label for="quick_exit_quantity">Quantidade da saída</label>
           <input id="quick_exit_quantity" type="number" min="0.01" step="0.01" value="1">
         </div>
 
@@ -202,7 +202,7 @@
 
       <div class="quick-box-actions">
         <button id="quick-entry-box" type="button">Registrar entrada</button>
-        <button id="quick-exit-box" class="secondary" type="button">Registrar saida</button>
+        <button id="quick-exit-box" class="secondary" type="button">Registrar saída</button>
       </div>
     </div>
 
@@ -244,7 +244,7 @@
       <summary class="section-accordion-summary">
         <div>
           <h3>Novo insumo</h3>
-          <p class="muted">Cadastro rapido com abas para dados, compra, validade, etiqueta e ficha tecnica.</p>
+          <p class="muted">Cadastro rapido com abas para dados, compra, validade, etiqueta e ficha técnica.</p>
         </div>
         <span class="section-accordion-cta">Abrir cadastro</span>
       </summary>
@@ -258,11 +258,11 @@
           <button class="secondary" type="button" data-drawer-tab="fornecedores">Fornecedores</button>
           <button class="secondary" type="button" data-drawer-tab="etiqueta">Etiqueta</button>
           <button class="secondary" type="button" data-drawer-tab="ficha">Ficha Tecnica</button>
-          <button class="secondary" type="button" data-drawer-tab="historico">Historico</button>
+          <button class="secondary" type="button" data-drawer-tab="historico">Histórico</button>
         </nav>
 
         <div class="page-header" style="margin-bottom: 16px;">
-          <p class="muted">Preencha o basico para cadastro rapido e abra as opcoes quando precisar.</p>
+          <p class="muted">Preencha o básico para cadastro rapido e abra as opcoes quando precisar.</p>
           <button id="reset-button" class="ghost" type="button">Zerar estoque</button>
         </div>
 
@@ -325,7 +325,7 @@
           <select id="novo_status_produto">
             <option value="ativo">Ativo</option>
             <option value="pausado">Pausado</option>
-            <option value="sem_ficha_tecnica">Sem ficha tecnica</option>
+            <option value="sem_ficha_tecnica">Sem ficha técnica</option>
             <option value="produto_parado">Produto parado</option>
           </select>
         </div>
@@ -380,7 +380,7 @@
                     <option value="Embalagens"></option>
                     <option value="Limpeza"></option>
                     <option value="Congelados"></option>
-                    <option value="Producao propria"></option>
+                    <option value="Produção propria"></option>
                   </datalist>
                 </div>
               </div>
@@ -445,7 +445,7 @@
                 <div class="field-group">
                   <label for="novo_fornecedor_principal">Fornecedor principal</label>
                   <select id="novo_fornecedor_principal">
-                    <option value="sim">Sim, usar como custo padrao</option>
+                    <option value="sim">Sim, usar como custo padrão</option>
                     <option value="nao">Nao, deixar como alternativa</option>
                   </select>
                 </div>
@@ -477,7 +477,7 @@
                 </div>
 
                 <div class="field-group">
-                  <label for="novo_qtd_pedido_padrao">Quantidade padrao por pedido</label>
+                  <label for="novo_qtd_pedido_padrao">Quantidade padrão por pedido</label>
                   <input id="novo_qtd_pedido_padrao" type="number" min="1" step="1" value="1">
                 </div>
 
@@ -532,7 +532,7 @@
                 </div>
 
                 <div class="field-group">
-                  <label for="novo_responsavel_etiqueta">Responsavel</label>
+                  <label for="novo_responsavel_etiqueta">Responsável</label>
                   <input id="novo_responsavel_etiqueta" placeholder="Nome do colaborador">
                 </div>
 
@@ -547,8 +547,8 @@
           <details class="supplier-section section-accordion compact-inner-accordion">
             <summary class="section-accordion-summary">
               <div>
-                <span>Ficha tecnica</span>
-                <strong>Vincule o insumo ao cardapio e acompanhe custo por receita.</strong>
+                <span>Ficha técnica</span>
+                <strong>Vincule o insumo ao cardápio e acompanhe custo por receita.</strong>
               </div>
               <span class="section-accordion-cta">Abrir ficha</span>
             </summary>
@@ -556,7 +556,7 @@
             <div class="section-accordion-body">
               <div class="form-grid">
                 <div class="field-group" style="grid-column: 1 / -1;">
-                  <label for="novo_ficha_vinculos">Produtos do cardapio vinculados</label>
+                  <label for="novo_ficha_vinculos">Produtos do cardápio vinculados</label>
                   <textarea id="novo_ficha_vinculos" placeholder="Ex.: X-Burger, Smash duplo, molho da casa"></textarea>
                 </div>
 
@@ -806,7 +806,7 @@ const DEFAULT_STOCK_CATEGORIES = [
   "Embalagens",
   "Limpeza",
   "Congelados",
-  "Producao propria"
+  "Produção propria"
 ];
 const STOCK_CATEGORY_STORAGE_KEY = "cariocas-stock-custom-categories";
 const STOCK_CATEGORY_HIDDEN_STORAGE_KEY = "cariocas-stock-hidden-categories";
@@ -821,7 +821,7 @@ const STOCK_CATEGORY_ALIASES = {
   embalagens: ["embalagem", "embalagens", "descartavel", "descartaveis", "sacola", "caixa"],
   limpeza: ["limpeza", "higiene", "detergente", "sanitizante"],
   congelados: ["congelado", "congelados", "freezer"],
-  "producao propria": ["producao propria", "producao", "pre-preparo", "preparo", "porcionado", "porcao"]
+  "producao propria": ["producao propria", "producao", "pré-preparo", "preparo", "porcionado", "porção"]
 };
 
 const QUICK_MOVEMENT_UNITS = {
@@ -956,7 +956,7 @@ function updateQuickBoxCostPreview() {
   quickEntryBoxButton.textContent = `Registrar entrada de ${formatQuantity(movement.quantity)} ${movement.unitLabel}(s)`;
 
   const exitMovement = getQuickMovementInputs(false);
-  quickExitBoxButton.textContent = `Registrar saida de ${formatQuantity(exitMovement.quantity)} ${exitMovement.unitLabel}(s)`;
+  quickExitBoxButton.textContent = `Registrar saída de ${formatQuantity(exitMovement.quantity)} ${exitMovement.unitLabel}(s)`;
 }
 
 function findProductByBarcode(barcode) {
@@ -1031,7 +1031,7 @@ async function lookupQuickBoxProduct() {
 
     if (product) {
       syncQuickBoxProductView(product, null);
-      setStatus("quick-box-status", "Produto encontrado. Informe o valor da caixa para entrada ou registre a saida.", "success");
+      setStatus("quick-box-status", "Produto encontrado. Informe o valor da caixa para entrada ou registre a saída.", "success");
       return product;
     }
 
@@ -1047,7 +1047,7 @@ async function lookupQuickBoxProduct() {
           fonte: response?.source || "codigo-barras"
         }))
         .catch((error) => {
-          console.warn("Nao foi possivel consultar codigo externo.", error);
+          console.warn("Não foi possível consultar codigo externo.", error);
           return {
             barcode,
             nome: "",
@@ -1177,7 +1177,7 @@ async function recordQuickBoxMovement(type) {
   const movement = getQuickMovementInputs(isEntry);
 
   if (!isEntry && !currentProduct) {
-    setStatus("quick-box-status", "Produto ainda nao cadastrado. Faca uma entrada para criar o cadastro antes da saida.", "error");
+    setStatus("quick-box-status", "Produto ainda nao cadastrado. Faca uma entrada para criar o cadastro antes da saída.", "error");
     return;
   }
 
@@ -1290,7 +1290,7 @@ async function recordQuickBoxMovement(type) {
     quickBarcodeInput.select();
   } catch (error) {
     console.error(error);
-    setStatus("quick-box-status", error.message || "Nao foi possivel registrar a movimentacao.", "error");
+    setStatus("quick-box-status", error.message || "Não foi possível registrar a movimentacao.", "error");
   } finally {
     quickEntryBoxButton.disabled = false;
     quickExitBoxButton.disabled = false;
@@ -1348,7 +1348,7 @@ function formatSupplierScheduleDescription(supplier) {
   return [
     `Pedir: ${formatWeekdayList(supplier.diasPedido, "long")}`,
     `Entrega: ${formatWeekdayList(supplier.diasEntrega, "long")}`,
-    `Pedido padrao: ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)`
+    `Pedido padrão: ${Math.max(1, toNumber(supplier.quantidadePedidoPadrao, 1))} embalagem(ns)`
   ].join(" | ");
 }
 
@@ -1396,7 +1396,7 @@ function getStockStatus(stockQuantity, minimumQuantity) {
 
   if (minimum > 0 && stock <= minimum) {
     return {
-      label: "Reposicao urgente",
+      label: "Reposição urgente",
       className: "urgent"
     };
   }
@@ -1622,7 +1622,7 @@ async function lookupBarcodeProduct(barcode) {
     return product;
   } catch (error) {
     console.error(error);
-    setStatus("barcode-status", error.message || "Nao foi possivel consultar o codigo de barras.", "error");
+    setStatus("barcode-status", error.message || "Não foi possível consultar o codigo de barras.", "error");
     return null;
   }
 }
@@ -1637,7 +1637,7 @@ async function ensureBarcodeScannerLibrary() {
 
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Nao foi possivel carregar a biblioteca do leitor.")), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Não foi possível carregar a biblioteca do leitor.")), { once: true });
       return;
     }
 
@@ -1646,7 +1646,7 @@ async function ensureBarcodeScannerLibrary() {
     script.async = true;
     script.dataset.html5Qrcode = "true";
     script.addEventListener("load", () => resolve(), { once: true });
-    script.addEventListener("error", () => reject(new Error("Nao foi possivel carregar a biblioteca do leitor.")), { once: true });
+    script.addEventListener("error", () => reject(new Error("Não foi possível carregar a biblioteca do leitor.")), { once: true });
     document.head.appendChild(script);
   });
 
@@ -1712,7 +1712,7 @@ async function startBarcodeScanner() {
   } catch (error) {
     console.error(error);
     await stopBarcodeScanner();
-    setStatus("barcode-status", error.message || "Nao foi possivel iniciar a camera.", "error");
+    setStatus("barcode-status", error.message || "Não foi possível iniciar a camera.", "error");
   }
 }
 
@@ -1841,7 +1841,7 @@ function readLocalCategoryList(key) {
     const parsed = JSON.parse(window.localStorage.getItem(key) || "[]");
     return Array.isArray(parsed) ? parsed.map(normalizeCategoryDisplayName).filter(Boolean) : [];
   } catch (error) {
-    console.warn("Nao foi possivel ler categorias locais.", error);
+    console.warn("Não foi possível ler categorias locais.", error);
     return [];
   }
 }
@@ -1986,7 +1986,7 @@ async function addStockCategory() {
 
     await Promise.all(hiddenDocsToRemove.map((category) => (
       deleteDoc(doc(db, "categoriasInsumosRemovidas", category.id)).catch((error) => {
-        console.warn("Nao foi possivel restaurar categoria remota.", error);
+        console.warn("Não foi possível restaurar categoria remota.", error);
       })
     )));
 
@@ -2039,7 +2039,7 @@ async function deleteStockCategoryByName(categoryName) {
 
     if (remoteCategory?.id) {
       await deleteDoc(doc(db, "categoriasInsumos", remoteCategory.id)).catch((error) => {
-        console.warn("Nao foi possivel excluir categoria remota.", error);
+        console.warn("Não foi possível excluir categoria remota.", error);
       });
     }
 
@@ -2234,7 +2234,7 @@ function getOperationalProductStatus(item, productSuppliers = normalizeProductSu
   }
 
   if (item.statusProduto === "sem_ficha_tecnica" || item.fichaTecnicaStatus === "pendente") {
-    return { label: "Sem ficha tecnica", badgeClass: "low" };
+    return { label: "Sem ficha técnica", badgeClass: "low" };
   }
 
   if (item.statusProduto === "produto_parado") {
@@ -2686,7 +2686,7 @@ function refreshSupplierEntryFrequencyState(entryElement) {
   const orderDays = formatWeekdayList(readWeekdaySelector(orderDaysContainer));
   const deliveryDays = formatWeekdayList(readWeekdaySelector(deliveryDaysContainer));
   const quantity = Math.max(1, toNumber(orderQuantityInput?.value, 1));
-  helper.textContent = `Pedido: ${orderDays} | Entrega: ${deliveryDays} | Qtd. padrao ${quantity} embalagem(ns)`;
+  helper.textContent = `Pedido: ${orderDays} | Entrega: ${deliveryDays} | Qtd. padrão ${quantity} embalagem(ns)`;
 }
 
 function createSupplierEntryElement(entry = {}, options = {}) {
@@ -2828,7 +2828,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
 
   const orderQuantityField = createField(
     `supplier_order_quantity_${Math.random().toString(36).slice(2)}`,
-    "Quantidade padrao por pedido",
+    "Quantidade padrão por pedido",
     Math.max(1, toNumber(entry.quantidadePedidoPadrao, 1))
   );
   orderQuantityField.querySelector("input").classList.add("supplier-order-quantity");
@@ -2870,7 +2870,7 @@ function createSupplierEntryElement(entry = {}, options = {}) {
   principalChoice.className = "inline-choice";
   principalChoice.innerHTML = `
     <input class="supplier-principal-radio" type="radio" name="${radioName}">
-    <span>Usar como custo padrao</span>
+    <span>Usar como custo padrão</span>
   `;
   const principalRadio = principalChoice.querySelector("input");
   principalRadio.checked = Boolean(entry.principal);
@@ -3139,7 +3139,7 @@ function handleProductQuickAction(action, item, collapsible = null) {
   }
 
   if (action === "historico") {
-    setStatus("status", "Historico completo fica registrado nas movimentacoes e auditoria do sistema.", "info");
+    setStatus("status", "Histórico completo fica registrado nas movimentacoes e auditoria do sistema.", "info");
     return;
   }
 
@@ -3471,7 +3471,7 @@ function renderProducts(items) {
         }
 
         if (duplicateBarcode) {
-          throw new Error(`Ja existe outro produto cadastrado com o codigo de barras ${codigoBarras}.`);
+          throw new Error(`Já existe outro produto cadastrado com o codigo de barras ${codigoBarras}.`);
         }
 
         if (!nextSuppliers.length) {
@@ -3504,7 +3504,7 @@ function renderProducts(items) {
         await loadProducts();
       } catch (error) {
         console.error(error);
-        setStatus("status", error.message || `Nao foi possivel atualizar ${item.nome}.`, "error");
+        setStatus("status", error.message || `Não foi possível atualizar ${item.nome}.`, "error");
       }
     });
 
@@ -3594,7 +3594,7 @@ function renderProducts(items) {
       <button class="secondary" type="button" data-product-action="entrada">Entrada</button>
       <button class="secondary" type="button" data-product-action="saida">Saida</button>
       <button class="secondary" type="button" data-product-action="etiqueta">Etiqueta</button>
-      <button class="secondary" type="button" data-product-action="historico">Historico</button>
+      <button class="secondary" type="button" data-product-action="historico">Histórico</button>
     `;
 
     const advancedOverview = createDetailAccordion({
@@ -4043,7 +4043,7 @@ async function handleXmlSelection() {
       imports.push(parsedInvoice);
     } catch (error) {
       console.error(error);
-      errors.push(`${file.name}: ${error.message || "Nao foi possivel ler o XML."}`);
+      errors.push(`${file.name}: ${error.message || "Não foi possível ler o XML."}`);
     }
   }
 
@@ -4367,7 +4367,7 @@ async function importXmlInvoices() {
     setStatus("xml-status", `Importacao concluida: ${summary.join(", ")}.`, statusType);
   } catch (error) {
     console.error(error);
-    setStatus("xml-status", error.message || "Nao foi possivel importar os XMLs selecionados.", "error");
+    setStatus("xml-status", error.message || "Não foi possível importar os XMLs selecionados.", "error");
     importXmlButton.disabled = false;
     return;
   }
@@ -4658,11 +4658,11 @@ form.addEventListener("submit", async (event) => {
     }
 
     if (duplicated) {
-      throw new Error("Ja existe um produto com esse nome.");
+      throw new Error("Já existe um produto com esse nome.");
     }
 
     if (duplicatedBarcode) {
-      throw new Error(`Ja existe um produto cadastrado com o codigo de barras ${codigoBarras}.`);
+      throw new Error(`Já existe um produto cadastrado com o codigo de barras ${codigoBarras}.`);
     }
 
     const productSuppliers = collectSupplierEntries(newSuppliersList).map((supplierEntry) => ({
@@ -4724,7 +4724,7 @@ form.addEventListener("submit", async (event) => {
     await loadProducts();
   } catch (error) {
     console.error(error);
-    setStatus("status", error.message || "Nao foi possivel criar o produto.", "error");
+    setStatus("status", error.message || "Não foi possível criar o produto.", "error");
   } finally {
     createButton.disabled = false;
   }
@@ -4777,7 +4777,7 @@ resetButton.addEventListener("click", async () => {
     await loadProducts();
   } catch (error) {
     console.error(error);
-    setStatus("status", "Nao foi possivel zerar o estoque.", "error");
+    setStatus("status", "Não foi possível zerar o estoque.", "error");
   }
 });
 

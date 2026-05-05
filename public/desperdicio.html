@@ -90,7 +90,7 @@
 
       <p id="waste-conversion-preview" class="muted waste-conversion-preview">Informe quantas unidades foram desperdicadas.</p>
 
-      <div class="waste-reason-grid" role="group" aria-label="Motivo do desperdicio">
+      <div class="waste-reason-grid" role="group" aria-label="Motivo do desperdício">
         <button class="secondary waste-reason active" type="button" data-reason="Sobra final">Sobra final</button>
         <button class="secondary waste-reason" type="button" data-reason="Vencido">Vencido</button>
         <button class="secondary waste-reason" type="button" data-reason="Erro de preparo">Erro preparo</button>
@@ -117,7 +117,7 @@
         <button id="add-employee-button" class="secondary" type="button" hidden>Cadastrar funcionario</button>
       </div>
 
-      <button id="save-waste-button" type="button">Registrar desperdicio</button>
+      <button id="save-waste-button" type="button">Registrar desperdício</button>
     </div>
 
     <div id="waste-status" class="status info" hidden></div>
@@ -453,11 +453,11 @@ async function createWasteEmployee() {
     wasteEmployees.sort((left, right) => getEmployeeDisplayName(left).localeCompare(getEmployeeDisplayName(right), "pt-BR"));
     newEmployeeNameInput.value = "";
     renderEmployeeOptions(createdEmployee.id);
-    setStatus("waste-status", "Funcionario cadastrado para lancamentos de desperdicio.", "success");
+    setStatus("waste-status", "Funcionario cadastrado para lancamentos de desperdício.", "success");
     return createdEmployee;
   } catch (error) {
     console.error(error);
-    setStatus("waste-status", error.message || "Nao foi possivel cadastrar o funcionario.", "error");
+    setStatus("waste-status", error.message || "Não foi possível cadastrar o funcionario.", "error");
     return null;
   } finally {
     addEmployeeButton.disabled = false;
@@ -472,7 +472,7 @@ async function getSelectedWasteEmployee() {
   const employee = wasteEmployees.find((item) => item.id === employeeSelect.value) || null;
 
   if (!employee) {
-    setStatus("waste-status", "Selecione o funcionario responsavel pelo desperdicio.", "error");
+    setStatus("waste-status", "Selecione o funcionario responsavel pelo desperdício.", "error");
     employeeSelect.focus();
     return null;
   }
@@ -549,7 +549,7 @@ function getWasteConversion(product = selectedProduct, quantityValue = quantityI
 
 function updateWasteConversionPreview() {
   if (!selectedProduct) {
-    conversionPreview.textContent = "Selecione um produto para registrar o desperdicio em unidades.";
+    conversionPreview.textContent = "Selecione um produto para registrar o desperdício em unidades.";
     return;
   }
 
@@ -641,7 +641,7 @@ function renderWasteHistory() {
   historyList.innerHTML = "";
 
   if (!todayEvents.length) {
-    historyList.innerHTML = '<div class="empty-state">Nenhum desperdicio registrado hoje.</div>';
+    historyList.innerHTML = '<div class="empty-state">Nenhum desperdício registrado hoje.</div>';
     return;
   }
 
@@ -655,7 +655,7 @@ function renderWasteHistory() {
         <span>${escapeHtml(event.productName || "Produto")}</span>
         <strong>${escapeHtml(getWasteEventDisplayQuantity(event))}</strong>
       </div>
-      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | Responsavel: ${escapeHtml(event.responsibleEmployeeName || event.employeeName || event.responsible || "nao informado")} | Lancado por: ${escapeHtml(event.registeredBy || event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
+      <p class="muted compact-meta">${escapeHtml(event.reason || "Sem motivo")} | Responsável: ${escapeHtml(event.responsibleEmployeeName || event.employeeName || event.responsible || "nao informado")} | Lancado por: ${escapeHtml(event.registeredBy || event.responsible || "equipe")} | ${escapeHtml(formatDateTime(event.createdAt))}</p>
       ${event.note ? `<p class="muted compact-meta">${escapeHtml(event.note)}</p>` : ""}
       <div class="waste-history-actions">
         <input type="number" min="0.001" step="0.001" value="${formatQuantity(event.inputQuantity ?? event.quantity, 3).replace(/\./g, "").replace(",", ".")}" aria-label="Quantidade desperdicada" data-waste-quantity="${escapeHtml(event.id)}">
@@ -688,7 +688,7 @@ async function updateWasteQuantity(wasteId, nextQuantityValue, nextUnitValue) {
   const event = wasteEvents.find((item) => item.id === wasteId);
 
   if (!event) {
-    setStatus("waste-status", "Registro de desperdicio nao encontrado.", "error");
+    setStatus("waste-status", "Registro de desperdício nao encontrado.", "error");
     return;
   }
 
@@ -734,7 +734,7 @@ async function updateWasteQuantity(wasteId, nextQuantityValue, nextUnitValue) {
     nextEstimatedCost - previousEstimatedCost
   );
 
-  setStatus("waste-status", "Quantidade do desperdicio atualizada.", "success");
+  setStatus("waste-status", "Quantidade do desperdício atualizada.", "success");
   await loadData();
 }
 
@@ -747,11 +747,11 @@ async function deleteWasteEvent(wasteId) {
   const event = wasteEvents.find((item) => item.id === wasteId);
 
   if (!event) {
-    setStatus("waste-status", "Registro de desperdicio nao encontrado.", "error");
+    setStatus("waste-status", "Registro de desperdício nao encontrado.", "error");
     return;
   }
 
-  if (!window.confirm(`Excluir o desperdicio de ${event.productName || "produto"}?`)) {
+  if (!window.confirm(`Excluir o desperdício de ${event.productName || "produto"}?`)) {
     return;
   }
 
@@ -761,7 +761,7 @@ async function deleteWasteEvent(wasteId) {
   await deleteDoc(doc(db, "desperdicios", wasteId));
   await adjustProductWasteTotals(event, -quantity, -estimatedCost);
 
-  setStatus("waste-status", "Registro de desperdicio excluido.", "success");
+  setStatus("waste-status", "Registro de desperdício excluido.", "success");
   await loadData();
 }
 
@@ -891,7 +891,7 @@ async function saveWaste() {
     selectProduct(selectedProduct.id);
   } catch (error) {
     console.error(error);
-    setStatus("waste-status", error.message || "Nao foi possivel registrar o desperdicio.", "error");
+    setStatus("waste-status", error.message || "Não foi possível registrar o desperdício.", "error");
   } finally {
     saveButton.disabled = false;
   }
@@ -929,7 +929,7 @@ historyList.addEventListener("click", async (event) => {
     }
   } catch (error) {
     console.error(error);
-    setStatus("waste-status", error.message || "Nao foi possivel alterar o registro de desperdicio.", "error");
+    setStatus("waste-status", error.message || "Não foi possível alterar o registro de desperdício.", "error");
   } finally {
     button.disabled = false;
   }

@@ -9,14 +9,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Padronizacao & Etiquetagem | Hamburgueria</title>
+<title>Padronização e Etiquetagem | Hamburgueria</title>
 </head>
 <body>
 <main class="page">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Producao inteligente</p>
-      <h1>Padronizacao & Etiquetagem</h1>
+      <p class="eyebrow">Produção inteligente</p>
+      <h1>Padronização e Etiquetagem</h1>
       <p id="user-info" class="muted"></p>
     </div>
     <div class="actions">
@@ -28,7 +28,7 @@
 
   <section class="layout-grid">
     <article class="panel">
-      <h3>Registrar producao ou porcionamento</h3>
+      <h3>Registrar produção ou porcionamento</h3>
       <form id="production-form" class="form-grid" style="margin-top: 16px;">
         <div class="field-group">
           <label for="product">Produto produzido</label>
@@ -40,10 +40,10 @@
         </div>
         <div class="field-group">
           <label for="unit">Unidade</label>
-          <input id="unit" placeholder="un, kg, porcao" value="un">
+          <input id="unit" placeholder="un, kg, porção" value="un">
         </div>
         <div class="field-group">
-          <label for="validity">Validade padrao (horas)</label>
+          <label for="validity">Validade padrão (horas)</label>
           <input id="validity" type="number" min="1" step="1" value="72">
         </div>
         <div class="field-group">
@@ -51,12 +51,12 @@
           <input id="storage" placeholder="Refrigerado">
         </div>
         <div class="field-group">
-          <label for="responsible">Responsavel</label>
+          <label for="responsible">Responsável</label>
           <input id="responsible" placeholder="Nome do operador">
         </div>
         <div class="field-group" style="grid-column: 1 / -1;">
-          <label for="notes">Ficha tecnica, alergenicos e observacoes</label>
-          <textarea id="notes" placeholder="Modo de preparo, conservacao, alergenicos e padrao de porcao"></textarea>
+          <label for="notes">Ficha técnica, alergênicos e observações</label>
+          <textarea id="notes" placeholder="Modo de preparo, conservação, alergênicos e padrão de porção"></textarea>
         </div>
         <button id="save-production-button" type="submit">Salvar e gerar etiqueta</button>
       </form>
@@ -73,22 +73,46 @@
   </section>
 
   <section class="panel" style="margin-top: 20px;">
-    <h3>Historico de etiquetas</h3>
+    <div class="summary-line">
+      <div>
+        <h3>Histórico de etiquetas</h3>
+        <p class="muted">Produções, lotes e etiquetas emitidas pela operação.</p>
+      </div>
+      <button id="clear-production-history" class="secondary danger-button" type="button" hidden>Zerar histórico</button>
+    </div>
     <div id="label-history" class="list" style="margin-top: 16px;"></div>
   </section>
 </main>
+
+<dialog id="clear-production-history-dialog" class="premium-confirm-dialog">
+  <form method="dialog">
+    <h3>Zerar histórico de produção?</h3>
+    <p class="muted">Essa ação apagará apenas o histórico de produções e etiquetas. Insumos, configurações e produtos cadastrados serão preservados.</p>
+    <p class="muted">Digite <strong>ZERAR</strong> para confirmar.</p>
+    <div class="field-group">
+      <label for="clear-production-history-confirmation">Confirmação</label>
+      <input id="clear-production-history-confirmation" autocomplete="off" placeholder="ZERAR">
+    </div>
+    <div class="actions">
+      <button class="secondary" value="cancel" type="submit">Cancelar</button>
+      <button id="confirm-clear-production-history" value="confirm" type="submit" disabled>Zerar histórico</button>
+    </div>
+  </form>
+</dialog>
 
 <script type="module">
 import { db } from "./firebase.js";
 import {
   addDoc,
   collection,
+  doc,
   getDocs,
   orderBy,
   query,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus, toNumber } from "./app.js";
+import { bindLogoutButton, can, describeProfile, escapeHtml, requireAuth, setStatus, toNumber } from "./app.js";
 import { calculateExpirationDate, formatDateTime, generateLotCode, OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
@@ -98,6 +122,10 @@ document.getElementById("user-info").textContent = describeProfile(profile);
 const productSelect = document.getElementById("product");
 const labelPreview = document.getElementById("label-preview");
 const labelHistory = document.getElementById("label-history");
+const clearProductionHistoryButton = document.getElementById("clear-production-history");
+const clearProductionHistoryDialog = document.getElementById("clear-production-history-dialog");
+const clearProductionHistoryConfirmation = document.getElementById("clear-production-history-confirmation");
+const confirmClearProductionHistoryButton = document.getElementById("confirm-clear-production-history");
 let estoque = [];
 let lastLabelHtml = "";
 
@@ -117,7 +145,7 @@ function renderLabel(data) {
       <h3>${escapeHtml(data.productName)}</h3>
       <p>Produzido em: ${escapeHtml(formatDateTime(data.producedAt))}</p>
       <p>Validade: ${escapeHtml(formatDateTime(data.expiresAt))}</p>
-      <p>Responsavel: ${escapeHtml(data.responsible || profile.email)}</p>
+      <p>Responsável: ${escapeHtml(data.responsible || profile.email)}</p>
       <p>Lote: ${escapeHtml(data.lot)}</p>
       <p>Armazenamento: ${escapeHtml(data.storage || "Configurar")}</p>
       <p>Qtd.: ${escapeHtml(`${data.quantity} ${data.unit}`)}</p>
@@ -142,6 +170,48 @@ async function loadLabelHistory() {
     `;
     labelHistory.appendChild(article);
   });
+}
+
+async function clearProductionHistory() {
+  if (!can("producao.historico.zerar", profile)) {
+    setStatus("status", "Seu perfil não possui permissão para zerar o histórico.", "error");
+    return;
+  }
+
+  const [productionsSnapshot, labelsSnapshot] = await Promise.all([
+    getDocs(collection(db, OPERATIONAL_COLLECTIONS.producoes)),
+    getDocs(collection(db, OPERATIONAL_COLLECTIONS.etiquetas))
+  ]);
+
+  const removedCount = productionsSnapshot.size + labelsSnapshot.size;
+
+  if (!removedCount) {
+    setStatus("status", "Não há histórico de produção para zerar.", "info");
+    return;
+  }
+
+  const batch = writeBatch(db);
+  productionsSnapshot.docs.forEach((document) => {
+    batch.delete(doc(db, OPERATIONAL_COLLECTIONS.producoes, document.id));
+  });
+  labelsSnapshot.docs.forEach((document) => {
+    batch.delete(doc(db, OPERATIONAL_COLLECTIONS.etiquetas, document.id));
+  });
+  batch.set(doc(collection(db, OPERATIONAL_COLLECTIONS.auditoria)), {
+    empresaId: profile.empresaId || "",
+    usuario: profile.email || "",
+    perfil: profile.perfilPrincipal || profile.tipo || "",
+    quantidadeRegistrosApagados: removedCount,
+    modulo: "Produção",
+    acao: "Zerar histórico de produção e etiquetas",
+    criadoEm: serverTimestamp()
+  });
+
+  await batch.commit();
+  lastLabelHtml = "";
+  labelPreview.innerHTML = "";
+  await loadLabelHistory();
+  setStatus("status", `Histórico de produção zerado com segurança. ${removedCount} registro(s) apagado(s).`, "success");
 }
 
 document.getElementById("production-form").addEventListener("submit", async (event) => {
@@ -189,8 +259,34 @@ document.getElementById("production-form").addEventListener("submit", async (eve
   });
 
   renderLabel({ productName: product.nome, producedAt, expiresAt, lot, responsible, storage, quantity, unit });
-  setStatus("status", "Producao registrada e etiqueta gerada.", "success");
+  setStatus("status", "Produção registrada e etiqueta gerada.", "success");
   await loadLabelHistory();
+});
+
+clearProductionHistoryConfirmation.addEventListener("input", () => {
+  confirmClearProductionHistoryButton.disabled = clearProductionHistoryConfirmation.value.trim().toUpperCase() !== "ZERAR";
+});
+
+clearProductionHistoryButton.addEventListener("click", () => {
+  clearProductionHistoryConfirmation.value = "";
+  confirmClearProductionHistoryButton.disabled = true;
+  clearProductionHistoryDialog.showModal();
+});
+
+clearProductionHistoryDialog.addEventListener("close", async () => {
+  if (clearProductionHistoryDialog.returnValue !== "confirm") {
+    return;
+  }
+
+  try {
+    clearProductionHistoryButton.disabled = true;
+    await clearProductionHistory();
+  } catch (error) {
+    console.error(error);
+    setStatus("status", "Não foi possível zerar o histórico de produção.", "error");
+  } finally {
+    clearProductionHistoryButton.disabled = false;
+  }
 });
 
 document.getElementById("print-label-button").addEventListener("click", () => {
@@ -207,6 +303,8 @@ document.getElementById("print-label-button").addEventListener("click", () => {
 
 await loadProducts();
 await loadLabelHistory();
+clearProductionHistoryButton.hidden = !can("producao.historico.zerar", profile);
+clearProductionHistoryButton.title = clearProductionHistoryButton.hidden ? "Seu perfil não possui permissão para zerar o histórico." : "";
 </script>
 </body>
 </html>

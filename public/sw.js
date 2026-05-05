@@ -4,7 +4,7 @@ const APP_SHELL = [
   "/login.html",
   "/index.html",
   "/estoque.html",
-  "/desperdicio.html",
+  "/desperdício.html",
   "/reposicao-producao.html",
   "/compras.html",
   "/alertas-reposicao.html",
