@@ -29,7 +29,7 @@
   <section class="stats-grid">
     <article class="card"><span class="muted">Saude do estoque</span><strong id="health" class="metric-value">0%</strong></article>
     <article class="card"><span class="muted">Itens criticos</span><strong id="critical" class="metric-value">0</strong></article>
-    <article class="card"><span class="muted">Valor em estoque</span><strong id="stock-value" class="metric-value">R$ 0,00</strong></article>
+    <article class="card"><span class="muted">Produções registradas</span><strong id="productions" class="metric-value">0</strong></article>
     <article class="card"><span class="muted">Etiquetas hoje</span><strong id="labels" class="metric-value">0</strong></article>
   </section>
 
@@ -53,7 +53,7 @@
 <script type="module">
 import { db } from "./firebase.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { bindLogoutButton, describeProfile, escapeHtml, formatCurrency, requireAuth, toNumber } from "./app.js";
+import { bindLogoutButton, describeProfile, escapeHtml, requireAuth, toNumber } from "./app.js";
 import { buildDailySummary, OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
@@ -78,7 +78,7 @@ const criticalItems = estoque.filter((item) => toNumber(item.quantidade, 0) <= t
 
 document.getElementById("health").textContent = `${summary.healthPercent}%`;
 document.getElementById("critical").textContent = String(summary.criticalCount);
-document.getElementById("stock-value").textContent = formatCurrency(summary.stockValue);
+document.getElementById("productions").textContent = String(summary.productionCount);
 document.getElementById("labels").textContent = String(summary.labelCount);
 document.getElementById("ai-summary").textContent = summary.aiSummary;
 

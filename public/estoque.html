@@ -36,15 +36,6 @@
   </header>
 
   <section class="stock-kpi-grid" aria-label="Indicadores do cadastro de insumos">
-    <article class="panel stock-kpi-card stock-sensitive-kpi">
-      <span>Valor total em estoque</span>
-      <div class="sensitive-value-row">
-        <strong id="stock-kpi-value">R$ 0,00</strong>
-        <button id="stock-kpi-value-toggle" class="sensitive-value-toggle" type="button" title="Mostrar/Ocultar valor" aria-label="Mostrar ou ocultar valor total em estoque" hidden>Ver</button>
-      </div>
-      <small>Com base no custo unitario atual</small>
-    </article>
-
     <article class="panel stock-kpi-card warning">
       <span>Itens abaixo do minimo</span>
       <strong id="stock-kpi-low">0</strong>
@@ -676,8 +667,6 @@ const stockDeleteCategoryButton = document.getElementById("stock-delete-category
 const stockCategoryStatus = document.getElementById("stock-category-status");
 const stockViewCardsButton = document.getElementById("stock-view-cards");
 const stockViewTableButton = document.getElementById("stock-view-table");
-const stockKpiValue = document.getElementById("stock-kpi-value");
-const stockKpiValueToggle = document.getElementById("stock-kpi-value-toggle");
 const stockKpiLow = document.getElementById("stock-kpi-low");
 const stockKpiExpiring = document.getElementById("stock-kpi-expiring");
 const stockKpiNoSupplier = document.getElementById("stock-kpi-no-supplier");
@@ -761,10 +750,6 @@ bindLogoutButton();
 const { profile } = await requireAuth({ permission: "estoque.ver" });
 userInfo.textContent = describeProfile(profile);
 const isAdmin = profile?.tipo === "admin";
-const canViewStockValue = can("estoque.valorTotal.ver", profile);
-let stockValueVisible = true;
-let currentStockValue = 0;
-
 if (profile?.tipo === "estoque") {
   window.location.href = "index.html";
   throw new Error("Acesso restrito.");
@@ -2260,23 +2245,7 @@ function productHasCostIncrease(item = {}) {
   return previousCost > 0 && currentCost > previousCost;
 }
 
-function renderSensitiveStockValue() {
-  if (!canViewStockValue) {
-    stockKpiValue.textContent = "Valor restrito ao administrador";
-    stockKpiValueToggle.hidden = true;
-    return;
-  }
-
-  stockKpiValueToggle.hidden = false;
-  stockKpiValue.textContent = stockValueVisible ? formatCurrency(currentStockValue) : "R$ ••••••";
-  stockKpiValueToggle.textContent = stockValueVisible ? "Ocultar" : "Ver";
-  stockKpiValueToggle.setAttribute("aria-pressed", String(stockValueVisible));
-}
-
 function renderStockKpis(items = []) {
-  const totalValue = items.reduce((total, item) => (
-    total + (Math.max(0, toNumber(item.quantidade, 0)) * Math.max(0, toNumber(getUnitCost(item), 0)))
-  ), 0);
   const lowItems = items.filter((item) => getBoxOperationStock(item) <= getBoxOperationMinimum(item)).length;
   const expiringItems = items.filter((item) => {
     const expiration = getExpirationState(item);
@@ -2286,8 +2255,6 @@ function renderStockKpis(items = []) {
   const labelItems = items.filter(productNeedsLabel).length;
   const costIncreaseItems = items.filter(productHasCostIncrease).length;
 
-  currentStockValue = totalValue;
-  renderSensitiveStockValue();
   stockKpiLow.textContent = String(lowItems);
   stockKpiExpiring.textContent = String(expiringItems);
   stockKpiNoSupplier.textContent = String(noSupplierItems);
@@ -4450,14 +4417,6 @@ stockDeleteCategoryButton.addEventListener("click", async () => {
 });
 stockViewCardsButton.addEventListener("click", () => setStockViewMode("cards"));
 stockViewTableButton.addEventListener("click", () => setStockViewMode("table"));
-stockKpiValueToggle.addEventListener("click", () => {
-  if (!canViewStockValue) {
-    return;
-  }
-
-  stockValueVisible = !stockValueVisible;
-  renderSensitiveStockValue();
-});
 stockTopSearchInput.addEventListener("input", () => {
   inventorySearchInput.value = stockTopSearchInput.value;
   applyProductsView();
