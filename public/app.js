@@ -860,6 +860,7 @@ function getAutomationLogStatusLabel(status = "") {
   const labels = {
     simulado: "Simulado",
     pendente_api: "Pendente API",
+    enviado: "Enviado",
     enviado_futuro: "Enviado futuramente",
     erro_futuro: "Erro futuramente"
   };
@@ -959,7 +960,8 @@ export async function registerAutomationLog({
   createdAt = new Date(),
   userId = "",
   empresaId = "",
-  recipient = ""
+  recipient = "",
+  providerMessageId = ""
 } = {}) {
   const profile = globalThis.window?.__burgerOpsProfile || {};
   const payload = {
@@ -971,6 +973,7 @@ export async function registerAutomationLog({
     mensagem: message,
     status,
     statusLabel: getAutomationLogStatusLabel(status),
+    providerMessageId,
     destinatario: recipient,
     userId: userId || profile.userId || profile.id || "",
     empresaId: empresaId || profile.empresaId || "",
@@ -988,21 +991,49 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
   // POST /api/whatsapp/send
   // O token da API ficará apenas no servidor.
   console.log("[WhatsApp pendente API]", message);
+  let status = "pendente_api";
+  let providerMessageId = "";
+
+  try {
+    const response = await apiFetch("/api/whatsapp/send", {
+      method: "POST",
+      body: JSON.stringify({
+        empresaId: event.empresaId || "",
+        phone: config.adminPhone || "",
+        secondaryPhone: config.secondaryPhone || "",
+        message,
+        alertType: event.type,
+        metadata: {
+          productName: event.productName || "",
+          provider: config.provider || "",
+          sendMode: config.sendMode || "immediate",
+          webhookUrl: config.webhookUrl || ""
+        }
+      })
+    });
+
+    status = response.status === "sent" ? "enviado" : "pendente_api";
+    providerMessageId = response.providerMessageId || "";
+  } catch (error) {
+    console.warn("Envio real ainda nao concluido. Log sera salvo como pendente de API.", error);
+  }
 
   await registerAutomationLog({
     type: event.type,
     productName: event.productName,
     message,
-    status: "pendente_api",
+    status,
     createdAt: event.date || new Date(),
     userId: event.userId || "",
     empresaId: event.empresaId || "",
-    recipient: config.adminPhone || ""
+    recipient: config.adminPhone || "",
+    providerMessageId
   });
 
   return {
-    status: "pendente_api",
-    message
+    status,
+    message,
+    providerMessageId
   };
 }
 

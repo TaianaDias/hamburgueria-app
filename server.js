@@ -1213,36 +1213,187 @@ async function resolveAdminAlert(req, res) {
   }
 }
 
+function getWhatsAppBackendConfig() {
+  return {
+    provider: normalizeLookupText(process.env.WHATSAPP_PROVIDER || "generic").toLowerCase(),
+    apiUrl: normalizeLookupText(process.env.WHATSAPP_API_URL || ""),
+    token: normalizeLookupText(process.env.WHATSAPP_TOKEN || ""),
+    tokenHeader: normalizeLookupText(process.env.WHATSAPP_TOKEN_HEADER || "Authorization"),
+    instanceId: normalizeLookupText(process.env.WHATSAPP_INSTANCE_ID || ""),
+    instanceToken: normalizeLookupText(process.env.WHATSAPP_INSTANCE_TOKEN || ""),
+    clientToken: normalizeLookupText(process.env.WHATSAPP_CLIENT_TOKEN || ""),
+    metaPhoneNumberId: normalizeLookupText(process.env.WHATSAPP_PHONE_NUMBER_ID || ""),
+    metaApiVersion: normalizeLookupText(process.env.WHATSAPP_META_API_VERSION || "v20.0"),
+    twilioAccountSid: normalizeLookupText(process.env.TWILIO_ACCOUNT_SID || ""),
+    twilioAuthToken: normalizeLookupText(process.env.TWILIO_AUTH_TOKEN || ""),
+    twilioFrom: normalizeLookupText(process.env.TWILIO_WHATSAPP_FROM || "")
+  };
+}
+
+function buildBearerHeader(tokenHeader, token) {
+  if (!token) {
+    return {};
+  }
+
+  if (tokenHeader.toLowerCase() === "authorization") {
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  return { [tokenHeader]: token };
+}
+
+async function postJson(url, body, headers = {}) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers
+    },
+    body: JSON.stringify(body)
+  });
+  const text = await response.text();
+  let payload = text;
+
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text };
+  }
+
+  if (!response.ok) {
+    const details = typeof payload === "string" ? payload : JSON.stringify(payload);
+    throw new Error(`WhatsApp API respondeu ${response.status}: ${details}`);
+  }
+
+  return payload;
+}
+
+async function sendWhatsAppToProvider(phone, message, config) {
+  if (!phone || !message) {
+    throw new Error("Telefone e mensagem sao obrigatorios.");
+  }
+
+  if (config.provider === "zapi") {
+    if (!config.instanceId || !config.instanceToken || !config.clientToken) {
+      throw new Error("Configure WHATSAPP_INSTANCE_ID, WHATSAPP_INSTANCE_TOKEN e WHATSAPP_CLIENT_TOKEN.");
+    }
+
+    const url = `https://api.z-api.io/instances/${config.instanceId}/token/${config.instanceToken}/send-text`;
+    return postJson(url, { phone, message }, { "Client-Token": config.clientToken });
+  }
+
+  if (config.provider === "evolution") {
+    if (!config.apiUrl || !config.instanceId || !config.token) {
+      throw new Error("Configure WHATSAPP_API_URL, WHATSAPP_INSTANCE_ID e WHATSAPP_TOKEN.");
+    }
+
+    const url = `${config.apiUrl.replace(/\/+$/, "")}/message/sendText/${config.instanceId}`;
+    return postJson(url, { number: phone, text: message }, { apikey: config.token });
+  }
+
+  if (config.provider === "meta") {
+    if (!config.metaPhoneNumberId || !config.token) {
+      throw new Error("Configure WHATSAPP_PHONE_NUMBER_ID e WHATSAPP_TOKEN.");
+    }
+
+    const url = `https://graph.facebook.com/${config.metaApiVersion}/${config.metaPhoneNumberId}/messages`;
+    return postJson(url, {
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { preview_url: false, body: message }
+    }, { Authorization: `Bearer ${config.token}` });
+  }
+
+  if (config.provider === "twilio") {
+    if (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioFrom) {
+      throw new Error("Configure TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN e TWILIO_WHATSAPP_FROM.");
+    }
+
+    const params = new URLSearchParams({
+      To: `whatsapp:+${phone}`,
+      From: config.twilioFrom,
+      Body: message
+    });
+    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioAccountSid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: params
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(`Twilio respondeu ${response.status}: ${JSON.stringify(payload)}`);
+    }
+
+    return payload;
+  }
+
+  if (!config.apiUrl) {
+    throw new Error("Configure WHATSAPP_API_URL ou selecione um provedor suportado no backend.");
+  }
+
+  return postJson(config.apiUrl, { phone, message }, buildBearerHeader(config.tokenHeader, config.token));
+}
+
 async function futureWhatsAppSend(req, res) {
   const {
     empresaId,
     phone,
+    secondaryPhone,
     message,
     alertType,
     metadata
   } = req.body || {};
 
-  // FUTURO:
-  // Enviar mensagem via backend seguro usando Z-API, Evolution API, Twilio ou Meta Cloud API.
-  // O token da API deve ficar apenas no servidor.
-  // Nunca expor token no front-end.
-  if (!phone || !message) {
+  const primaryPhone = normalizePhone(phone);
+  const optionalSecondaryPhone = normalizePhone(secondaryPhone);
+
+  if (!primaryPhone || !message) {
     return res.status(400).json({
       success: false,
       status: "missing_payload",
-      erro: "Informe phone e message para envio futuro."
+      erro: "Informe phone e message para envio."
     });
   }
 
-  return res.status(501).json({
-    success: false,
-    providerMessageId: "",
-    status: "pending_api",
-    empresaId: empresaId || req.profile?.empresaId || "",
-    alertType: alertType || "",
-    metadata: metadata || {},
-    erro: "Endpoint preparado. Conecte um provedor WhatsApp no backend para ativar envio real."
-  });
+  const config = getWhatsAppBackendConfig();
+  const recipients = [...new Set([primaryPhone, optionalSecondaryPhone].filter(Boolean))];
+
+  try {
+    const results = [];
+
+    for (const recipient of recipients) {
+      const providerResponse = await sendWhatsAppToProvider(recipient, message, config);
+      results.push({
+        phone: recipient,
+        providerResponse
+      });
+    }
+
+    return res.json({
+      success: true,
+      providerMessageId: results[0]?.providerResponse?.id || results[0]?.providerResponse?.sid || "",
+      status: "sent",
+      provider: config.provider,
+      recipients: results.map((item) => item.phone),
+      empresaId: empresaId || req.profile?.empresaId || "",
+      alertType: alertType || "",
+      metadata: metadata || {}
+    });
+  } catch (error) {
+    console.error("Falha ao enviar WhatsApp pelo backend.", error);
+    return res.status(502).json({
+      success: false,
+      providerMessageId: "",
+      status: "provider_error",
+      provider: config.provider,
+      erro: error.message || "Nao foi possivel enviar WhatsApp pelo backend."
+    });
+  }
 }
 
 app.get("/api/health", (req, res) => {
