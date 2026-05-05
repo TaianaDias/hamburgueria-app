@@ -1947,6 +1947,41 @@ button.active,
   font-weight: 800;
 }
 
+.premium-store-card[data-status="fechado"] small {
+  color: #fca5a5;
+}
+
+.premium-store-card[data-status="pausado"] small,
+.premium-store-card[data-status="em-preparacao"] small {
+  color: #fbbf24;
+}
+
+.premium-store-edit {
+  justify-self: start;
+  min-height: 30px;
+  margin-top: 6px;
+  padding: 0.38rem 0.68rem;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.1);
+  box-shadow: none;
+  color: #fed7aa;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.store-card-dialog {
+  width: min(520px, calc(100vw - 28px));
+}
+
+.store-card-dialog .form-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.store-card-dialog .actions {
+  justify-content: flex-end;
+}
+
 .premium-nav {
   display: grid;
   gap: 5px;
