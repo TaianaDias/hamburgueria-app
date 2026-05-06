@@ -29,7 +29,6 @@
       <a class="button secondary" href="dashboard-saas.html">Dashboard</a>
       <a class="button secondary" href="compras.html">Compras</a>
       <button id="evaluate-button" type="button">Avaliar agora</button>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
@@ -42,7 +41,7 @@
       </div>
 
       <div class="purchase-dashboard-badges">
-        <span id="hero-next-run" class="purchase-badge">Ultima avaliacao: -</span>
+        <span id="hero-next-run" class="purchase-badge">Última avaliação: -</span>
         <span id="hero-provider" class="purchase-badge">Canal: WhatsApp</span>
         <span id="hero-recipient" class="purchase-badge">Admin: não configurado</span>
       </div>
@@ -323,7 +322,7 @@ function renderSummary(data) {
     ? `${formatDateTime(data.latestNotification.createdAt)} | ${toNumber(data.latestNotification.itemCount, 0)} item(ns)`
     : "Nenhum disparo ainda.";
 
-  document.getElementById("hero-next-run").textContent = `Ultima avaliacao: ${formatDateTime(data.generatedAt)}`;
+  document.getElementById("hero-next-run").textContent = `Última avaliação: ${formatDateTime(data.generatedAt)}`;
   document.getElementById("hero-provider").textContent = "Canal: WhatsApp";
   document.getElementById("hero-recipient").textContent = data.adminWhatsapp
     ? `Admin: ${data.adminWhatsapp}`

@@ -27,7 +27,6 @@
     <div class="actions">
       <a class="button secondary" href="dashboard-saas.html">Dashboard</a>
       <a class="button secondary" href="demo.html">Demo</a>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
@@ -168,7 +167,7 @@
         </div>
       </div>
       <div class="training-progress-summary-grid">
-        <div><span>Aulas concluidas</span><strong id="completed-lessons">0</strong></div>
+        <div><span>Aulas concluídas</span><strong id="completed-lessons">0</strong></div>
         <div><span>Aulas pendentes</span><strong id="pending-lessons">0</strong></div>
         <div><span>Percentual</span><strong id="progress-lessons">0%</strong></div>
       </div>
@@ -202,7 +201,7 @@
     </div>
     <div class="training-tour-actions">
       <button id="prev-tour-button" class="secondary" type="button">Anterior</button>
-      <button id="next-tour-button" type="button">Proximo</button>
+      <button id="next-tour-button" type="button">Próximo</button>
     </div>
   </div>
 </div>
@@ -444,7 +443,7 @@ function updateProgress() {
 
   document.getElementById("training-progress-percent").textContent = `${percent}%`;
   document.getElementById("training-progress-fill").style.width = `${percent}%`;
-  document.getElementById("training-progress-summary").textContent = `${completed} aulas concluidas | ${total - completed} pendentes`;
+  document.getElementById("training-progress-summary").textContent = `${completed} aulas concluídas | ${total - completed} pendentes`;
   document.getElementById("training-last-lesson").textContent = `Ultima aula: ${lastLessonTitle}`;
   document.getElementById("completed-lessons").textContent = String(completed);
   document.getElementById("pending-lessons").textContent = String(total - completed);
@@ -458,7 +457,7 @@ function openTour(index = 0) {
   document.getElementById("tour-description").textContent = step.description;
   document.getElementById("tour-progress-fill").style.width = `${((currentTourIndex + 1) / tourSteps.length) * 100}%`;
   document.getElementById("prev-tour-button").disabled = currentTourIndex === 0;
-  document.getElementById("next-tour-button").textContent = currentTourIndex === tourSteps.length - 1 ? "Concluir tour" : "Proximo";
+  document.getElementById("next-tour-button").textContent = currentTourIndex === tourSteps.length - 1 ? "Concluir tour" : "Próximo";
   document.getElementById("training-tour-modal").hidden = false;
 }
 

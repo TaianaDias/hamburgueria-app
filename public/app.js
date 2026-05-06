@@ -653,7 +653,7 @@ const FUNCTION_PERMISSION_DEFAULTS = Object.freeze({
   treinamento: ["treinamento.ver", "treinamento.concluir"],
   fornecedores: ["fornecedores.ver", "fornecedores.cadastrar", "fornecedores.editar"],
   funcionarios: ["funcionarios.ver", "funcionarios.cadastrar", "funcionarios.editar"],
-  configuracoes: ["configuracoes.ver"]
+  configuracoes: ["configuracoes.ver", "configuracoes.editar", "configuracoes.gerenciarPlano"]
 });
 
 const ROLE_LABELS = Object.freeze({
@@ -670,7 +670,22 @@ const ROLE_LABELS = Object.freeze({
 export const PERMISSION_DENIED_MESSAGE = "Seu perfil não possui permissão para esta ação. Solicite liberação ao administrador.";
 
 function normalizePermissionRole(value) {
-  return normalizeText(value).replace(/\s+/g, "_") || "funcionario";
+  const normalized = normalizeText(value).replace(/\s+/g, "_") || "funcionario";
+  const aliases = {
+    administrador: "admin",
+    dono: "admin",
+    proprietario: "admin",
+    proprietaria: "admin",
+    visualização: "visualizacao",
+    visualizacao: "visualizacao",
+    funcionário: "funcionario",
+    funcionario: "funcionario",
+    ficha_tecnica: "cmv",
+    ficha_tecnica_cmv: "cmv",
+    ficha_técnica_cmv: "cmv"
+  };
+
+  return aliases[normalized] || normalized;
 }
 
 function getManualPermission(profile = {}, permission = "") {
@@ -802,23 +817,42 @@ export async function logout() {
 }
 
 export function bindLogoutButton(buttonId = "logout-button") {
-  const targets = [
-    document.getElementById(buttonId),
-    ...document.querySelectorAll("[data-logout-button]")
-  ].filter(Boolean);
+  const targets = [document.getElementById(buttonId)].filter(Boolean);
 
-  if (!targets.length) {
-    return;
-  }
-
-  targets.forEach((button) => button.addEventListener("click", async () => {
+  const runLogout = async () => {
     try {
       await logout();
     } catch (error) {
       console.error(error);
       window.alert("Não foi possível encerrar a sessão.");
     }
-  }));
+  };
+
+  targets.forEach((button) => {
+    if (button.dataset.logoutBound === "true") {
+      return;
+    }
+
+    button.dataset.logoutBound = "true";
+    button.addEventListener("click", runLogout);
+  });
+
+  if (document.documentElement.dataset.logoutDelegated === "true") {
+    return;
+  }
+
+  document.documentElement.dataset.logoutDelegated = "true";
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest("[data-logout-button]");
+
+    if (!button) {
+      return;
+    }
+
+    event.preventDefault();
+    runLogout();
+  });
 }
 
 export function setStatus(targetId, message, type = "info") {

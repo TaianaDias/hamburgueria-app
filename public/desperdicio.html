@@ -13,27 +13,26 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script src="premium-shell.js" defer></script>
-<title>Desperdicio | Hamburgueria</title>
+<title>Desperdício | Hamburgueria</title>
 </head>
 <body>
 <main class="page">
   <header class="page-header">
     <div>
       <p class="eyebrow">Controle operacional</p>
-      <h1>Desperdicio</h1>
+      <h1>Desperdício</h1>
       <p id="user-info" class="muted"></p>
     </div>
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
       <a id="stock-link" class="button secondary" href="estoque.html" hidden>Estoque</a>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
   <section class="stats-grid waste-stats">
     <article class="card">
-      <span class="muted">Lancamentos hoje</span>
+      <span class="muted">Lançamentos hoje</span>
       <strong id="metric-waste-count" class="metric-value">0</strong>
     </article>
 
@@ -886,7 +885,7 @@ async function saveWaste() {
       console.warn("Desperdício registrado, mas o agregado do produto não foi atualizado.", error);
     });
 
-    setStatus("waste-status", "Desperdicio registrado.", "success");
+    setStatus("waste-status", "Desperdício registrado.", "success");
     await loadData();
     selectProduct(selectedProduct.id);
   } catch (error) {

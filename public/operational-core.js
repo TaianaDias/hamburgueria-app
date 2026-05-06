@@ -88,7 +88,7 @@ export function inferOperationalCommand(message = "") {
 }
 
 function buildConfirmationText(intent, quantity, cost) {
-  const amount = quantity > 0 ? `${quantity} unidade(s)` : "a movimentacao informada";
+  const amount = quantity > 0 ? `${quantity} unidade(s)` : "a movimentação informada";
   const costText = cost > 0 ? ` com valor de ${formatCurrency(cost)}` : "";
 
   if (intent === "entrada_estoque") {

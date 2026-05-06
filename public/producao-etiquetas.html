@@ -22,7 +22,6 @@
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
       <a class="button secondary" href="impressora.html">Impressora</a>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
@@ -76,7 +75,7 @@
     <div class="summary-line">
       <div>
         <h3>Histórico de etiquetas</h3>
-        <p class="muted">Produções, lotes e etiquetas emitidas pela operação.</p>
+        <p class="muted">Etiquetas emitidas pela operação. O histórico de produção pode ser zerado sem apagar etiquetas.</p>
       </div>
       <button id="clear-production-history" class="secondary danger-button" type="button" hidden>Zerar histórico</button>
     </div>
@@ -87,7 +86,7 @@
 <dialog id="clear-production-history-dialog" class="premium-confirm-dialog">
   <form method="dialog">
     <h3>Zerar histórico de produção?</h3>
-    <p class="muted">Essa ação apagará apenas o histórico de produções e etiquetas. Insumos, configurações e produtos cadastrados serão preservados.</p>
+    <p class="muted">Essa ação apagará apenas o histórico de produções. Etiquetas, insumos, configurações e produtos cadastrados serão preservados.</p>
     <p class="muted">Digite <strong>ZERAR</strong> para confirmar.</p>
     <div class="field-group">
       <label for="clear-production-history-confirmation">Confirmação</label>
@@ -178,12 +177,8 @@ async function clearProductionHistory() {
     return;
   }
 
-  const [productionsSnapshot, labelsSnapshot] = await Promise.all([
-    getDocs(collection(db, OPERATIONAL_COLLECTIONS.producoes)),
-    getDocs(collection(db, OPERATIONAL_COLLECTIONS.etiquetas))
-  ]);
-
-  const removedCount = productionsSnapshot.size + labelsSnapshot.size;
+  const productionsSnapshot = await getDocs(collection(db, OPERATIONAL_COLLECTIONS.producoes));
+  const removedCount = productionsSnapshot.size;
 
   if (!removedCount) {
     setStatus("status", "Não há histórico de produção para zerar.", "info");
@@ -194,22 +189,17 @@ async function clearProductionHistory() {
   productionsSnapshot.docs.forEach((document) => {
     batch.delete(doc(db, OPERATIONAL_COLLECTIONS.producoes, document.id));
   });
-  labelsSnapshot.docs.forEach((document) => {
-    batch.delete(doc(db, OPERATIONAL_COLLECTIONS.etiquetas, document.id));
-  });
   batch.set(doc(collection(db, OPERATIONAL_COLLECTIONS.auditoria)), {
     empresaId: profile.empresaId || "",
     usuario: profile.email || "",
     perfil: profile.perfilPrincipal || profile.tipo || "",
     quantidadeRegistrosApagados: removedCount,
     modulo: "Produção",
-    acao: "Zerar histórico de produção e etiquetas",
+    acao: "Zerar histórico de produção",
     criadoEm: serverTimestamp()
   });
 
   await batch.commit();
-  lastLabelHtml = "";
-  labelPreview.innerHTML = "";
   await loadLabelHistory();
   setStatus("status", `Histórico de produção zerado com segurança. ${removedCount} registro(s) apagado(s).`, "success");
 }

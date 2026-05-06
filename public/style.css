@@ -892,7 +892,8 @@ h3 {
   padding: 14px;
 }
 
-.premium-mobile-menu-grid a {
+.premium-mobile-menu-grid a,
+.premium-mobile-menu-grid button {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
@@ -902,9 +903,13 @@ h3 {
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 16px;
   background: rgba(15, 23, 42, 0.62);
+  box-shadow: none;
+  color: #cbd5e1;
+  text-align: left;
 }
 
-.premium-mobile-menu-grid a span {
+.premium-mobile-menu-grid a span,
+.premium-mobile-menu-grid button span {
   display: grid;
   place-items: center;
   width: 34px;
@@ -915,11 +920,23 @@ h3 {
   font-weight: 900;
 }
 
-.premium-mobile-menu-grid a strong {
+.premium-mobile-menu-grid a strong,
+.premium-mobile-menu-grid button strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.premium-mobile-menu-grid button[data-logout-button] {
+  border-color: rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+}
+
+.premium-mobile-menu-grid button[data-logout-button] span {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
 }
 
 .premium-mobile-menu-grid a.active {
@@ -1987,7 +2004,8 @@ button.active,
   gap: 5px;
 }
 
-.premium-nav a {
+.premium-nav a,
+.premium-nav-logout {
   min-height: 38px;
   padding: 0.58rem 0.7rem;
   border-radius: 12px;
@@ -1996,14 +2014,24 @@ button.active,
 }
 
 .premium-nav a.active,
-.premium-nav a:hover {
+.premium-nav a:hover,
+.premium-nav-logout:hover {
   background: rgba(34, 197, 94, 0.14);
   color: #86efac;
 }
 
-.premium-nav span {
+.premium-nav span,
+.premium-nav-logout span {
   width: 22px;
   color: #22c55e;
+}
+
+.premium-nav-logout {
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 800;
 }
 
 .premium-user-card {
@@ -4700,7 +4728,8 @@ pre {
     padding: 14px;
   }
 
-  .dashboard-mobile-drawer-grid a {
+  .dashboard-mobile-drawer-grid a,
+  .dashboard-mobile-drawer-grid button {
     display: grid;
     grid-template-columns: 34px minmax(0, 1fr);
     align-items: center;
@@ -4710,6 +4739,15 @@ pre {
     border: 1px solid rgba(148, 163, 184, 0.12);
     border-radius: 16px;
     background: rgba(15, 23, 42, 0.62);
+    box-shadow: none;
+    color: #cbd5e1;
+    text-align: left;
+  }
+
+  .dashboard-mobile-drawer-grid button[data-logout-button] {
+    border-color: rgba(239, 68, 68, 0.18);
+    background: rgba(239, 68, 68, 0.08);
+    color: #fca5a5;
   }
 
   .dashboard-mobile-drawer-grid span {
@@ -4721,6 +4759,11 @@ pre {
     background: rgba(148, 163, 184, 0.1);
     color: #86efac;
     font-weight: 900;
+  }
+
+  .dashboard-mobile-drawer-grid button[data-logout-button] span {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
   }
 
   .employee-layout,

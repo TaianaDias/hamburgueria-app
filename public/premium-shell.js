@@ -111,6 +111,10 @@ function buildMobileMenu() {
             </a>
           `;
         }).join("")}
+        <button type="button" data-logout-button>
+          <span>X</span>
+          <strong>Sair</strong>
+        </button>
       </div>
     </section>
   `;

@@ -29,7 +29,6 @@
       <a id="alerts-link" class="button secondary" href="alertas-reposicao.html" hidden>Alertas</a>
       <a id="dashboard-link" class="button secondary" href="dashboard-compras.html">Dashboard</a>
       <button id="send-button" type="button">Enviar pedidos</button>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
@@ -37,7 +36,7 @@
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Registro mensal de compras</h3>
-        <p class="muted">Lance compras manuais, acompanhe o gasto do mes e, se quiser, ja atualize o estoque no mesmo registro.</p>
+        <p class="muted">Lance compras manuais, acompanhe o gasto do mês e, se quiser, já atualize o estoque no mesmo registro.</p>
       </div>
     </div>
 
@@ -87,12 +86,12 @@
       </div>
 
       <div class="field-group" style="grid-column: 1 / -1;">
-        <label for="purchase-note">Observacao</label>
-        <textarea id="purchase-note" placeholder="Ex.: promocao do mes, compra emergencial, pedido dividido..."></textarea>
+        <label for="purchase-note">Observação</label>
+        <textarea id="purchase-note" placeholder="Ex.: promoção do mês, compra emergencial, pedido dividido..."></textarea>
       </div>
 
       <div class="field-group" style="grid-column: 1 / -1;">
-        <span>Atualizacao de estoque</span>
+        <span>Atualização de estoque</span>
         <label class="inline-choice">
           <input id="purchase-update-stock" type="checkbox" checked>
           <span>Dar entrada no estoque ao registrar esta compra</span>
@@ -183,6 +182,7 @@ import {
   getEffectiveSupplierPurchaseCost,
   getEffectiveSupplierUnitCost,
   getPackageQuantity,
+  handleStockAutomationEvent,
   isSupplierOrderDueToday,
   isSupplierOrderFrequencyEnabled,
   isSupplierPromotionActive,
@@ -750,7 +750,7 @@ sendButton.addEventListener("click", () => {
     return;
   }
 
-  setStatus("status", "Nenhum pedido foi enviado porque faltam telefones validos.", "error");
+  setStatus("status", "Nenhum pedido foi enviado porque faltam telefones válidos.", "error");
 });
 
 adminWhatsappInput.addEventListener("change", () => {
@@ -863,10 +863,45 @@ purchaseForm.addEventListener("submit", async (event) => {
     });
 
     if (atualizarEstoque) {
+      const previousStock = toNumber(product.quantidade, 0);
+      const currentStock = Math.max(0, previousStock + quantidadeUnidades);
       await updateDoc(doc(db, "estoque", product.id), {
-        quantidade: Math.max(0, toNumber(product.quantidade, 0) + quantidadeUnidades),
+        quantidade: currentStock,
         atualizadoEm: serverTimestamp()
       });
+
+      const automationEvents = [
+        handleStockAutomationEvent({
+          type: "stockIn",
+          productName: product.nome,
+          quantity: quantidadeEmbalagens,
+          unit: unidadeCompra,
+          previousStock,
+          currentStock,
+          supplier: supplier.nome,
+          responsibleUser: profile.nome || profile.email || "Usuário",
+          userId: profile.id || profile.userId || "",
+          empresaId: profile.empresaId || "",
+          date: new Date(`${dataCompra}T12:00:00`)
+        })
+      ];
+
+      if (currentStock <= Math.max(0, toNumber(product.minimo, 0))) {
+        automationEvents.push(handleStockAutomationEvent({
+          type: "lowStock",
+          productName: product.nome,
+          currentStock,
+          minStock: product.minimo,
+          supplier: supplier.nome,
+          recommendation: "Comprar hoje",
+          responsibleUser: profile.nome || profile.email || "Usuário",
+          userId: profile.id || profile.userId || "",
+          empresaId: profile.empresaId || "",
+          date: new Date(`${dataCompra}T12:00:00`)
+        }));
+      }
+
+      await Promise.allSettled(automationEvents);
     }
 
     await addDoc(collection(db, "historico"), {

@@ -304,12 +304,17 @@ function normalizeRole(value, fallback = "funcionario") {
     .replace(/\s+/g, "_")
     .replace("producao", "producao");
 
-  if (normalized === "funcionario" || normalized === "funcionário") {
-    return "funcionario";
-  }
+  const aliases = {
+    administrador: "admin",
+    dono: "admin",
+    proprietario: "admin",
+    proprietaria: "admin",
+    funcionario: "funcionario",
+    visualizacao: "visualizacao"
+  };
 
-  if (normalized === "visualizacao" || normalized === "visualização") {
-    return "visualizacao";
+  if (aliases[normalized]) {
+    return aliases[normalized];
   }
 
   return validRoles.has(normalized) ? normalized : fallback;
@@ -436,7 +441,9 @@ function getPermissionValue(profile = {}, permission = "") {
 }
 
 function hasPermission(profile = {}, permission = "") {
-  if (profile.tipo === "admin" || profile.perfilPrincipal === "admin") {
+  const role = normalizeRole(profile.perfilPrincipal || profile.tipo);
+
+  if (role === "admin") {
     return true;
   }
 

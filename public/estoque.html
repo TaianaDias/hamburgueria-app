@@ -330,7 +330,7 @@
       <details class="section-accordion compact-config-accordion">
         <summary class="section-accordion-summary">
           <div>
-            <span>Configuracoes opcionais</span>
+            <span>Configurações opcionais</span>
             <strong>Código de barras, fornecedores e frequência de compra</strong>
           </div>
           <span class="section-accordion-cta">Abrir opções</span>
@@ -378,8 +378,8 @@
 
               <div class="actions" style="margin-top: 16px;">
                 <button id="lookup-barcode-button" class="secondary" type="button">Consultar código</button>
-                <button id="start-scan-button" class="secondary" type="button">Ativar camera</button>
-                <button id="stop-scan-button" class="ghost" type="button" disabled>Parar camera</button>
+                <button id="start-scan-button" class="secondary" type="button">Ativar câmera</button>
+                <button id="stop-scan-button" class="ghost" type="button" disabled>Parar câmera</button>
               </div>
 
               <label class="inline-choice" style="margin-top: 16px;">
@@ -528,7 +528,7 @@
                 </div>
 
                 <div class="field-group">
-                  <label for="novo_observacao_etiqueta">Observacao da etiqueta</label>
+                  <label for="novo_observacao_etiqueta">Observação da etiqueta</label>
                   <input id="novo_observacao_etiqueta" placeholder="Manter refrigerado">
                 </div>
               </div>
@@ -1266,7 +1266,7 @@ async function recordQuickBoxMovement(type) {
     triggerReplenishmentEvaluation(isEntry ? "entrada_estoque" : "saida_estoque").catch(() => null);
     setStatus(
       "quick-box-status",
-      `${isEntry ? "Entrada" : "Saida"} registrada: ${formatQuantity(movement.quantity)} ${movement.unitLabel}(s). Estoque atual ${formatQuantity(nextStockBoxes)} embalagem(ns).`,
+      `${isEntry ? "Entrada" : "Saída"} registrada: ${formatQuantity(movement.quantity)} ${movement.unitLabel}(s). Estoque atual ${formatQuantity(nextStockBoxes)} embalagem(ns).`,
       "success"
     );
     await loadProducts();
@@ -1275,7 +1275,7 @@ async function recordQuickBoxMovement(type) {
     quickBarcodeInput.select();
   } catch (error) {
     console.error(error);
-    setStatus("quick-box-status", error.message || "Não foi possível registrar a movimentacao.", "error");
+    setStatus("quick-box-status", error.message || "Não foi possível registrar a movimentação.", "error");
   } finally {
     quickEntryBoxButton.disabled = false;
     quickExitBoxButton.disabled = false;
@@ -2207,7 +2207,7 @@ function getOperationalProductStatus(item, productSuppliers = normalizeProductSu
   }
 
   if (expiration.state === "expiring") {
-    return { label: "Proximo do vencimento", badgeClass: "urgent" };
+    return { label: "Próximo do vencimento", badgeClass: "urgent" };
   }
 
   if (minimumBoxes > 0 && stockBoxes <= minimumBoxes) {
@@ -3106,7 +3106,7 @@ function handleProductQuickAction(action, item, collapsible = null) {
   }
 
   if (action === "historico") {
-    setStatus("status", "Histórico completo fica registrado nas movimentacoes e auditoria do sistema.", "info");
+    setStatus("status", "Histórico completo fica registrado nas movimentações e auditoria do sistema.", "info");
     return;
   }
 
@@ -3516,7 +3516,7 @@ function renderProducts(items) {
     detailsSummary.innerHTML = `
       <div>
         <strong>Ver detalhes</strong>
-        <p class="muted">Descricao completa, fornecedores, custos e configuracoes.</p>
+        <p class="muted">Descrição completa, fornecedores e configurações.</p>
       </div>
       <span class="product-card-details-cta">Abrir</span>
     `;
@@ -3577,7 +3577,7 @@ function renderProducts(items) {
     });
 
     const productConfigSection = createDetailAccordion({
-      title: "Descricao completa",
+      title: "Descrição completa",
       summaryEntries: [
         { label: "Qtd. máxima", value: String(toNumber(item.maximo, 0)) },
         { label: "Estoque mínimo", value: String(toNumber(item.minimo, 0)) },
@@ -3589,8 +3589,8 @@ function renderProducts(items) {
     });
 
     const supplierConfigSection = createDetailAccordion({
-      title: "Dias, entrega e configuracoes avancadas",
-      helperText: "Defina custo, prioridade, compra e frequencia.",
+      title: "Dias, entrega e configurações avançadas",
+      helperText: "Defina prioridade, compra e frequência.",
       summaryEntries: [
         { label: "Fornecedores", value: String(productSuppliers.length || 0) },
         { label: "Principal", value: primarySupplier?.nome || "Configurar" }

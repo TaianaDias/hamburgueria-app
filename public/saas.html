@@ -21,7 +21,6 @@
     </div>
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
     </div>
   </header>
 
@@ -75,15 +74,28 @@
 <script type="module">
 import { db } from "./firebase.js";
 import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { bindLogoutButton, describeProfile, requireAuth, setStatus, toNumber } from "./app.js";
+import { bindLogoutButton, can, describeProfile, requireAuth, setStatus, toNumber } from "./app.js";
 import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
 bindLogoutButton();
-const { profile } = await requireAuth({ adminOnly: true });
+const { profile } = await requireAuth({ permission: "configuracoes.ver" });
 document.getElementById("user-info").textContent = describeProfile(profile);
+const canEditSettings = can("configuracoes.editar", profile);
+
+if (!canEditSettings) {
+  document.querySelectorAll("#saas-form input, #saas-form select, #saas-form button").forEach((field) => {
+    field.disabled = true;
+  });
+  setStatus("status", "Você pode visualizar as configurações, mas não possui permissão para alterar.", "info");
+}
 
 document.getElementById("saas-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!canEditSettings) {
+    setStatus("status", "Seu perfil não possui permissão para editar configurações.", "error");
+    return;
+  }
+
   await addDoc(collection(db, OPERATIONAL_COLLECTIONS.saas), {
     empresaNome: document.getElementById("company").value.trim(),
     lojaNome: document.getElementById("store").value.trim(),
