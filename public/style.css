@@ -2002,6 +2002,9 @@ button.active,
 .premium-nav {
   display: grid;
   gap: 5px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .premium-nav a,
@@ -2027,11 +2030,17 @@ button.active,
 }
 
 .premium-nav-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   justify-content: flex-start;
+  width: 100%;
+  margin-top: auto;
   border: 0;
   background: transparent;
   box-shadow: none;
   font-weight: 800;
+  flex-shrink: 0;
 }
 
 .premium-user-card {
