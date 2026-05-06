@@ -698,6 +698,8 @@ h3 {
 .premium-global-nav {
   display: grid;
   gap: 5px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -720,7 +722,7 @@ h3 {
   gap: 8px;
   min-height: 38px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: auto;
   padding: 0.48rem 0.56rem;
   border: 1px solid rgba(239, 68, 68, 0.16);
   border-radius: 13px;
@@ -728,6 +730,7 @@ h3 {
   color: #fca5a5;
   box-shadow: none;
   text-align: left;
+  flex-shrink: 0;
 }
 
 .premium-global-logout span {
