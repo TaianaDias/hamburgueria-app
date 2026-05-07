@@ -5251,6 +5251,187 @@ textarea:focus {
   box-shadow: var(--shadow-premium);
 }
 
+/* Glassmorphism premium: deixa cards e painéis com aparência real de vidro escuro. */
+:root {
+  --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032));
+  --glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.042));
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-hot: rgba(248, 113, 113, 0.52);
+  --glass-shadow: 0 26px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.premium-card,
+.premium-card-surface,
+.premium-surface,
+.premium-panel,
+.premium-phone-card,
+.premium-kpi-card,
+.premium-action-card,
+.panel,
+.card,
+.product-card,
+.inventory-card,
+.inventory-product-card,
+.stock-kpi-card,
+.stock-command-panel,
+.quick-box-panel,
+.stock-daily-entry-panel,
+.waste-entry-panel,
+.waste-form-card,
+.waste-history-card,
+.replenishment-card,
+.operation-action-card,
+.training-progress-card,
+.training-start-card,
+.training-step-card,
+.training-video-card,
+.training-profile-card,
+.supplier-price-card,
+.purchase-highlight-card,
+.purchase-dashboard-month-card,
+.analytics-month-card-high,
+.analytics-month-card-low,
+.alert-card,
+.employee-card,
+.employee-check-card,
+.employee-tab-panel,
+.login-premium-card,
+.login-marketing-panel,
+.login-feature-grid article,
+.login-testimonial,
+.premium-alert-drawer-item,
+.automation-alert-choice {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+}
+
+.premium-card::before,
+.premium-card-surface::before,
+.premium-surface::before,
+.premium-panel::before,
+.premium-phone-card::before,
+.premium-kpi-card::before,
+.premium-action-card::before,
+.panel::before,
+.card::before,
+.product-card::before,
+.inventory-card::before,
+.inventory-product-card::before,
+.stock-kpi-card::before,
+.stock-command-panel::before,
+.quick-box-panel::before,
+.stock-daily-entry-panel::before,
+.waste-entry-panel::before,
+.waste-form-card::before,
+.waste-history-card::before,
+.replenishment-card::before,
+.operation-action-card::before,
+.training-progress-card::before,
+.training-start-card::before,
+.training-step-card::before,
+.training-video-card::before,
+.training-profile-card::before,
+.supplier-price-card::before,
+.purchase-highlight-card::before,
+.purchase-dashboard-month-card::before,
+.analytics-month-card-high::before,
+.analytics-month-card-low::before,
+.alert-card::before,
+.employee-card::before,
+.employee-check-card::before,
+.employee-tab-panel::before,
+.login-premium-card::before,
+.login-marketing-panel::before,
+.login-feature-grid article::before,
+.login-testimonial::before,
+.premium-alert-drawer-item::before,
+.automation-alert-choice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.12), transparent 34%);
+  opacity: 0.85;
+}
+
+.premium-card > *,
+.premium-card-surface > *,
+.premium-surface > *,
+.premium-panel > *,
+.premium-phone-card > *,
+.premium-kpi-card > *,
+.premium-action-card > *,
+.panel > *,
+.card > *,
+.product-card > *,
+.inventory-card > *,
+.inventory-product-card > *,
+.stock-kpi-card > *,
+.stock-command-panel > *,
+.quick-box-panel > *,
+.stock-daily-entry-panel > *,
+.waste-entry-panel > *,
+.waste-form-card > *,
+.waste-history-card > *,
+.replenishment-card > *,
+.operation-action-card > *,
+.training-progress-card > *,
+.training-start-card > *,
+.training-step-card > *,
+.training-video-card > *,
+.training-profile-card > *,
+.supplier-price-card > *,
+.purchase-highlight-card > *,
+.purchase-dashboard-month-card > *,
+.analytics-month-card-high > *,
+.analytics-month-card-low > *,
+.alert-card > *,
+.employee-card > *,
+.employee-check-card > *,
+.employee-tab-panel > *,
+.login-premium-card > *,
+.login-marketing-panel > *,
+.login-feature-grid article > *,
+.login-testimonial > *,
+.premium-alert-drawer-item > *,
+.automation-alert-choice > * {
+  position: relative;
+  z-index: 1;
+}
+
+.premium-card.interactive:hover,
+.dashboard-clickable-card:hover,
+.dashboard-clickable-card:focus-visible,
+.premium-alert-item:hover,
+.premium-action-card:hover,
+.premium-alert-drawer-item:hover,
+.prototype-critical-item:hover,
+.product-card:hover,
+.inventory-card:hover,
+.inventory-product-card:hover,
+.stock-kpi-card:hover,
+.replenishment-card:hover,
+.training-video-card:hover,
+.supplier-price-card:hover,
+.alert-card:hover,
+.login-feature-grid article:hover {
+  border-color: var(--glass-border-hot);
+  background: var(--glass-bg-strong);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(248, 113, 113, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
 /* Login V2: mesma linguagem visual do mockup premium convertido. */
 .login-premium-body {
   min-height: 100vh;
