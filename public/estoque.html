@@ -3466,6 +3466,43 @@ function renderProducts(items) {
           atualizadoEm: serverTimestamp()
         });
 
+        const previousQuantity = toNumber(item.quantidade ?? item.stock_boxes, 0);
+
+        if (quantidade !== previousQuantity) {
+          const stockDelta = quantidade - previousQuantity;
+          const primarySupplier = getPrimaryProductSupplier({ ...item, quantidade }, fornecedores);
+          await Promise.allSettled([
+            handleStockAutomationEvent({
+              type: stockDelta >= 0 ? "stockIn" : "stockOut",
+              productName: item.nome,
+              quantity: Math.abs(stockDelta),
+              unit: unidadeCompra,
+              previousStock: previousQuantity,
+              currentStock: quantidade,
+              supplier: primarySupplier?.nome || item.fornecedorNome || item.fornecedor || "",
+              responsibleUser: profile.nome || profile.email || "Usuário",
+              reason: stockDelta >= 0 ? "Ajuste manual de estoque" : "Correção de quantidade",
+              userId: profile.id || "",
+              empresaId: profile.empresaId || "",
+              date: new Date()
+            }),
+            quantidade <= Math.max(0, minimo)
+              ? handleStockAutomationEvent({
+                type: "lowStock",
+                productName: item.nome,
+                currentStock: quantidade,
+                minStock: minimo,
+                supplier: primarySupplier?.nome || item.fornecedorNome || item.fornecedor || "",
+                recommendation: "Repor imediatamente",
+                responsibleUser: profile.nome || profile.email || "Usuário",
+                userId: profile.id || "",
+                empresaId: profile.empresaId || "",
+                date: new Date()
+              })
+              : Promise.resolve()
+          ]);
+        }
+
         triggerReplenishmentEvaluation("estoque_atualizado").catch(() => null);
         setStatus("status", `Produto ${item.nome} atualizado com sucesso.`, "success");
         await loadProducts();
@@ -4706,8 +4743,32 @@ resetButton.addEventListener("click", async () => {
     const BATCH_LIMIT = 400;
     let batch = writeBatch(db);
     let pendingOperations = 0;
+    const resetAlerts = [];
 
     for (const stockDocument of snapshot.docs) {
+      const item = {
+        id: stockDocument.id,
+        ...stockDocument.data()
+      };
+      const previousQuantity = toNumber(item.quantidade ?? item.stock_boxes, 0);
+
+      if (previousQuantity > 0) {
+        resetAlerts.push({
+          type: "stockOut",
+          productName: item.nome || item.name || "Produto",
+          quantity: previousQuantity,
+          unit: item.unidadeCompra || item.unidadeMedida || "unidade",
+          previousStock: previousQuantity,
+          currentStock: 0,
+          supplier: item.fornecedorNome || item.fornecedor || "",
+          responsibleUser: profile.nome || profile.email || "Usuário",
+          reason: "Produto zerado",
+          userId: profile.id || "",
+          empresaId: profile.empresaId || "",
+          date: new Date()
+        });
+      }
+
       batch.update(doc(db, "estoque", stockDocument.id), {
         quantidade: 0,
         atualizadoEm: serverTimestamp()
@@ -4731,6 +4792,7 @@ resetButton.addEventListener("click", async () => {
       data: serverTimestamp()
     });
 
+    await Promise.allSettled(resetAlerts.map((alert) => handleStockAutomationEvent(alert)));
     triggerReplenishmentEvaluation("estoque_zerado").catch(() => null);
     setStatus("status", "Todas as quantidades foram zeradas.", "success");
     await loadProducts();

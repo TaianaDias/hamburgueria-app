@@ -107,6 +107,13 @@
         <button id="submit-button" type="submit" style="grid-column: 1 / -1;">Entrar <span aria-hidden="true">→</span></button>
       </form>
 
+      <div class="status info" style="display: grid; gap: 10px; margin-top: 14px;">
+        <strong>Conta demo para análise externa</strong>
+        <span>Dados fictícios, navegação segura e sem alteração no banco real.</span>
+        <code>demo@cariocas.com / Demo@123456</code>
+        <button id="demo-login-button" class="secondary" type="button">Acessar demo pública</button>
+      </div>
+
       <div class="login-social-block">
         <span>ou continue com</span>
         <div class="login-social-actions">
@@ -171,6 +178,7 @@ async function init() {
   const loginPanel = document.getElementById("login-panel");
   const registerPanel = document.getElementById("register-panel");
   const loginForm = document.getElementById("login-form");
+  const demoLoginButton = document.getElementById("demo-login-button");
   const registerForm = document.getElementById("register-form");
   const loginButton = document.getElementById("submit-button");
   const registerButton = document.getElementById("register-button");
@@ -287,6 +295,13 @@ async function init() {
       return;
     }
 
+    if (email === "demo@cariocas.com" && senha === "Demo@123456") {
+      window.sessionStorage.setItem("cariocasDemoSession", "active");
+      setStatus("status", "Abrindo ambiente demo seguro...", "success");
+      window.location.href = "demo.html";
+      return;
+    }
+
     loginButton.disabled = true;
     setStatus("status", "Validando acesso...", "info");
 
@@ -300,6 +315,13 @@ async function init() {
     } finally {
       loginButton.disabled = false;
     }
+  });
+
+  demoLoginButton?.addEventListener("click", () => {
+    document.getElementById("login-email").value = "demo@cariocas.com";
+    document.getElementById("login-senha").value = "Demo@123456";
+    window.sessionStorage.setItem("cariocasDemoSession", "active");
+    window.location.href = "demo.html";
   });
 
   registerForm.addEventListener("submit", async (event) => {

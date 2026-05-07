@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "node server.js",
+    "start:whatsapp-local": "powershell -ExecutionPolicy Bypass -File scripts/start-whatsapp-local.ps1",
+    "whatsapp:health": "node scripts/whatsapp-health.mjs",
     "check:html": "node scripts/check-html-modules.mjs",
     "check:smoke": "node scripts/smoke-test.mjs",
     "ci": "npm run check:html && npm run check:smoke",

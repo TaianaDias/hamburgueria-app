@@ -60,6 +60,7 @@
         <span class="status success">Ativo via webhook</span>
       </div>
       <div class="timeline-list">
+        <span>Assistente: Carioquinha | Carioca's Assistente Virtual</span>
         <span>Autorizados: administrador, funcionários cadastrados e números liberados no backend</span>
         <span>Comandos: ajuda, resumo do estoque, itens baixos, produtos vencendo e sugestão de compra</span>
         <span>Números não autorizados recebem orientação para solicitar liberação ao administrador</span>
@@ -84,6 +85,7 @@
         <p class="eyebrow">Backend Evolution API</p>
         <h3>Configuração da automação WhatsApp</h3>
         <p class="muted">Configure a automação pelo backend, sem expor tokens no navegador.</p>
+        <p class="muted"><strong>Admin Principal:</strong> 5521983240790</p>
       </div>
       <span id="automation-status-badge" class="status info">Automação desligada</span>
     </div>
@@ -181,6 +183,8 @@ document.getElementById("user-info").textContent = describeProfile(profile);
 const AUTOMATION_CONFIG_REF = doc(db, "configuracoes", "whatsappAutomation");
 const AUTOMATION_LOG_COLLECTION = "automacaoLogs";
 const WHATSAPP_LOG_COLLECTION = "whatsapp_logs";
+const ASSISTANT_PUBLIC_LABEL = "Carioquinha | Carioca's Assistente Virtual";
+const PRIMARY_ADMIN_PHONE = "5521983240790";
 const automationAlertTypes = Object.freeze([
   ["stockIn", "Entrada de estoque"],
   ["stockOut", "Saída de estoque"],
@@ -422,6 +426,10 @@ function getLogIndicator(status = "", source = "") {
 
 function normalizeAutomationLog(log = {}, source = "frontend") {
   const indicator = getLogIndicator(log.statusLabel || log.status, source);
+  const rawRecipient = log.destinatario || log.telefone_destino || log.telefone || "";
+  const recipientLabel = normalizePhone(rawRecipient) === PRIMARY_ADMIN_PHONE
+    ? `${ASSISTANT_PUBLIC_LABEL} -> Admin Principal`
+    : (rawRecipient || "não configurado");
 
   return {
     id: log.id || "",

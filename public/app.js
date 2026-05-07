@@ -1097,15 +1097,16 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
 export async function handleStockAutomationEvent(event = {}) {
   const alertKey = getAutomationAlertKey(event.type);
   const config = await loadAutomationConfig();
+  const mandatoryAdminEvent = ["stockIn", "stockOut", "lowStock"].includes(alertKey);
 
-  if (!config.enabled) {
+  if (!config.enabled && !mandatoryAdminEvent) {
     return {
       skipped: true,
       reason: "automation_disabled"
     };
   }
 
-  if (config.alertTypes?.[alertKey] === false) {
+  if (config.alertTypes?.[alertKey] === false && !mandatoryAdminEvent) {
     return {
       skipped: true,
       reason: "alert_type_disabled"

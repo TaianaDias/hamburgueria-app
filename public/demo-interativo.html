@@ -415,13 +415,17 @@
       <button class="active" type="button" data-section="dashboard">Dashboard</button>
       <button type="button" data-section="estoque">Insumos</button>
       <button type="button" data-section="producao">Produção</button>
+      <button type="button" data-section="reposicao">Reposição para produção</button>
       <button type="button" data-section="compras">Compras</button>
+      <button type="button" data-section="compras_analise">Compras: Dashboard + Análise</button>
+      <button type="button" data-section="alertas">Alertas de reposição</button>
       <button type="button" data-section="fornecedores">Fornecedores</button>
       <button type="button" data-section="desperdício">Desperdício</button>
       <button type="button" data-section="relatórios">Relatórios</button>
       <button type="button" data-section="etiquetas">Etiquetas</button>
       <button type="button" data-section="whatsapp">WhatsApp e IA</button>
       <button type="button" data-section="funcionarios">Funcionários</button>
+      <button type="button" data-section="treinamento">Treinamentos</button>
       <button type="button" data-section="configuracoes">Configurações</button>
     </nav>
   </aside>
@@ -614,13 +618,17 @@ const sectionTitles = {
   dashboard: "Copiloto Operacional Food Service",
   estoque: "Cadastro de Insumos",
   producao: "Produção e Porcionamento",
+  reposicao: "Reposição para Produção",
   compras: "Compras Inteligentes",
+  compras_analise: "Compras: Dashboard e Análise",
+  alertas: "Alertas de Reposição",
   fornecedores: "Fornecedores",
   desperdício: "Desperdício e Perdas",
   relatórios: "Relatórios Operacionais",
   etiquetas: "Etiquetagem Termica",
   whatsapp: "WhatsApp e IA",
   funcionarios: "Funcionários e Permissões",
+  treinamento: "Treinamentos",
   configuracoes: "Configurações",
   operação: "Modo Operação Correria"
 };
@@ -659,6 +667,30 @@ const moduleContent = {
       </article>
     </div>
   `,
+  reposicao: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Separação para produção</p>
+        <h3>Reposição do dia</h3>
+        <ul class="demo-module-list">
+          <li><span>Pão brioche</span><strong>40 un</strong></li>
+          <li><span>Blend bovino 160g</span><strong>40 un</strong></li>
+          <li><span>Batata congelada</span><strong>5 kg</strong></li>
+        </ul>
+        <button class="demo-action" type="button">Simular baixa para produção</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Destino</p>
+        <h3>Cozinha quente</h3>
+        <p class="muted">Fluxo visual para baixar insumos, registrar responsável e manter auditoria operacional.</p>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Pendências</p>
+        <h3>2 itens aguardando</h3>
+        <p class="muted">Cheddar fatiado e embalagem burger precisam de conferência antes do turno.</p>
+      </article>
+    </div>
+  `,
   compras: `
     <div class="demo-module-grid">
       <article class="panel demo-module-card">
@@ -685,6 +717,52 @@ const moduleContent = {
         <h3>Compras do mes</h3>
         <strong>R$ 8.450,30</strong>
         <p class="muted">Demo com tendencia, ultimo preço e melhor preço.</p>
+      </article>
+    </div>
+  `,
+  compras_analise: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Dashboard de compras</p>
+        <h3>R$ 8.450,30 no mês</h3>
+        <ul class="demo-module-list">
+          <li><span>Aumento de custo</span><strong>Cheddar +14%</strong></li>
+          <li><span>Melhor preço</span><strong>Food Distribuidora</strong></li>
+          <li><span>Compras pendentes</span><strong>3 pedidos</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Análise IA</p>
+        <h3>Comprar antes de sexta</h3>
+        <p class="muted">Com base nas últimas semanas, a demanda por pão brioche tende a subir 22% no fim de semana.</p>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Comparativo</p>
+        <h3>Fornecedor recomendado</h3>
+        <p class="muted">Pack Food tem melhor prazo, enquanto Food Distribuidora tem melhor preço para embalagens.</p>
+      </article>
+    </div>
+  `,
+  alertas: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Alerta de reposição</p>
+        <h3>Itens críticos</h3>
+        <ul class="demo-module-list">
+          <li><span>Cheddar fatiado</span><strong>Comprar hoje</strong></li>
+          <li><span>Embalagem burger</span><strong>Estoque baixo</strong></li>
+          <li><span>Cebola caramelizada</span><strong>Vence amanhã</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">WhatsApp</p>
+        <h3>Carioquinha ativo</h3>
+        <p class="muted">Alertas de entrada, saída, estoque mínimo e reposição são simulados visualmente nesta demo.</p>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Prioridade</p>
+        <h3>Admin principal</h3>
+        <p class="muted">Em produção, o administrador recebe alertas operacionais em tempo real.</p>
       </article>
     </div>
   `,
@@ -850,6 +928,30 @@ const moduleContent = {
         <p class="eyebrow">Cadastro</p>
         <h3>Novo usuário</h3>
         <button class="demo-action" type="button">Convidar funcionário demo</button>
+      </article>
+    </div>
+  `,
+  treinamento: `
+    <div class="demo-module-grid">
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Comece por aqui</p>
+        <h3>Treinamento básico</h3>
+        <ul class="demo-module-list">
+          <li><span>Cadastrar fornecedores</span><strong>Concluído</strong></li>
+          <li><span>Cadastrar insumos</span><strong>Em andamento</strong></li>
+          <li><span>Gerar etiquetas</span><strong>Pendente</strong></li>
+        </ul>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Vídeos rápidos</p>
+        <h3>10 aulas curtas</h3>
+        <p class="muted">Cards preparados para videoaulas de entrada, saída, estoque mínimo, etiqueta e CMV.</p>
+        <button class="demo-action" type="button">Assistir aula demo</button>
+      </article>
+      <article class="panel demo-module-card">
+        <p class="eyebrow">Assistente IA</p>
+        <h3>Dúvidas operacionais</h3>
+        <p class="muted">Área simulada para perguntas como “Como faço entrada?” ou “Como gero etiqueta?”.</p>
       </article>
     </div>
   `,

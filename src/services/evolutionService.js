@@ -3,6 +3,8 @@ const DEFAULT_INSTANCE = "cariocas-estoque";
 const DEFAULT_BASE_URL = "http://localhost:8080";
 const DEFAULT_TIMEOUT_MS = 12000;
 const FIRESTORE_LOG_TIMEOUT_MS = 4000;
+const PRIMARY_ADMIN_WHATSAPP = "5521983240790";
+const ASSISTANT_NAME = "Carioquinha";
 const WEBHOOK_EVENTS = Object.freeze([
   "QRCODE_UPDATED",
   "CONNECTION_UPDATE",
@@ -149,7 +151,11 @@ export function createEvolutionService({ admin, logger = console } = {}) {
     const now = new Date();
     const logPayload = {
       tipo: normalizeText(payload.tipo || payload.type || "whatsapp"),
+      tipo_evento: normalizeText(payload.tipo_evento || payload.tipoEvento || payload.tipo || payload.type || "whatsapp"),
+      produto: normalizeText(payload.produto || payload.productName || payload.metadata?.productName || payload.metadata?.product || ""),
+      quantidade: payload.quantidade ?? payload.quantity ?? payload.metadata?.quantity ?? "",
       telefone: normalizePhone(payload.telefone || payload.phone || ""),
+      telefone_destino: normalizePhone(payload.telefone_destino || payload.telefoneDestino || payload.telefone || payload.phone || ""),
       mensagem: normalizeText(payload.mensagem || payload.message || ""),
       status: normalizeText(payload.status || "pendente"),
       erro: normalizeText(payload.erro || payload.error || ""),
@@ -158,6 +164,7 @@ export function createEvolutionService({ admin, logger = console } = {}) {
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       timestampIso: now.toISOString(),
       usuarioResponsavel: normalizeText(payload.usuarioResponsavel || payload.responsavel || ""),
+      usuario_responsavel: normalizeText(payload.usuario_responsavel || payload.usuarioResponsavel || payload.responsavel || ""),
       empresaId: normalizeText(payload.empresaId || ""),
       lojaId: normalizeText(payload.lojaId || ""),
       provider: "evolution",
@@ -357,7 +364,7 @@ export function createEvolutionService({ admin, logger = console } = {}) {
         tipo: options.tipo || options.type || "mensagem",
         telefone: targetPhone,
         mensagem: text,
-        status: error.code === "instance_not_connected" ? "pendente_conexao" : "erro",
+        status: options.failureStatus || (error.code === "instance_not_connected" ? "pendente_conexao" : "erro"),
         erro: error.message,
         usuarioResponsavel: options.usuarioResponsavel,
         empresaId: options.empresaId,
@@ -476,34 +483,83 @@ export function createEvolutionService({ admin, logger = console } = {}) {
     return "";
   }
 
-  async function sendStockEntryAlert(data = {}) {
-    return sendToAdmins(buildStockEntryMessage(data), {
-      tipo: "entrada_estoque",
+  function buildAdminStockEntryMessage(data = {}) {
+    return [
+      `📦 *${ASSISTANT_NAME} | Entrada de Estoque*`,
+      "",
+      `Produto: ${data.productName || data.produto || "-"}`,
+      `Quantidade adicionada: ${formatQuantity(data.quantity || data.quantidade)} ${data.unit || data.unidade || "unidade"}`,
+      `Estoque atual: ${formatQuantity(data.currentStock ?? data.estoqueAtual ?? data.quantidadeAtual ?? "-")}`,
+      `Fornecedor: ${data.supplier || data.fornecedor || "-"}`,
+      `Responsável: ${data.responsibleUser || data.responsavel || "-"}`,
+      `Data/Hora: ${formatDateTime(data.date || data.data || new Date())}`
+    ].join("\n");
+  }
+
+  function buildAdminStockExitMessage(data = {}) {
+    return [
+      `📤 *${ASSISTANT_NAME} | Saída de Estoque*`,
+      "",
+      `Produto: ${data.productName || data.produto || "-"}`,
+      `Quantidade removida: ${formatQuantity(data.quantity || data.quantidade)} ${data.unit || data.unidade || "unidade"}`,
+      `Estoque atual: ${formatQuantity(data.currentStock ?? data.estoqueAtual ?? data.quantidadeAtual ?? "-")}`,
+      `Destino: ${data.destination || data.destino || data.reason || "Produção"}`,
+      `Responsável: ${data.responsibleUser || data.responsavel || "-"}`,
+      `Data/Hora: ${formatDateTime(data.date || data.data || new Date())}`
+    ].join("\n");
+  }
+
+  function buildAdminLowStockMessage(data = {}) {
+    return [
+      `⚠️ *${ASSISTANT_NAME} | Estoque Mínimo*`,
+      "",
+      `Produto: ${data.productName || data.product || data.produto || "-"}`,
+      `Quantidade atual: ${formatQuantity(data.currentStock ?? data.quantidadeAtual)} ${data.unit || data.unidade || ""}`.trim(),
+      `Estoque mínimo: ${formatQuantity(data.minimumStock ?? data.minStock ?? data.estoqueMinimo)} ${data.unit || data.unidade || ""}`.trim(),
+      `Fornecedor sugerido: ${data.supplier || data.fornecedor || data.fornecedorSugerido || "-"}`,
+      "Ação recomendada: Repor imediatamente"
+    ].join("\n");
+  }
+
+  async function sendAdminStockAlert(type, data = {}) {
+    const message = type === "stockIn"
+      ? buildAdminStockEntryMessage(data)
+      : type === "lowStock"
+        ? buildAdminLowStockMessage(data)
+        : buildAdminStockExitMessage(data);
+    const eventType = type === "stockIn"
+      ? "entrada_estoque"
+      : type === "lowStock"
+        ? "estoque_minimo"
+        : "saida_estoque";
+
+    return sendText(PRIMARY_ADMIN_WHATSAPP, message, {
+      tipo: eventType,
+      tipo_evento: eventType,
+      failureStatus: "falhou_envio_admin",
       usuarioResponsavel: data.responsibleUser || data.responsavel,
       empresaId: data.empresaId,
       lojaId: data.lojaId,
-      metadata: data
+      metadata: {
+        ...data,
+        productName: data.productName || data.product || data.produto || "",
+        quantity: data.quantity || data.quantidade || data.currentStock || "",
+        adminPrioritario: true,
+        assistantName: ASSISTANT_NAME
+      }
     });
+  }
+
+  async function sendStockEntryAlert(data = {}) {
+    return sendAdminStockAlert("stockIn", data);
   }
 
   async function sendStockExitAlert(data = {}) {
-    return sendToAdmins(buildStockExitMessage(data), {
-      tipo: "saida_estoque",
-      usuarioResponsavel: data.responsibleUser || data.responsavel,
-      empresaId: data.empresaId,
-      lojaId: data.lojaId,
-      metadata: data
-    });
+    return sendAdminStockAlert("stockOut", data);
   }
 
   async function sendLowStockAlert(data = {}) {
-    return sendToAdmins(buildLowStockMessage(data), {
-      tipo: "low_stock",
-      usuarioResponsavel: data.responsibleUser || data.responsavel,
-      empresaId: data.empresaId,
-      lojaId: data.lojaId,
-      metadata: data
-    });
+    return sendAdminStockAlert("lowStock", data);
   }
 
   async function sendSupplierOrderSuggestion(data = {}) {
@@ -528,6 +584,7 @@ export function createEvolutionService({ admin, logger = console } = {}) {
     sendLowStockAlert,
     sendSupplierOrderSuggestion,
     sendToAdmins,
+    sendAdminStockAlert,
     saveLog,
     buildOperationalTextMessage,
     buildStockEntryMessage,
