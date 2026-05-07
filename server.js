@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createStockAlertService } from "./server/stock-alerts.js";
+import { registerWhatsAppRoutes } from "./src/routes/whatsappRoutes.js";
+import { createEvolutionService } from "./src/services/evolutionService.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -180,10 +182,19 @@ const stockAlertService = createStockAlertService({
   admin,
   logger: console
 });
+const evolutionService = createEvolutionService({
+  admin,
+  logger: console
+});
 
 app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json());
+registerWhatsAppRoutes(app, {
+  evolutionService,
+  requireAuthenticated,
+  admin
+});
 
 function extractToken(headerValue) {
   if (!headerValue) {
@@ -1264,8 +1275,19 @@ async function resolveAdminAlert(req, res) {
 }
 
 function getWhatsAppBackendConfig() {
+  const evolutionApiKey = normalizeLookupText(
+    process.env.EVOLUTION_API_KEY ||
+    process.env.AUTHENTICATION_API_KEY ||
+    process.env.EVOLUTION_API_TOKEN ||
+    ""
+  );
+  const hasEvolutionConfig = Boolean(
+    evolutionApiKey
+    && evolutionApiKey !== "colocar_chave_aqui"
+  );
+
   return {
-    provider: normalizeLookupText(process.env.WHATSAPP_PROVIDER || "generic").toLowerCase(),
+    provider: normalizeLookupText(process.env.WHATSAPP_PROVIDER || (hasEvolutionConfig ? "evolution" : "generic")).toLowerCase(),
     apiUrl: normalizeLookupText(process.env.WHATSAPP_API_URL || ""),
     token: normalizeLookupText(process.env.WHATSAPP_TOKEN || ""),
     tokenHeader: normalizeLookupText(process.env.WHATSAPP_TOKEN_HEADER || "Authorization"),
@@ -1417,7 +1439,15 @@ async function futureWhatsAppSend(req, res) {
     const results = [];
 
     for (const recipient of recipients) {
-      const providerResponse = await sendWhatsAppToProvider(recipient, message, config);
+      const providerResponse = config.provider === "evolution"
+        ? await evolutionService.sendText(recipient, message, {
+          tipo: alertType || "api_whatsapp_send",
+          usuarioResponsavel: req.profile?.email || req.user?.email || "",
+          empresaId: empresaId || req.profile?.empresaId || "",
+          lojaId: req.profile?.lojaId || "",
+          metadata: metadata || {}
+        })
+        : await sendWhatsAppToProvider(recipient, message, config);
       results.push({
         phone: recipient,
         providerResponse
@@ -1426,7 +1456,7 @@ async function futureWhatsAppSend(req, res) {
 
     return res.json({
       success: true,
-      providerMessageId: results[0]?.providerResponse?.id || results[0]?.providerResponse?.sid || "",
+      providerMessageId: results[0]?.providerResponse?.providerMessageId || results[0]?.providerResponse?.id || results[0]?.providerResponse?.sid || "",
       status: "sent",
       provider: config.provider,
       recipients: results.map((item) => item.phone),

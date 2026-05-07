@@ -1024,18 +1024,22 @@ export async function registerAutomationLog({
 }
 
 export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) {
-  // FUTURO:
-  // Aqui será chamado o backend seguro:
-  // POST /api/whatsapp/send
-  // O token da API ficará apenas no servidor.
+  // O envio real acontece no backend seguro.
+  // O token da Evolution API deve ficar apenas no servidor.
   console.log("[WhatsApp pendente API]", message);
   let status = "pendente_api";
   let providerMessageId = "";
+  let backendRegisteredLog = false;
 
   try {
-    const response = await apiFetch("/api/whatsapp/send", {
-      method: "POST",
-      body: JSON.stringify({
+    const endpointByType = {
+      stockIn: "/whatsapp/stock-entry",
+      stockOut: "/whatsapp/stock-exit",
+      lowStock: "/whatsapp/low-stock"
+    };
+    const endpoint = endpointByType[event.type] || "/api/whatsapp/send";
+    const body = endpoint === "/api/whatsapp/send"
+      ? {
         empresaId: event.empresaId || "",
         phone: config.adminPhone || "",
         secondaryPhone: config.secondaryPhone || "",
@@ -1047,26 +1051,41 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
           sendMode: config.sendMode || "immediate",
           webhookUrl: config.webhookUrl || ""
         }
-      })
+      }
+      : {
+        ...event,
+        message,
+        adminPhone: config.adminPhone || "",
+        secondaryPhone: config.secondaryPhone || "",
+        provider: config.provider || "",
+        sendMode: config.sendMode || "immediate",
+        webhookUrl: config.webhookUrl || ""
+      };
+    const response = await apiFetch(endpoint, {
+      method: "POST",
+      body: JSON.stringify(body)
     });
 
     status = response.status === "sent" ? "enviado" : "pendente_api";
     providerMessageId = response.providerMessageId || "";
+    backendRegisteredLog = true;
   } catch (error) {
     console.warn("Envio real ainda não concluído. Log será salvo como pendente de API.", error);
   }
 
-  await registerAutomationLog({
-    type: event.type,
-    productName: event.productName,
-    message,
-    status,
-    createdAt: event.date || new Date(),
-    userId: event.userId || "",
-    empresaId: event.empresaId || "",
-    recipient: config.adminPhone || "",
-    providerMessageId
-  });
+  if (!backendRegisteredLog) {
+    await registerAutomationLog({
+      type: event.type,
+      productName: event.productName,
+      message,
+      status,
+      createdAt: event.date || new Date(),
+      userId: event.userId || "",
+      empresaId: event.empresaId || "",
+      recipient: config.adminPhone || "",
+      providerMessageId
+    });
+  }
 
   return {
     status,

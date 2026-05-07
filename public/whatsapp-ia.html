@@ -49,12 +49,41 @@
     </article>
   </section>
 
+  <section class="layout-grid" style="margin-top: 20px;">
+    <article class="panel">
+      <div class="page-header compact-header">
+        <div>
+          <p class="eyebrow">Resposta automática</p>
+          <h3>Robô pronto para responder mensagens recebidas</h3>
+          <p class="muted">Quando a Evolution API enviar uma mensagem para o webhook, o backend verifica o número, interpreta o comando e responde pelo WhatsApp.</p>
+        </div>
+        <span class="status success">Ativo via webhook</span>
+      </div>
+      <div class="timeline-list">
+        <span>Autorizados: administrador, funcionários cadastrados e números liberados no backend</span>
+        <span>Comandos: ajuda, resumo do estoque, itens baixos, produtos vencendo e sugestão de compra</span>
+        <span>Números não autorizados recebem orientação para solicitar liberação ao administrador</span>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h3>Exemplos para mandar no WhatsApp</h3>
+      <div class="timeline-list">
+        <span>O que preciso comprar hoje?</span>
+        <span>Quais itens estão baixos?</span>
+        <span>Resumo do estoque</span>
+        <span>Produtos vencendo</span>
+        <span>Ajuda</span>
+      </div>
+    </article>
+  </section>
+
   <section class="panel automation-config-panel" style="margin-top: 20px;">
     <div class="page-header compact-header">
       <div>
-        <p class="eyebrow">API/Webhook futuro</p>
+        <p class="eyebrow">Backend Evolution API</p>
         <h3>Configuração da automação WhatsApp</h3>
-        <p class="muted">Prepare a integração com Z-API, Evolution API, Twilio ou Meta Cloud API sem expor tokens no navegador.</p>
+        <p class="muted">Configure a automação pelo backend, sem expor tokens no navegador.</p>
       </div>
       <span id="automation-status-badge" class="status info">Automação desligada</span>
     </div>
@@ -81,7 +110,7 @@
 
       <div class="field-group">
         <label for="automation-webhook">URL do Webhook</label>
-        <input id="automation-webhook" type="url" placeholder="https://seu-backend.com/api/webhooks/whatsapp">
+        <input id="automation-webhook" type="url" placeholder="https://seu-backend.com/webhook/evolution">
       </div>
 
       <div class="field-group">
@@ -151,6 +180,7 @@ document.getElementById("user-info").textContent = describeProfile(profile);
 
 const AUTOMATION_CONFIG_REF = doc(db, "configuracoes", "whatsappAutomation");
 const AUTOMATION_LOG_COLLECTION = "automacaoLogs";
+const WHATSAPP_LOG_COLLECTION = "whatsapp_logs";
 const automationAlertTypes = Object.freeze([
   ["stockIn", "Entrada de estoque"],
   ["stockOut", "Saída de estoque"],
@@ -325,55 +355,130 @@ async function registerAutomationLog(log = {}) {
 }
 
 async function triggerOperationalAlert(alert) {
-  const message = buildWhatsAppMessage(alert);
-
-  // FUTURO:
-  // Enviar mensagem via backend seguro:
-  // POST /api/whatsapp/send
-  // O token da API deve ficar apenas no servidor.
-  // Nunca expor token no front-end.
-  console.log("[WhatsApp simulado]", message);
-
-  await registerAutomationLog({
-    ...alert,
-    destinatario: automationConfig.adminPhone,
-    status: "Simulado",
-    message
+  const response = await apiFetch("/whatsapp/low-stock", {
+    method: "POST",
+    body: JSON.stringify({
+      product: alert.product || "Pão Brioche",
+      currentStock: alert.currentStock ?? 4,
+      minimumStock: alert.minimumStock ?? 10,
+      supplier: alert.supplier || "Fornecedor X",
+      recommendedAction: alert.recommendedAction || "Comprar hoje"
+    })
   });
+
   await loadAutomationLogs();
-  return message;
+  return response;
 }
 
 async function testAutomationConnection() {
-  await saveAutomationConfig();
-  await registerAutomationLog({
-    type: "test",
-    productName: "Teste de conexão",
-    destinatario: automationConfig.adminPhone,
-    status: "Pendente API",
-    message: "Configuração salva. Integração pronta para receber API/Webhook."
+  const config = await saveAutomationConfig();
+
+  if (!config.adminPhone) {
+    setStatus("automation-config-status", "Informe o número principal do administrador antes de testar.", "error");
+    return;
+  }
+
+  await apiFetch("/whatsapp/send-test", {
+    method: "POST",
+    body: JSON.stringify({
+      phone: config.adminPhone,
+      message: "Teste de integração Evolution API - Carioca's Estoque"
+    })
   });
   await loadAutomationLogs();
-  setStatus("automation-config-status", "Configuração salva. Integração pronta para receber API/Webhook.", "success");
+  setStatus("automation-config-status", "Teste enviado pelo backend. Confira o WhatsApp e os logs de automação.", "success");
+}
+
+function getLogTimestamp(log = {}) {
+  if (log.criadoEm?.seconds) {
+    return log.criadoEm.seconds;
+  }
+
+  if (log.dataCriacao?.seconds) {
+    return log.dataCriacao.seconds;
+  }
+
+  const parsed = Date.parse(log.dataCriacaoIso || log.createdAt || "");
+  return Number.isNaN(parsed) ? 0 : Math.floor(parsed / 1000);
+}
+
+function getLogIndicator(status = "", source = "") {
+  const normalized = String(status || "").toLowerCase();
+
+  if (normalized.includes("enviado") || normalized === "sent") {
+    return { label: "Enviado", type: "success" };
+  }
+
+  if (normalized.includes("erro") || normalized.includes("falh")) {
+    return { label: "Falhou", type: "error" };
+  }
+
+  if (normalized.includes("simulado") || source === "frontend") {
+    return { label: "Simulado", type: "info" };
+  }
+
+  return { label: status || "Pendente", type: "info" };
+}
+
+function normalizeAutomationLog(log = {}, source = "frontend") {
+  const indicator = getLogIndicator(log.statusLabel || log.status, source);
+
+  return {
+    id: log.id || "",
+    source,
+    produto: log.produto || log.productName || log.metadata?.productName || log.metadata?.product || "Automação",
+    status: indicator.label,
+    statusClass: indicator.type,
+    tipo: log.tipo || log.type || "whatsapp",
+    destinatario: log.destinatario || log.telefone || "não configurado",
+    mensagem: log.mensagem || log.message || "",
+    timestamp: getLogTimestamp(log)
+  };
+}
+
+function dedupeAutomationLogs(logs = []) {
+  const seen = new Set();
+
+  return logs.filter((log) => {
+    const key = [
+      normalizeText(log.tipo),
+      normalizeText(log.destinatario),
+      normalizeText(log.mensagem)
+    ].join("|");
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }
 
 async function loadAutomationLogs() {
-  const snapshot = await getDocs(collection(db, AUTOMATION_LOG_COLLECTION));
-  const logs = snapshot.docs
-    .map((document) => ({ id: document.id, ...document.data() }))
-    .sort((left, right) => String(right.criadoEm?.seconds || "").localeCompare(String(left.criadoEm?.seconds || "")))
+  const [automationSnapshot, whatsappSnapshot] = await Promise.all([
+    getDocs(collection(db, AUTOMATION_LOG_COLLECTION)).catch(() => ({ docs: [] })),
+    getDocs(collection(db, WHATSAPP_LOG_COLLECTION)).catch(() => ({ docs: [] }))
+  ]);
+  const logs = [
+    ...automationSnapshot.docs.map((document) => normalizeAutomationLog({ id: document.id, ...document.data() }, "frontend")),
+    ...whatsappSnapshot.docs.map((document) => normalizeAutomationLog({ id: document.id, ...document.data() }, "backend"))
+  ]
+    .sort((left, right) => right.timestamp - left.timestamp)
+    .filter((log) => log.mensagem);
+  const visibleLogs = dedupeAutomationLogs(logs)
     .slice(0, 12);
 
-  automationLogsList.innerHTML = logs.length ? "" : '<div class="empty-state">Nenhum log de automação registrado ainda.</div>';
-  logs.forEach((log) => {
+  automationLogsList.innerHTML = visibleLogs.length ? "" : '<div class="empty-state">Nenhum log de automação registrado ainda.</div>';
+  visibleLogs.forEach((log) => {
     const article = document.createElement("article");
     article.className = "card automation-log-card";
     article.innerHTML = `
       <div class="summary-line">
         <strong>${escapeHtml(log.produto || "Automação")}</strong>
-        <span>${escapeHtml(log.status || "Simulado")}</span>
+        <span class="status ${escapeHtml(log.statusClass || "info")}">${escapeHtml(log.status || "Simulado")}</span>
       </div>
-      <p class="muted">${escapeHtml(`${log.tipo || "-"} | Destinatário: ${log.destinatario || "não configurado"}`)}</p>
+      <p class="muted">${escapeHtml(`${log.tipo || "-"} | Destinatário: ${log.destinatario || "não configurado"} | ${log.source === "backend" ? "Backend Evolution" : "Front-end"}`)}</p>
       <pre>${escapeHtml(log.mensagem || "")}</pre>
     `;
     automationLogsList.appendChild(article);
@@ -463,24 +568,33 @@ automationTestButton.addEventListener("click", async () => {
     await testAutomationConnection();
   } catch (error) {
     console.error(error);
-    setStatus("automation-config-status", "Não foi possível simular o teste da integração.", "error");
+    setStatus("automation-config-status", "Não foi possível testar a integração. Verifique Evolution API, QR Code e variáveis de ambiente.", "error");
   }
 });
 
 document.getElementById("simulate-alert-button").addEventListener("click", async () => {
+  const button = document.getElementById("simulate-alert-button");
+  button.disabled = true;
+
   try {
-    await triggerOperationalAlert({
-      type: "lowStock",
-      productName: "Pão Brioche",
+    const response = await triggerOperationalAlert({
+      product: "Pão Brioche",
       currentStock: 4,
-      minStock: 10,
+      minimumStock: 10,
       supplier: "Fornecedor X",
-      recommendation: "Comprar hoje"
+      recommendedAction: "Comprar hoje"
     });
-    setStatus("automation-config-status", "Alerta simulado e registrado nos logs.", "success");
+    setStatus(
+      "automation-config-status",
+      response.status === "sent" ? "Enviado: alerta real disparado via Evolution API." : "Alerta processado pelo backend.",
+      "success"
+    );
   } catch (error) {
     console.error(error);
-    setStatus("automation-config-status", "Não foi possível simular o alerta operacional.", "error");
+    await loadAutomationLogs();
+    setStatus("automation-config-status", "Falhou: o backend retornou erro real ao enviar o alerta.", "error");
+  } finally {
+    button.disabled = false;
   }
 });
 
