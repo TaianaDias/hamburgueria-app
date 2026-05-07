@@ -5251,6 +5251,223 @@ textarea:focus {
   box-shadow: var(--shadow-premium);
 }
 
+/* Login V2: mesma linguagem visual do mockup premium convertido. */
+.login-premium-body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    var(--bg-main);
+}
+
+.login-premium-shell {
+  width: min(1240px, 100%);
+  gap: 28px;
+}
+
+.login-marketing-panel {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 56px);
+  border-color: var(--border-soft);
+  border-radius: var(--radius-2xl);
+  background:
+    radial-gradient(circle at 16% 12%, rgba(239, 68, 68, 0.20), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(0, 0, 0, 0.30));
+  box-shadow: var(--shadow-premium);
+  backdrop-filter: blur(18px);
+}
+
+.login-marketing-panel::before {
+  content: "";
+  position: absolute;
+  inset: 18px auto auto 18px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.16);
+  filter: blur(52px);
+  pointer-events: none;
+}
+
+.login-brand {
+  position: relative;
+  width: min(100%, 360px);
+  padding: 20px;
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--red-main), var(--red-dark));
+  box-shadow: 0 20px 45px rgba(127, 29, 29, 0.40);
+}
+
+.login-brand-mark {
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: none;
+}
+
+.login-brand strong {
+  color: white;
+  font-size: 1.45rem;
+  font-weight: 1000;
+  letter-spacing: -0.03em;
+}
+
+.login-brand small {
+  color: rgba(254, 242, 242, 0.82);
+  font-weight: 800;
+}
+
+.login-hero-copy h1 {
+  max-width: 700px;
+  color: var(--text-main);
+  font-weight: 1000;
+  letter-spacing: -0.055em;
+}
+
+.login-hero-copy h1 span {
+  color: #f87171;
+}
+
+.login-hero-copy p:not(.eyebrow) {
+  color: #d4d4d8;
+}
+
+.login-feature-grid article {
+  border-color: var(--border-soft);
+  border-radius: var(--radius-xl);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-premium);
+  backdrop-filter: blur(18px);
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.login-feature-grid article:hover {
+  transform: translateY(-4px);
+  border-color: rgba(248, 113, 113, 0.50);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.login-feature-grid article span {
+  border-radius: 16px;
+  background: var(--red-soft);
+  color: #fecaca;
+}
+
+.login-feature-grid strong {
+  color: var(--text-main);
+  font-weight: 900;
+}
+
+.login-feature-grid small,
+.login-trust-row span,
+.login-testimonial p {
+  color: var(--text-muted);
+}
+
+.login-testimonial {
+  border-color: rgba(248, 113, 113, 0.24);
+  border-radius: var(--radius-xl);
+  background: var(--red-soft);
+}
+
+.login-testimonial strong {
+  color: #fecaca;
+}
+
+.login-trust-row span {
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.login-premium-card {
+  border-color: var(--border-soft);
+  border-radius: var(--radius-2xl);
+  background:
+    radial-gradient(circle at top, rgba(239, 68, 68, 0.12), transparent 36%),
+    rgba(17, 17, 17, 0.92);
+  box-shadow: var(--shadow-premium);
+  backdrop-filter: blur(18px);
+}
+
+.login-burger-icon {
+  width: 108px;
+  height: 108px;
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  border-radius: var(--radius-xl);
+  background: rgba(0, 0, 0, 0.36);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.32);
+}
+
+.login-card-head h2 {
+  font-weight: 1000;
+  letter-spacing: -0.04em;
+}
+
+.login-lang-button,
+.auth-switcher,
+.login-social-actions button {
+  border-color: var(--border-soft);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-tab {
+  border-radius: 14px;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.auth-tab.active {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.login-premium-card input {
+  border-radius: 18px;
+  border-color: var(--border-soft);
+  background: rgba(0, 0, 0, 0.30);
+}
+
+.password-toggle {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+#submit-button,
+#register-button {
+  border-radius: 18px;
+  background: var(--red-main);
+  box-shadow: 0 16px 35px rgba(127, 29, 29, 0.40);
+  font-weight: 1000;
+}
+
+#submit-button:hover,
+#register-button:hover {
+  background: #ef4444;
+}
+
+.login-security-note {
+  color: #fecaca;
+}
+
+@media (max-width: 920px) {
+  .login-premium-shell {
+    gap: 16px;
+  }
+
+  .login-marketing-panel {
+    min-height: auto;
+  }
+
+  .login-brand {
+    width: 100%;
+  }
+}
+
   .employee-layout,
   .employee-tabs,
   .employee-permission-grid,
