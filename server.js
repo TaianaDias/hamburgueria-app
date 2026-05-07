@@ -40,6 +40,7 @@ const publicDir = path.join(__dirname, "public");
 const envFilePath = path.join(__dirname, ".env");
 const localServiceAccountPath = path.join(__dirname, "server", "serviceAccountKey.json");
 const legacyRootServiceAccountPath = path.join(__dirname, "serviceAccountKey.json");
+const publicDemoMode = String(process.env.PUBLIC_DEMO_MODE || process.env.DEMO_PUBLIC_MODE || "").toLowerCase() === "true";
 
 function loadEnvironmentFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -169,23 +170,36 @@ function loadFirebaseServiceAccount() {
 loadEnvironmentFile(envFilePath);
 
 const firebaseCredentialSource = loadFirebaseServiceAccount();
+let firebaseAdminAvailable = false;
+let firebaseStartupError = null;
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: firebaseCredentialSource.type === "service-account"
-      ? admin.credential.cert(firebaseCredentialSource.value)
-      : admin.credential.applicationDefault()
-  });
+try {
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: firebaseCredentialSource.type === "service-account"
+        ? admin.credential.cert(firebaseCredentialSource.value)
+        : admin.credential.applicationDefault()
+    });
+  }
+
+  firebaseAdminAvailable = true;
+} catch (error) {
+  firebaseStartupError = error;
+  console.warn("Firebase Admin indisponível. O servidor continuará em modo público/demo.", error?.message || error);
 }
 
-const stockAlertService = createStockAlertService({
-  admin,
-  logger: console
-});
-const evolutionService = createEvolutionService({
-  admin,
-  logger: console
-});
+const stockAlertService = firebaseAdminAvailable
+  ? createStockAlertService({
+    admin,
+    logger: console
+  })
+  : null;
+const evolutionService = firebaseAdminAvailable
+  ? createEvolutionService({
+    admin,
+    logger: console
+  })
+  : null;
 
 async function configureEvolutionWebhookOnStartup() {
   const webhookUrl = String(process.env.EVOLUTION_WEBHOOK_URL || process.env.WHATSAPP_WEBHOOK_URL || "").trim();
@@ -205,11 +219,14 @@ async function configureEvolutionWebhookOnStartup() {
 app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json());
-registerWhatsAppRoutes(app, {
-  evolutionService,
-  requireAuthenticated,
-  admin
-});
+
+if (firebaseAdminAvailable && evolutionService) {
+  registerWhatsAppRoutes(app, {
+    evolutionService,
+    requireAuthenticated,
+    admin
+  });
+}
 
 function extractToken(headerValue) {
   if (!headerValue) {
@@ -915,6 +932,13 @@ async function saveUserProfile(userId, profile) {
 }
 
 async function requireAuthenticated(req, res, next) {
+  if (!firebaseAdminAvailable) {
+    return res.status(503).json({
+      erro: "Firebase Admin não configurado neste ambiente.",
+      publicDemoMode: true
+    });
+  }
+
   const token = extractToken(req.headers.authorization);
 
   if (!token) {
@@ -1122,6 +1146,15 @@ async function updateUser(req, res) {
 }
 
 async function getBootstrapStatus(req, res) {
+  if (!firebaseAdminAvailable) {
+    return res.json({
+      ok: true,
+      initialized: true,
+      canCreateFirstAccount: false,
+      publicDemoMode: true
+    });
+  }
+
   try {
     const initialized = await hasRegisteredUsers();
 
@@ -1492,7 +1525,13 @@ async function futureWhatsAppSend(req, res) {
 }
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    publicDemoMode,
+    firebaseAdminAvailable,
+    firebaseCredentialSource: firebaseCredentialSource.source,
+    firebaseStartupError: firebaseStartupError?.message || ""
+  });
 });
 
 app.get("/api/bootstrap/status", getBootstrapStatus);
@@ -1526,7 +1565,7 @@ export function startServer(options = {}) {
   const runtimePort = options.port || port;
   const shouldStartScheduler = options.startScheduler !== false;
 
-  if (shouldStartScheduler) {
+  if (shouldStartScheduler && stockAlertService) {
     stockAlertService.startScheduler();
   }
 
