@@ -187,6 +187,21 @@ const evolutionService = createEvolutionService({
   logger: console
 });
 
+async function configureEvolutionWebhookOnStartup() {
+  const webhookUrl = String(process.env.EVOLUTION_WEBHOOK_URL || process.env.WHATSAPP_WEBHOOK_URL || "").trim();
+
+  if (!webhookUrl) {
+    return;
+  }
+
+  try {
+    await evolutionService.configureWebhook(webhookUrl);
+    console.log(`Webhook Evolution configurado em ${webhookUrl}.`);
+  } catch (error) {
+    console.warn("Não foi possível configurar o webhook da Evolution automaticamente.", error?.message || error);
+  }
+}
+
 app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json());
@@ -1517,6 +1532,7 @@ export function startServer(options = {}) {
 
   return app.listen(runtimePort, host, () => {
     console.log(`Servidor rodando na porta ${runtimePort} com credenciais via ${firebaseCredentialSource.source}.`);
+    configureEvolutionWebhookOnStartup();
   });
 }
 

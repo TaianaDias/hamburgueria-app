@@ -283,10 +283,13 @@ export function createEvolutionService({ admin, logger = console } = {}) {
     return requestEvolution(`/webhook/set/${encodeURIComponent(instance)}`, {
       method: "POST",
       body: {
-        url,
-        events: WEBHOOK_EVENTS,
-        webhook_by_events: false,
-        webhook_base64: false
+        webhook: {
+          enabled: true,
+          url,
+          events: WEBHOOK_EVENTS,
+          webhook_by_events: false,
+          webhook_base64: false
+        }
       }
     });
   }

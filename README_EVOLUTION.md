@@ -11,6 +11,7 @@ EVOLUTION_BASE_URL=http://localhost:8080
 EVOLUTION_API_KEY=colocar_chave_aqui
 EVOLUTION_INSTANCE=cariocas-estoque
 EVOLUTION_INSTANCE_TOKEN=token_da_instancia_se_existir
+EVOLUTION_WEBHOOK_URL=http://host.docker.internal:3000/webhook/evolution
 ADMIN_WHATSAPP=5521999999999
 # Separe por vírgula se quiser liberar outros números sem cadastrar usuário:
 # WHATSAPP_ALLOWED_PHONES=5521988888888,5521977777777
@@ -25,6 +26,7 @@ Campos:
 - `EVOLUTION_API_KEY`: chave definida no `AUTHENTICATION_API_KEY` da Evolution API.
 - `EVOLUTION_INSTANCE`: nome da instância do WhatsApp.
 - `EVOLUTION_INSTANCE_TOKEN`: token da instância quando existir; mantido no backend para compatibilidade.
+- `EVOLUTION_WEBHOOK_URL`: URL que a Evolution API chama ao receber mensagens. Em Docker Desktop local, use `http://host.docker.internal:3000/webhook/evolution`.
 - `ADMIN_WHATSAPP`: número que receberá alertas internos, com DDI e DDD.
 - `WHATSAPP_ALLOWED_PHONES`: lista opcional de números autorizados a conversar com o robô sem depender do cadastro de funcionário.
 - `AUTHENTICATION_API_KEY`: fallback compatível com o nome usado no Docker Compose oficial.
