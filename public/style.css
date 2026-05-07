@@ -1,13 +1,28 @@
 :root {
   color-scheme: dark;
-  --bg: #0f172a;
-  --bg-soft: #111827;
-  --panel: rgba(15, 23, 42, 0.82);
-  --line: rgba(148, 163, 184, 0.16);
-  --text: #e5eefc;
-  --muted: #9fb3d9;
-  --brand: #f97316;
-  --brand-soft: #fb923c;
+  --bg-main: #070707;
+  --bg-panel: rgba(255, 255, 255, 0.055);
+  --bg-card-dark: rgba(0, 0, 0, 0.30);
+  --border-soft: rgba(255, 255, 255, 0.10);
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --red-main: #dc2626;
+  --red-dark: #7f1d1d;
+  --red-soft: rgba(239, 68, 68, 0.15);
+  --green-soft: rgba(16, 185, 129, 0.15);
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --shadow-premium: 0 25px 60px rgba(0, 0, 0, 0.35);
+  --bg: var(--bg-main);
+  --bg-soft: #101010;
+  --panel: var(--bg-panel);
+  --card: var(--bg-panel);
+  --line: var(--border-soft);
+  --border: var(--border-soft);
+  --text: var(--text-main);
+  --muted: var(--text-muted);
+  --brand: var(--red-main);
+  --brand-soft: #f87171;
 }
 
 * {
@@ -26,29 +41,28 @@ body {
 }
 
 body {
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.18), transparent 30%),
-    linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%);
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    var(--bg-main);
 }
 
 .premium-app-body {
   min-height: 100vh;
   background:
-    linear-gradient(90deg, rgba(3, 7, 18, 0.96), rgba(2, 6, 23, 0.84)),
-    radial-gradient(circle at 82% 12%, rgba(34, 197, 94, 0.12), transparent 32%),
-    #020617;
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    var(--bg-main);
 }
 
 .premium-global-body {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.94), rgba(3, 7, 18, 0.98)),
-    radial-gradient(circle at 16% 8%, rgba(249, 115, 22, 0.16), transparent 28%),
-    radial-gradient(circle at 86% 14%, rgba(34, 197, 94, 0.12), transparent 30%),
-    #020617;
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    var(--bg-main);
 }
 
 .premium-saas-shell-body {
@@ -4976,10 +4990,266 @@ pre {
     font-weight: 900;
   }
 
-  .dashboard-mobile-drawer-grid button[data-logout-button] span {
-    background: rgba(239, 68, 68, 0.12);
-    color: #fca5a5;
-  }
+.dashboard-mobile-drawer-grid button[data-logout-button] span {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+/* Tema oficial SaaS premium: preto absoluto, vidro escuro e vermelho foodtech. */
+.app-premium,
+.premium-app-body,
+.premium-global-body {
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    var(--bg-main);
+  color: var(--text-main);
+}
+
+.sidebar-premium,
+.premium-sidebar,
+.premium-global-sidebar {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-premium);
+}
+
+.brand-card,
+.premium-global-brand {
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--red-main), var(--red-dark));
+  box-shadow: 0 20px 45px rgba(127, 29, 29, 0.40);
+}
+
+.premium-brand-mark,
+.premium-global-brand span:not(.premium-svg-icon),
+.dashboard-mobile-brand span {
+  background: linear-gradient(135deg, var(--red-main), var(--red-dark));
+  color: #fff;
+}
+
+.nav-item,
+.premium-nav a,
+.premium-nav-logout,
+.premium-global-nav a,
+.premium-global-logout {
+  border-radius: 18px;
+  color: #d4d4d8;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-item:hover,
+.premium-nav a:hover,
+.premium-nav-logout:hover,
+.premium-global-nav a:hover,
+.premium-global-logout:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.nav-item.active,
+.premium-nav a.active,
+.premium-global-nav a.active {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.premium-nav a.active span,
+.premium-global-nav a.active span,
+.premium-mobile-dock a.active span,
+.dashboard-mobile-bottom-nav .active span,
+.dashboard-mobile-drawer-grid a.active span,
+.premium-mobile-menu-grid a.active span {
+  background: rgba(0, 0, 0, 0.08);
+  color: #000;
+}
+
+.premium-nav span,
+.premium-nav-logout span,
+.premium-global-nav a span,
+.premium-global-logout span,
+.premium-mobile-dock a span,
+.premium-mobile-dock button span,
+.dashboard-mobile-bottom-nav span,
+.dashboard-mobile-drawer-grid span {
+  color: #f87171;
+}
+
+.premium-card,
+.premium-card-surface,
+.premium-surface,
+.premium-panel,
+.premium-phone-card,
+.premium-kpi-card,
+.premium-action-card,
+.panel,
+.card,
+.product-card,
+.inventory-card,
+.prototype-kpi-card,
+.prototype-panel {
+  border-color: var(--border-soft);
+  border-radius: var(--radius-xl);
+  background: var(--bg-panel);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-premium);
+}
+
+.premium-card.interactive,
+.dashboard-clickable-card,
+.premium-alert-item,
+.premium-action-card,
+.premium-alert-drawer-item,
+.prototype-critical-item,
+.product-card,
+.inventory-card {
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.premium-card.interactive:hover,
+.dashboard-clickable-card:hover,
+.dashboard-clickable-card:focus-visible,
+.premium-alert-item:hover,
+.premium-action-card:hover,
+.premium-alert-drawer-item:hover,
+.prototype-critical-item:hover,
+.product-card:hover,
+.inventory-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(248, 113, 113, 0.50);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-premium), 0 0 0 1px rgba(248, 113, 113, 0.08);
+}
+
+button,
+.button,
+.btn-primary {
+  border-radius: 18px;
+  background: var(--red-main);
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 16px 35px rgba(127, 29, 29, 0.40);
+}
+
+button:hover,
+.button:hover,
+.btn-primary:hover {
+  background: #ef4444;
+}
+
+button.secondary,
+.button.secondary,
+.btn-secondary,
+.premium-icon-button {
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e4e4e7;
+  box-shadow: none;
+}
+
+button.secondary:hover,
+.button.secondary:hover,
+.btn-secondary:hover,
+.premium-icon-button:hover,
+.premium-icon-button:focus-visible {
+  border-color: rgba(248, 113, 113, 0.50);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.premium-primary-action,
+.login-submit-button,
+.create-product-button,
+.prototype-command.active {
+  background: var(--red-main);
+  color: #fff;
+  box-shadow: 0 16px 35px rgba(127, 29, 29, 0.40);
+}
+
+.premium-primary-action:hover,
+.login-submit-button:hover,
+.create-product-button:hover {
+  background: #ef4444;
+}
+
+input,
+select,
+textarea {
+  border-color: var(--border-soft);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.30);
+  color: var(--text-main);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(248, 113, 113, 0.62);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+}
+
+.kpi-value,
+.premium-kpi-card > strong,
+.prototype-kpi-card strong {
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.premium-kpi-card.red,
+.premium-kpi-card.amber,
+.premium-kpi-card.violet,
+.premium-action-card.urgent,
+.dashboard-prototype-hero,
+.purchase-dashboard-hero {
+  border-color: rgba(248, 113, 113, 0.24);
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.18), rgba(0, 0, 0, 0.30)),
+    var(--bg-panel);
+}
+
+.premium-kpi-card.green {
+  border-color: rgba(16, 185, 129, 0.24);
+  background:
+    linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(0, 0, 0, 0.30)),
+    var(--bg-panel);
+}
+
+.pill-danger,
+.stock-badge.danger,
+.premium-alert-drawer-item .danger {
+  border-radius: 999px;
+  background: var(--red-soft);
+  color: #fecaca;
+}
+
+.pill-success,
+.stock-badge.ok,
+.premium-alert-drawer-item .ok {
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: #bbf7d0;
+}
+
+.modal-overlay,
+.premium-confirm-dialog::backdrop,
+.training-tour-modal {
+  background: rgba(0, 0, 0, 0.70);
+  backdrop-filter: blur(8px);
+}
+
+.modal-premium,
+.premium-confirm-dialog,
+.premium-alert-drawer,
+.dashboard-mobile-drawer,
+.premium-mobile-menu,
+.premium-action-dialog,
+.premium-search-dialog {
+  border-color: var(--border-soft);
+  border-radius: var(--radius-2xl);
+  background: #101010;
+  box-shadow: var(--shadow-premium);
+}
 
   .employee-layout,
   .employee-tabs,
@@ -5373,4 +5643,261 @@ pre {
   color: var(--muted);
   background: rgba(2, 6, 23, 0.24);
   font-size: 0.84rem;
+}
+
+/* Tema oficial SaaS premium aplicado globalmente. Mantido no fim do arquivo para
+   prevalecer sobre os estilos antigos sem refatorar as telas existentes. */
+.app-premium,
+.premium-app-body,
+.premium-global-body {
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    var(--bg-main);
+  color: var(--text-main);
+}
+
+.sidebar-premium,
+.premium-sidebar,
+.premium-global-sidebar {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-premium);
+}
+
+.brand-card,
+.premium-global-brand {
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--red-main), var(--red-dark));
+  box-shadow: 0 20px 45px rgba(127, 29, 29, 0.40);
+}
+
+.premium-brand-mark,
+.premium-global-brand span:not(.premium-svg-icon),
+.dashboard-mobile-brand span {
+  background: linear-gradient(135deg, var(--red-main), var(--red-dark));
+  color: #fff;
+}
+
+.nav-item,
+.premium-nav a,
+.premium-nav-logout,
+.premium-global-nav a,
+.premium-global-logout {
+  border-radius: 18px;
+  color: #d4d4d8;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-item:hover,
+.premium-nav a:hover,
+.premium-nav-logout:hover,
+.premium-global-nav a:hover,
+.premium-global-logout:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.nav-item.active,
+.premium-nav a.active,
+.premium-global-nav a.active {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.premium-nav a.active span,
+.premium-global-nav a.active span,
+.premium-mobile-dock a.active span,
+.dashboard-mobile-bottom-nav .active span,
+.dashboard-mobile-drawer-grid a.active span,
+.premium-mobile-menu-grid a.active span {
+  background: rgba(0, 0, 0, 0.08);
+  color: #000;
+}
+
+.premium-nav span,
+.premium-nav-logout span,
+.premium-global-nav a span,
+.premium-global-logout span,
+.premium-mobile-dock a span,
+.premium-mobile-dock button span,
+.dashboard-mobile-bottom-nav span,
+.dashboard-mobile-drawer-grid span {
+  color: #f87171;
+}
+
+.premium-card,
+.premium-card-surface,
+.premium-surface,
+.premium-panel,
+.premium-phone-card,
+.premium-kpi-card,
+.premium-action-card,
+.panel,
+.card,
+.product-card,
+.inventory-card,
+.prototype-kpi-card,
+.prototype-panel {
+  border-color: var(--border-soft);
+  border-radius: var(--radius-xl);
+  background: var(--bg-panel);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-premium);
+}
+
+.premium-card.interactive,
+.dashboard-clickable-card,
+.premium-alert-item,
+.premium-action-card,
+.premium-alert-drawer-item,
+.prototype-critical-item,
+.product-card,
+.inventory-card {
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.premium-card.interactive:hover,
+.dashboard-clickable-card:hover,
+.dashboard-clickable-card:focus-visible,
+.premium-alert-item:hover,
+.premium-action-card:hover,
+.premium-alert-drawer-item:hover,
+.prototype-critical-item:hover,
+.product-card:hover,
+.inventory-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(248, 113, 113, 0.50);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-premium), 0 0 0 1px rgba(248, 113, 113, 0.08);
+}
+
+button,
+.button,
+.btn-primary {
+  border-radius: 18px;
+  background: var(--red-main);
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 16px 35px rgba(127, 29, 29, 0.40);
+}
+
+button:hover,
+.button:hover,
+.btn-primary:hover {
+  background: #ef4444;
+}
+
+button.secondary,
+.button.secondary,
+.btn-secondary,
+.premium-icon-button {
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e4e4e7;
+  box-shadow: none;
+}
+
+button.secondary:hover,
+.button.secondary:hover,
+.btn-secondary:hover,
+.premium-icon-button:hover,
+.premium-icon-button:focus-visible {
+  border-color: rgba(248, 113, 113, 0.50);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.premium-primary-action,
+.login-submit-button,
+.create-product-button,
+.prototype-command.active {
+  background: var(--red-main);
+  color: #fff;
+  box-shadow: 0 16px 35px rgba(127, 29, 29, 0.40);
+}
+
+.premium-primary-action:hover,
+.login-submit-button:hover,
+.create-product-button:hover {
+  background: #ef4444;
+}
+
+input,
+select,
+textarea {
+  border-color: var(--border-soft);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.30);
+  color: var(--text-main);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(248, 113, 113, 0.62);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+}
+
+.kpi-value,
+.premium-kpi-card > strong,
+.prototype-kpi-card strong {
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.premium-kpi-card.red,
+.premium-kpi-card.amber,
+.premium-kpi-card.violet,
+.premium-action-card.urgent,
+.dashboard-prototype-hero,
+.purchase-dashboard-hero {
+  border-color: rgba(248, 113, 113, 0.24);
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.18), rgba(0, 0, 0, 0.30)),
+    var(--bg-panel);
+}
+
+.premium-kpi-card.green {
+  border-color: rgba(16, 185, 129, 0.24);
+  background:
+    linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(0, 0, 0, 0.30)),
+    var(--bg-panel);
+}
+
+.pill-danger,
+.stock-badge.danger,
+.premium-alert-drawer-item .danger {
+  border-radius: 999px;
+  background: var(--red-soft);
+  color: #fecaca;
+}
+
+.pill-success,
+.stock-badge.ok,
+.premium-alert-drawer-item .ok {
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: #bbf7d0;
+}
+
+.modal-overlay,
+.premium-confirm-dialog::backdrop,
+.training-tour-modal {
+  background: rgba(0, 0, 0, 0.70);
+  backdrop-filter: blur(8px);
+}
+
+.modal-premium,
+.premium-confirm-dialog,
+.premium-alert-drawer,
+.dashboard-mobile-drawer,
+.premium-mobile-menu,
+.premium-action-dialog,
+.premium-search-dialog {
+  border-color: var(--border-soft);
+  border-radius: var(--radius-2xl);
+  background: #101010;
+  box-shadow: var(--shadow-premium);
 }
