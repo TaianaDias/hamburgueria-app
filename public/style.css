@@ -9638,3 +9638,55 @@ body.dashboard-saas-page .dashboard-mobile-drawer-grid span {
     border-radius: 12px !important;
   }
 }
+
+.redirect-clean-body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(135deg, rgba(232, 68, 42, 0.07), transparent 30%),
+    #0b0c10 !important;
+  color: rgba(255,255,255,0.88);
+}
+
+.redirect-clean-card {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 26px;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
+    #181923;
+}
+
+.redirect-clean-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(232,68,42,0.40);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e8442a, #991b1b);
+  color: #fff;
+  font-weight: 900;
+}
+
+.redirect-clean-card h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.45rem;
+}
+
+.redirect-clean-card p {
+  margin: 0;
+  color: rgba(255,255,255,0.56);
+  line-height: 1.55;
+}
+
+.redirect-clean-card .button {
+  margin-top: 8px;
+}
