@@ -6830,3 +6830,68 @@ textarea:focus {
   background: #101010;
   box-shadow: var(--shadow-premium);
 }
+
+/* Override no fim do arquivo: KPIs e topo do Estoque sempre no tema premium oficial. */
+body .stock-page-header.page-header {
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 32px !important;
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.24), transparent 34%),
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.026)),
+    rgba(7, 7, 7, 0.92) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(22px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(130%) !important;
+}
+
+body .stock-page-header.page-header .eyebrow {
+  color: #f87171 !important;
+}
+
+body .stock-kpi-grid > article.panel.stock-kpi-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 32px !important;
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.20), transparent 36%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.025)),
+    rgba(0, 0, 0, 0.30) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(18px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(130%) !important;
+}
+
+body .stock-kpi-grid > article.panel.stock-kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%, rgba(239, 68, 68, 0.08));
+  opacity: 0.55;
+}
+
+body .stock-kpi-grid > article.panel.stock-kpi-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+body .stock-kpi-grid > article.panel.stock-kpi-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(248, 113, 113, 0.50) !important;
+}
+
+body .stock-kpi-grid > article.panel.stock-kpi-card span,
+body .stock-kpi-grid > article.panel.stock-kpi-card small {
+  color: #a1a1aa !important;
+}
+
+body .stock-kpi-grid > article.panel.stock-kpi-card strong {
+  color: #f4f4f5 !important;
+  font-size: clamp(2rem, 4vw, 2.75rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1 !important;
+}
