@@ -32,13 +32,6 @@
       </span>
     </div>
 
-    <div class="premium-store-card" id="dashboard-store-card">
-      <span id="dashboard-store-business">CARIOCAS BURGER</span>
-      <strong id="dashboard-store-name">Loja Centro</strong>
-      <small id="dashboard-store-status">Aberto</small>
-      <button id="edit-store-card-button" class="premium-store-edit" type="button" hidden>Editar</button>
-    </div>
-
     <nav class="premium-nav" aria-label="Menu principal">
       <a class="active" href="dashboard-saas.html"><span>D</span> Visão Geral</a>
       <a href="estoque.html"><span>E</span> Central de Estoque</a>
@@ -345,45 +338,6 @@
   </section>
 </div>
 
-<dialog id="store-card-dialog" class="premium-confirm-dialog store-card-dialog">
-  <form id="store-card-form" method="dialog">
-    <div>
-      <p class="eyebrow">Configuração da loja</p>
-      <h3>Editar card da operação</h3>
-      <p class="muted">Esses dados aparecem no card lateral do dashboard. Apenas administradores podem alterar.</p>
-    </div>
-
-    <div class="form-grid">
-      <div class="field-group" style="grid-column: 1 / -1;">
-        <label for="store-business-input">Nome da empresa</label>
-        <input id="store-business-input" maxlength="40" placeholder="Ex.: CARIOCAS BURGER">
-      </div>
-
-      <div class="field-group">
-        <label for="store-name-input">Nome da unidade</label>
-        <input id="store-name-input" maxlength="40" placeholder="Ex.: Loja Centro">
-      </div>
-
-      <div class="field-group">
-        <label for="store-status-input">Status da operação</label>
-        <select id="store-status-input">
-          <option value="Aberto">Aberto</option>
-          <option value="Fechado">Fechado</option>
-          <option value="Pausado">Pausado</option>
-          <option value="Em preparação">Em preparação</option>
-        </select>
-      </div>
-    </div>
-
-    <div id="store-card-status" class="status info" hidden></div>
-
-    <div class="actions">
-      <button id="store-card-cancel" class="secondary" type="button">Cancelar</button>
-      <button id="store-card-save" type="submit">Salvar alterações</button>
-    </div>
-  </form>
-</dialog>
-
 <script type="module">
 import { db } from "./firebase.js";
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -414,15 +368,7 @@ const dashboardAlertDrawerList = document.getElementById("dashboard-alert-drawer
 const dashboardActionDialog = document.getElementById("dashboard-action-dialog");
 const dashboardSearchDialog = document.getElementById("dashboard-search-dialog");
 const canViewStockValue = can("estoque.valorTotal.ver", profile);
-const storeCardRef = doc(db, "configuracoes", "dashboardStoreCard");
-const defaultStoreCard = Object.freeze({
-  businessName: "CARIOCAS BURGER",
-  storeName: "Loja Centro",
-  status: "Aberto"
-});
-const storeCardState = { ...defaultStoreCard };
 const normalizedProfileRole = normalizeText(profile.perfilPrincipal || profile.tipo);
-const canEditStoreCard = normalizedProfileRole === "admin" || normalizedProfileRole === "administrador";
 let stockValueVisible = true;
 let currentStockValue = 0;
 
@@ -481,103 +427,6 @@ if (mobileProfileButton) {
     .toUpperCase();
   mobileProfileButton.textContent = initials || "U";
 }
-
-function normalizeStoreStatus(value) {
-  const allowed = ["Aberto", "Fechado", "Pausado", "Em preparação"];
-  return allowed.includes(value) ? value : defaultStoreCard.status;
-}
-
-function renderStoreCard() {
-  document.getElementById("dashboard-store-business").textContent = storeCardState.businessName || defaultStoreCard.businessName;
-  document.getElementById("dashboard-store-name").textContent = storeCardState.storeName || defaultStoreCard.storeName;
-  document.getElementById("dashboard-store-status").textContent = storeCardState.status || defaultStoreCard.status;
-  document.getElementById("dashboard-store-card").dataset.status = normalizeStoreStatus(storeCardState.status)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-");
-}
-
-function fillStoreCardForm() {
-  document.getElementById("store-business-input").value = storeCardState.businessName || defaultStoreCard.businessName;
-  document.getElementById("store-name-input").value = storeCardState.storeName || defaultStoreCard.storeName;
-  document.getElementById("store-status-input").value = normalizeStoreStatus(storeCardState.status);
-}
-
-async function loadStoreCardConfig() {
-  renderStoreCard();
-
-  try {
-    const snapshot = await getDoc(storeCardRef);
-
-    if (snapshot.exists()) {
-      const data = snapshot.data() || {};
-      storeCardState.businessName = String(data.businessName || defaultStoreCard.businessName).trim().slice(0, 40);
-      storeCardState.storeName = String(data.storeName || defaultStoreCard.storeName).trim().slice(0, 40);
-      storeCardState.status = normalizeStoreStatus(data.status || defaultStoreCard.status);
-      renderStoreCard();
-    }
-  } catch (error) {
-    console.warn("Não foi possível carregar a configuração do card da loja.", error);
-  }
-}
-
-async function saveStoreCardConfig() {
-  if (!canEditStoreCard) {
-    setStatus("store-card-status", "Apenas administradores podem editar este card.", "error");
-    return;
-  }
-
-  const nextConfig = {
-    businessName: document.getElementById("store-business-input").value.trim().slice(0, 40) || defaultStoreCard.businessName,
-    storeName: document.getElementById("store-name-input").value.trim().slice(0, 40) || defaultStoreCard.storeName,
-    status: normalizeStoreStatus(document.getElementById("store-status-input").value),
-    updatedAt: serverTimestamp(),
-    updatedBy: profile.email || profile.nome || "admin",
-    usuarioId: profile.userId || profile.uid || "",
-    empresaId: profile.empresaId || "default"
-  };
-
-  const saveButton = document.getElementById("store-card-save");
-  saveButton.disabled = true;
-  setStatus("store-card-status", "Salvando configuração da loja...", "info");
-
-  try {
-    await setDoc(storeCardRef, nextConfig, { merge: true });
-    Object.assign(storeCardState, nextConfig);
-    renderStoreCard();
-    setStatus("store-card-status", "Card da loja atualizado com sucesso.", "success");
-    setTimeout(() => document.getElementById("store-card-dialog")?.close(), 450);
-  } catch (error) {
-    console.error(error);
-    setStatus("store-card-status", error.message || "Não foi possível salvar o card da loja.", "error");
-  } finally {
-    saveButton.disabled = false;
-  }
-}
-
-const editStoreCardButton = document.getElementById("edit-store-card-button");
-const storeCardDialog = document.getElementById("store-card-dialog");
-const storeCardForm = document.getElementById("store-card-form");
-const storeCardCancel = document.getElementById("store-card-cancel");
-
-editStoreCardButton.hidden = !canEditStoreCard;
-editStoreCardButton.addEventListener("click", () => {
-  fillStoreCardForm();
-  setStatus("store-card-status", "", "info");
-
-  if (typeof storeCardDialog.showModal === "function") {
-    storeCardDialog.showModal();
-  } else {
-    storeCardDialog.setAttribute("open", "");
-  }
-});
-
-storeCardCancel.addEventListener("click", () => storeCardDialog.close());
-storeCardForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await saveStoreCardConfig();
-});
 
 const mobileMoreButton = document.getElementById("dashboard-mobile-more");
 const mobileDrawerBackdrop = document.getElementById("dashboard-mobile-drawer-backdrop");
@@ -1153,7 +1002,6 @@ if (productionCard && !productionCard.dataset.dashboardTarget) {
   });
 }
 
-await loadStoreCardConfig();
 await loadDashboard();
 </script>
 </body>
