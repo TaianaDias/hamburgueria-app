@@ -86,38 +86,40 @@ function watchUserInfo() {
 }
 
 function buildTopbar() {
-  if (document.querySelector(".clean-topbar")) {
+  if (document.querySelector(".clean-topbar") || document.querySelector(".topbar")) {
     return;
   }
 
   const topbar = document.createElement("header");
-  topbar.className = "clean-topbar";
+  topbar.className = "topbar clean-topbar";
   topbar.innerHTML = `
-    <button class="clean-menu-button" type="button" aria-label="Abrir menu">
-      <span></span><span></span><span></span>
+    <button class="top-menu clean-menu-button" type="button" aria-label="Abrir menu">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     </button>
-    <a class="clean-brand" href="dashboard-saas.html" aria-label="Carioca's Operacao de Controle">
-      <span class="clean-brand-mark">C</span>
-      <span>
-        <strong>Carioca's <b>PRO</b></strong>
-        <small>Opera\u00e7\u00e3o de Controle</small>
+    <a class="top-logo clean-brand" href="dashboard-saas.html" aria-label="Carioca's Operacao de Controle">
+      <span class="logo-avatar clean-brand-mark">C</span>
+      <span class="logo-info">
+        <strong class="logo-name">Carioca's <b class="logo-badge">PRO</b></strong>
+        <small class="logo-sub">Opera\u00e7\u00e3o de Controle</small>
       </span>
     </a>
-    <label class="clean-search">
-      <span>Buscar</span>
+    <label class="top-search clean-search">
+      <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9 9l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       <input type="search" placeholder="Buscar no sistema...">
       <kbd>Ctrl K</kbd>
     </label>
-    <div class="clean-topbar-spacer"></div>
-    <button class="clean-notification-button" type="button" aria-label="Notifica\u00e7\u00f5es">
-      <span>!</span>
-      <b>8</b>
+    <div class="top-spacer clean-topbar-spacer"></div>
+    <button class="notif-btn clean-notification-button" type="button" aria-label="Notifica\u00e7\u00f5es">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <b class="notif-count">8</b>
     </button>
-    <a class="clean-help-button" href="treinamento.html" aria-label="Treinamentos">?</a>
-    <button class="clean-user-pill" type="button" aria-label="Perfil">
-      <span data-shell-user-initials>TD</span>
-      <strong data-shell-user-name>Taiana Dias</strong>
-      <small data-shell-user-role>Admin</small>
+    <a class="help-btn clean-help-button" href="treinamento.html" aria-label="Treinamentos">?</a>
+    <button class="user-pill clean-user-pill" type="button" aria-label="Perfil">
+      <span class="user-av" data-shell-user-initials>TD</span>
+      <span>
+        <strong class="user-name-top" data-shell-user-name>Taiana Dias</strong>
+        <small class="user-role-top" data-shell-user-role>Admin</small>
+      </span>
     </button>
   `;
   document.body.prepend(topbar);
@@ -130,24 +132,24 @@ function buildSidebar() {
 
   const current = getCurrentPage();
   const sidebar = document.createElement("aside");
-  sidebar.className = "premium-global-sidebar";
+  sidebar.className = "sidebar premium-global-sidebar approved-sidebar";
   sidebar.setAttribute("aria-label", "Navega\u00e7\u00e3o SaaS");
   sidebar.innerHTML = `
-    <a class="premium-global-brand" href="dashboard-saas.html" aria-label="Carioca's Opera\u00e7\u00e3o de Controle">
-      <span><img src="cariocas-logo.jpeg" alt="" aria-hidden="true"></span>
-      <strong>Carioca's</strong>
-      <small>Opera\u00e7\u00e3o de Controle</small>
-    </a>
-    <nav class="premium-global-nav">
-      ${NAV_ITEMS.map((item) => `
-        <a class="${isActive(item, current) ? "active" : ""}" href="${item.href}">
-          <span>${item.icon}</span>
+    <nav class="premium-nav premium-global-nav">
+      <div class="nav-group">
+      ${NAV_ITEMS.map((item, index) => {
+        const tones = ["red", "orange", "teal", "blue", "purple", "green", "yellow", "gray", "gray", "gray", "gray", "gray"];
+        return `
+        <a class="nav-link ${isActive(item, current) ? "active" : ""}" href="${item.href}">
+          <span class="nav-ic ${tones[index] || "gray"}">${item.icon}</span>
           <strong>${item.label}</strong>
         </a>
-      `).join("")}
+      `}).join("")}
+      </div>
+      <div class="nav-divider" aria-hidden="true"></div>
     </nav>
-    <button class="premium-global-logout" type="button" data-logout-button>
-      <span>X</span>
+    <button class="nav-link approved-logout premium-global-logout" type="button" data-logout-button>
+      <span class="nav-ic red">X</span>
       <strong>Sair</strong>
     </button>
   `;
@@ -162,7 +164,7 @@ function buildDock() {
   const current = getCurrentPage();
   const primaryItems = NAV_ITEMS.slice(0, 4);
   const dock = document.createElement("nav");
-  dock.className = "premium-mobile-dock";
+  dock.className = "dashboard-mobile-bottom-nav premium-mobile-dock";
   dock.setAttribute("aria-label", "Navega\u00e7\u00e3o principal");
   dock.innerHTML = primaryItems.map((item) => `
     <a class="${isActive(item, current) ? "active" : ""}" href="${item.href}">
@@ -185,10 +187,10 @@ function buildMobileMenu() {
 
   const current = getCurrentPage();
   const backdrop = document.createElement("div");
-  backdrop.className = "premium-mobile-menu-backdrop";
+  backdrop.className = "dashboard-mobile-drawer-backdrop premium-mobile-menu-backdrop";
   backdrop.hidden = true;
   backdrop.innerHTML = `
-    <section id="premium-mobile-menu" class="premium-mobile-menu" aria-label="Menu completo" role="dialog" aria-modal="true">
+    <section id="premium-mobile-menu" class="dashboard-mobile-drawer premium-mobile-menu" aria-label="Menu completo" role="dialog" aria-modal="true">
       <header>
         <div>
           <strong>Menu do sistema</strong>
@@ -196,7 +198,7 @@ function buildMobileMenu() {
         </div>
         <button class="premium-mobile-menu-close" type="button" aria-label="Fechar menu">x</button>
       </header>
-      <div class="premium-mobile-menu-grid">
+      <div class="dashboard-mobile-drawer-grid premium-mobile-menu-grid">
         ${NAV_ITEMS.map((item) => `
           <a class="${isActive(item, current) ? "active" : ""}" href="${item.href}">
             <span>${item.icon}</span>

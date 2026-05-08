@@ -1090,9 +1090,1470 @@ body.dashboard-saas-page .premium-lower-grid {
   }
 }
 </style>
+<style id="dashboard-approved-real-style">
+body.dashboard-approved-real {
+  --bg: #0b0c10;
+  --bg2: #0f1015;
+  --surface: #14151c;
+  --surface2: #1a1b24;
+  --card: #1e1f2a;
+  --card2: #22232f;
+  --border: rgba(255,255,255,0.07);
+  --border-hi: rgba(255,255,255,0.13);
+  --brand: #e8442a;
+  --brand-dim: rgba(232,68,42,0.15);
+  --brand-glow: rgba(232,68,42,0.08);
+  --orange: #f07b2a;
+  --orange-dim: rgba(240,123,42,0.15);
+  --teal: #2ab8a0;
+  --teal-dim: rgba(42,184,160,0.13);
+  --blue: #3a8ef6;
+  --blue-dim: rgba(58,142,246,0.13);
+  --green: #29c47a;
+  --green-dim: rgba(41,196,122,0.13);
+  --yellow: #f5c842;
+  --yellow-dim: rgba(245,200,66,0.13);
+  --purple: #9b6ef6;
+  --purple-dim: rgba(155,110,246,0.13);
+  --silver: rgba(255,255,255,0.82);
+  --silver2: rgba(255,255,255,0.50);
+  --silver3: rgba(255,255,255,0.28);
+  --silver4: rgba(255,255,255,0.14);
+  --r: 12px;
+  --r-sm: 8px;
+  --r-xs: 5px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(232, 68, 42, 0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(232, 68, 42, 0.10), transparent 28%),
+    var(--bg) !important;
+  color: var(--silver);
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 13px;
+}
+
+body.dashboard-approved-real > main.premium-app-shell.dashboard-shell,
+body.dashboard-approved-real > nav.dashboard-mobile-bottom-nav:not(.approved-mobile-bottom-nav),
+body.dashboard-approved-real > div.dashboard-mobile-drawer-backdrop:not(.approved-mobile-drawer-backdrop),
+body.dashboard-approved-real > div.premium-alert-drawer-backdrop:not(.approved-alert-drawer-backdrop),
+body.dashboard-approved-real > dialog:not(.approved-dialog) {
+  display: none !important;
+}
+
+body.dashboard-approved-real a { color: inherit; text-decoration: none; }
+body.dashboard-approved-real button,
+body.dashboard-approved-real input,
+body.dashboard-approved-real select { font: inherit; }
+body.dashboard-approved-real img,
+body.dashboard-approved-real svg,
+body.dashboard-approved-real canvas { max-width: 100%; }
+
+body.dashboard-approved-real .topbar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 200;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(20, 21, 28, 0.94);
+  backdrop-filter: blur(18px);
+}
+
+body.dashboard-approved-real .top-menu {
+  width: 32px;
+  height: 32px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--silver3);
+  cursor: pointer;
+}
+
+body.dashboard-approved-real .top-menu:hover { background: var(--surface2); color: var(--silver); }
+body.dashboard-approved-real .top-menu svg { width: 16px; height: 16px; }
+
+body.dashboard-approved-real .top-logo {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-right: 18px;
+  border-right: 1px solid var(--border);
+}
+
+body.dashboard-approved-real .logo-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid rgba(232,68,42,0.4);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), #c0321a);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+body.dashboard-approved-real .logo-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+body.dashboard-approved-real .logo-badge {
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+body.dashboard-approved-real .logo-sub {
+  display: block;
+  margin-top: 1px;
+  color: var(--silver3);
+  font-size: 0.65rem;
+}
+
+body.dashboard-approved-real .top-search {
+  flex: 1;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg2);
+  color: var(--silver3);
+  cursor: pointer;
+}
+
+body.dashboard-approved-real .top-search:hover { border-color: rgba(255,255,255,0.22); color: var(--silver); }
+body.dashboard-approved-real .top-search svg { width: 13px; height: 13px; color: var(--silver3); flex-shrink: 0; }
+body.dashboard-approved-real .top-search span { flex: 1; min-width: 0; text-align: left; font-size: 0.78rem; }
+body.dashboard-approved-real .top-search kbd {
+  padding: 2px 5px;
+  border: 1px solid var(--border-hi);
+  border-radius: 3px;
+  color: var(--silver3);
+  font: 0.58rem "JetBrains Mono", monospace;
+  white-space: nowrap;
+}
+
+body.dashboard-approved-real .top-spacer { flex: 1; }
+body.dashboard-approved-real .top-actions { display: flex; align-items: center; gap: 8px; }
+
+body.dashboard-approved-real .notif-btn,
+body.dashboard-approved-real .help-btn {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  color: var(--silver2);
+  cursor: pointer;
+}
+
+body.dashboard-approved-real .notif-btn:hover,
+body.dashboard-approved-real .help-btn:hover { border-color: var(--border-hi); color: var(--silver); }
+body.dashboard-approved-real .notif-btn svg,
+body.dashboard-approved-real .help-btn svg { width: 15px; height: 15px; }
+
+body.dashboard-approved-real .notif-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--surface);
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+body.dashboard-approved-real .user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  color: var(--silver);
+  cursor: pointer;
+}
+
+body.dashboard-approved-real .user-av {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--brand), #b82418);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+body.dashboard-approved-real .user-name-top {
+  display: block;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+body.dashboard-approved-real .user-role-top {
+  display: block;
+  color: var(--silver3);
+  font-size: 0.6rem;
+}
+
+body.dashboard-approved-real .body-wrap {
+  min-height: 100vh;
+  display: flex;
+  padding-top: 58px;
+}
+
+body.dashboard-approved-real .sidebar {
+  position: fixed;
+  top: 58px;
+  bottom: 0;
+  left: 0;
+  z-index: 150;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 14px 10px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+body.dashboard-approved-real .sidebar::-webkit-scrollbar { width: 0; }
+body.dashboard-approved-real .premium-nav { display: block !important; max-height: none !important; overflow: visible !important; padding: 0 !important; }
+body.dashboard-approved-real .nav-group { margin-bottom: 6px; }
+body.dashboard-approved-real .nav-group-label {
+  padding: 8px 10px 5px;
+  color: var(--silver4);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+body.dashboard-approved-real .nav-link,
+body.dashboard-approved-real .premium-nav a.nav-link,
+body.dashboard-approved-real .approved-logout {
+  position: relative;
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: var(--r-sm) !important;
+  background: transparent !important;
+  color: var(--silver3) !important;
+  cursor: pointer;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  text-align: left;
+  user-select: none;
+  transition: all 0.13s;
+  box-shadow: none !important;
+}
+
+body.dashboard-approved-real .nav-link:hover,
+body.dashboard-approved-real .premium-nav a.nav-link:hover,
+body.dashboard-approved-real .approved-logout:hover {
+  background: var(--surface2) !important;
+  color: var(--silver2) !important;
+}
+
+body.dashboard-approved-real .nav-link.active,
+body.dashboard-approved-real .premium-nav a.nav-link.active {
+  background: var(--brand-glow) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+body.dashboard-approved-real .nav-ic,
+body.dashboard-approved-real .premium-nav span.nav-ic {
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 7px !important;
+  font-size: 0 !important;
+}
+
+body.dashboard-approved-real .nav-ic svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+body.dashboard-approved-real .nav-ic.red { background: rgba(232,68,42,0.18); color: var(--brand); }
+body.dashboard-approved-real .nav-ic.orange { background: rgba(240,123,42,0.18); color: var(--orange); }
+body.dashboard-approved-real .nav-ic.teal { background: rgba(42,184,160,0.18); color: var(--teal); }
+body.dashboard-approved-real .nav-ic.blue { background: rgba(58,142,246,0.18); color: var(--blue); }
+body.dashboard-approved-real .nav-ic.green { background: rgba(41,196,122,0.18); color: var(--green); }
+body.dashboard-approved-real .nav-ic.yellow { background: rgba(245,200,66,0.18); color: var(--yellow); }
+body.dashboard-approved-real .nav-ic.purple { background: rgba(155,110,246,0.18); color: var(--purple); }
+body.dashboard-approved-real .nav-ic.gray { background: var(--surface2); color: var(--silver3); }
+body.dashboard-approved-real .nav-divider { height: 1px; margin: 8px 6px; background: var(--border); }
+
+body.dashboard-approved-real .main {
+  flex: 1;
+  min-width: 0;
+  margin-left: 210px;
+  overflow-y: auto;
+  background: var(--bg2);
+}
+
+body.dashboard-approved-real .page { padding: 24px 26px 48px; }
+body.dashboard-approved-real .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+body.dashboard-approved-real .ph-title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.4rem !important;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+body.dashboard-approved-real .ph-sub { margin-top: 3px; color: var(--silver3); font-size: 0.72rem; }
+body.dashboard-approved-real .ph-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+body.dashboard-approved-real .btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+body.dashboard-approved-real select.btn {
+  appearance: none;
+  padding-right: 32px;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.42) 50%), linear-gradient(135deg, rgba(255,255,255,0.42) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 14px, calc(100% - 10px) 14px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+body.dashboard-approved-real .btn-ghost { border: 1px solid var(--border); background: var(--card); color: var(--silver2); }
+body.dashboard-approved-real .btn-ghost:hover { border-color: var(--border-hi); color: var(--silver); }
+body.dashboard-approved-real .btn-primary { border: 0; background: var(--brand); color: #fff; }
+body.dashboard-approved-real .btn-primary:hover { transform: translateY(-1px); background: #d63820; box-shadow: 0 4px 16px rgba(232,68,42,0.3); }
+
+body.dashboard-approved-real .stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  margin-bottom: 20px;
+}
+
+body.dashboard-approved-real .stat-card,
+body.dashboard-approved-real .ia-card,
+body.dashboard-approved-real .alerts-card,
+body.dashboard-approved-real .mini-stat,
+body.dashboard-approved-real .chart-card,
+body.dashboard-approved-real .quick-actions {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  background: var(--card) !important;
+  box-shadow: none !important;
+}
+
+body.dashboard-approved-real .stat-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 18px 20px 16px;
+  cursor: default;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+body.dashboard-approved-real .stat-card:hover { transform: translateY(-1px); border-color: var(--border-hi) !important; }
+body.dashboard-approved-real .dashboard-clickable-card { cursor: pointer; }
+body.dashboard-approved-real .sc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+body.dashboard-approved-real .sc-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+body.dashboard-approved-real .sc-icon svg { width: 17px; height: 17px; }
+body.dashboard-approved-real .sc-label {
+  color: var(--silver3);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+body.dashboard-approved-real .sc-value {
+  margin-bottom: 7px;
+  color: #fff;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+body.dashboard-approved-real .sensitive-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+body.dashboard-approved-real .approved-eye {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--silver2);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+body.dashboard-approved-real .sc-delta { display: flex; align-items: center; gap: 5px; font-size: 0.68rem; }
+body.dashboard-approved-real .delta-up { color: var(--green); }
+body.dashboard-approved-real .delta-down { color: var(--brand); }
+body.dashboard-approved-real .delta-neu { color: var(--silver3); }
+body.dashboard-approved-real .sc-glow {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  filter: blur(20px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+body.dashboard-approved-real .grid-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 320px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+body.dashboard-approved-real .ia-card,
+body.dashboard-approved-real .alerts-card { overflow: hidden; transition: border-color 0.15s; }
+body.dashboard-approved-real .ia-card:hover,
+body.dashboard-approved-real .alerts-card:hover { border-color: var(--border-hi) !important; }
+body.dashboard-approved-real .ia-card::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--orange), var(--purple));
+}
+body.dashboard-approved-real .ia-head,
+body.dashboard-approved-real .card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px 0;
+  margin-bottom: 14px;
+}
+body.dashboard-approved-real .ia-name,
+body.dashboard-approved-real .card-title { color: #fff; font-size: 0.88rem; font-weight: 800; }
+body.dashboard-approved-real .ia-sub,
+body.dashboard-approved-real .card-sub { margin-top: 2px; color: var(--silver3); font-size: 0.67rem; }
+body.dashboard-approved-real .ia-expand {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--silver3);
+}
+body.dashboard-approved-real .ia-expand svg { width: 11px; height: 11px; }
+body.dashboard-approved-real .ia-body {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 14px;
+  align-items: flex-start;
+  padding: 0 18px 18px;
+}
+body.dashboard-approved-real .ia-robot-wrap {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(232,68,42,0.28);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(232,68,42,0.12), rgba(58,142,246,0.10));
+  overflow: hidden;
+}
+body.dashboard-approved-real .ia-robot-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+body.dashboard-approved-real .ia-robot-emoji { font-size: 2rem; }
+body.dashboard-approved-real .ia-robot-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--card);
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+}
+body.dashboard-approved-real .ia-upload-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 82px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px solid rgba(232,68,42,0.30);
+  border-radius: 999px;
+  background: var(--brand-dim);
+  color: #ffb7ad;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+body.dashboard-approved-real .ia-upload-label input { display: none; }
+body.dashboard-approved-real .ia-msg-text { color: var(--silver2); font-size: 0.78rem; line-height: 1.55; }
+body.dashboard-approved-real .ia-msg-text strong { color: #fff; font-weight: 700; }
+body.dashboard-approved-real .ia-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+body.dashboard-approved-real .ia-chip {
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+body.dashboard-approved-real .chip-teal { border-color: rgba(42,184,160,0.3); background: var(--teal-dim); color: var(--teal); }
+body.dashboard-approved-real .chip-orange { border-color: rgba(240,123,42,0.3); background: var(--orange-dim); color: var(--orange); }
+
+body.dashboard-approved-real .alert-list,
+body.dashboard-approved-real .premium-alert-list { display: flex; flex-direction: column; gap: 1px; padding: 0 18px 18px; }
+body.dashboard-approved-real .premium-alert-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--silver);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+body.dashboard-approved-real .premium-alert-item:hover { border-color: var(--border); background: var(--surface2); }
+body.dashboard-approved-real .premium-alert-icon,
+body.dashboard-approved-real .premium-movement-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  font-weight: 900;
+}
+body.dashboard-approved-real .premium-alert-icon.red,
+body.dashboard-approved-real .premium-movement-icon.red { background: var(--brand-dim); color: var(--brand); }
+body.dashboard-approved-real .premium-alert-icon.amber { background: var(--yellow-dim); color: var(--yellow); }
+body.dashboard-approved-real .premium-movement-icon.green { background: var(--green-dim); color: var(--green); }
+body.dashboard-approved-real .premium-movement-icon.blue { background: var(--blue-dim); color: var(--blue); }
+body.dashboard-approved-real .premium-movement-icon.purple { background: var(--purple-dim); color: var(--purple); }
+body.dashboard-approved-real .premium-alert-item strong,
+body.dashboard-approved-real .premium-movement-item strong { display: block; color: #fff; font-size: 0.75rem; font-weight: 800; }
+body.dashboard-approved-real .premium-alert-item small,
+body.dashboard-approved-real .premium-movement-item small { display: block; margin-top: 2px; color: var(--silver3); font-size: 0.67rem; line-height: 1.4; }
+body.dashboard-approved-real .premium-alert-item em {
+  color: var(--silver4);
+  font: normal 0.6rem "JetBrains Mono", monospace;
+  white-space: nowrap;
+}
+body.dashboard-approved-real .card-link { color: var(--brand); cursor: pointer; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+
+body.dashboard-approved-real .right-panel { display: flex; flex-direction: column; gap: 14px; }
+body.dashboard-approved-real .mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  transition: border-color 0.15s;
+}
+body.dashboard-approved-real .mini-stat:hover { border-color: var(--border-hi) !important; }
+body.dashboard-approved-real .ms-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+body.dashboard-approved-real .ms-icon svg { width: 18px; height: 18px; }
+body.dashboard-approved-real .ms-label { color: var(--silver3); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+body.dashboard-approved-real .ms-value { color: #fff; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+body.dashboard-approved-real .ms-delta { margin-top: 2px; font-size: 0.63rem; }
+
+body.dashboard-approved-real .approved-action-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+body.dashboard-approved-real .approved-action-value {
+  display: block;
+  margin: 10px 0 6px;
+  color: #fff;
+  font-size: 1.04rem;
+  font-weight: 850;
+}
+body.dashboard-approved-real .premium-action-card small { color: var(--silver3); font-size: 0.68rem; }
+
+body.dashboard-approved-real .quick-actions {
+  display: none;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+body.dashboard-approved-real .quick-actions h3 { margin-bottom: 12px; color: #fff; font-size: 0.9rem; }
+body.dashboard-approved-real .quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+body.dashboard-approved-real .quick-grid a {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+body.dashboard-approved-real .chart-card { overflow: hidden; margin-bottom: 16px; }
+body.dashboard-approved-real .chart-body { padding: 4px 20px 20px; }
+body.dashboard-approved-real .chart-area,
+body.dashboard-approved-real .approved-line-chart {
+  height: 180px;
+  display: block;
+  margin: 10px 0 6px;
+}
+body.dashboard-approved-real .approved-line-chart svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+body.dashboard-approved-real .premium-chart-grid-lines line { stroke: rgba(255,255,255,0.07); }
+body.dashboard-approved-real .premium-chart-line {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body.dashboard-approved-real .premium-chart-line.green { stroke: var(--green); }
+body.dashboard-approved-real .premium-chart-line.blue { stroke: var(--blue); }
+body.dashboard-approved-real .premium-chart-point { fill: #fff; stroke: var(--brand); stroke-width: 2; }
+body.dashboard-approved-real .approved-line-chart text {
+  fill: var(--silver4);
+  font: 10px "JetBrains Mono", monospace;
+  text-anchor: middle;
+}
+body.dashboard-approved-real .chart-legend { display: flex; gap: 16px; margin-top: 6px; }
+body.dashboard-approved-real .cl-item { display: flex; align-items: center; gap: 6px; color: var(--silver3); font-size: 0.68rem; }
+body.dashboard-approved-real .cl-dot { width: 8px; height: 8px; border-radius: 2px; }
+body.dashboard-approved-real .seg { display: flex; gap: 3px; padding: 3px; border-radius: var(--r-xs); background: var(--surface2); }
+body.dashboard-approved-real .seg-btn {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--silver3);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+body.dashboard-approved-real .seg-btn.on { background: var(--card2); color: #fff; }
+
+body.dashboard-approved-real .approved-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+}
+body.dashboard-approved-real .approved-movement-list { display: grid; gap: 1px; padding: 0 18px 18px; }
+body.dashboard-approved-real .premium-movement-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--r-sm);
+}
+body.dashboard-approved-real .premium-movement-item:hover { background: var(--surface2); }
+body.dashboard-approved-real .premium-movement-item time {
+  color: var(--silver4);
+  font: 0.6rem "JetBrains Mono", monospace;
+  white-space: nowrap;
+}
+body.dashboard-approved-real .approved-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 18px 18px;
+}
+body.dashboard-approved-real .approved-module-grid a {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+}
+body.dashboard-approved-real .approved-module-grid strong { display: block; color: #fff; font-size: 0.76rem; }
+body.dashboard-approved-real .approved-module-grid span { display: block; margin-top: 4px; color: var(--silver3); font-size: 0.66rem; }
+
+body.dashboard-approved-real .premium-alert-drawer-backdrop,
+body.dashboard-approved-real .dashboard-mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.68);
+  backdrop-filter: blur(8px);
+}
+body.dashboard-approved-real .premium-alert-drawer-backdrop[hidden],
+body.dashboard-approved-real .dashboard-mobile-drawer-backdrop[hidden] { display: none !important; }
+body.dashboard-approved-real .premium-alert-drawer,
+body.dashboard-approved-real .dashboard-mobile-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(440px, 100%);
+  height: 100%;
+  padding: 22px;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: -22px 0 70px rgba(0,0,0,0.4);
+  overflow-y: auto;
+}
+body.dashboard-approved-real .premium-alert-drawer header,
+body.dashboard-approved-real .dashboard-mobile-drawer header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+body.dashboard-approved-real .premium-alert-drawer header strong,
+body.dashboard-approved-real .dashboard-mobile-drawer header strong { display: block; color: #fff; font-size: 1rem; }
+body.dashboard-approved-real .premium-alert-drawer header small,
+body.dashboard-approved-real .dashboard-mobile-drawer header small { color: var(--silver3); }
+body.dashboard-approved-real .premium-alert-drawer header button,
+body.dashboard-approved-real .dashboard-mobile-drawer header button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  color: #fff;
+}
+body.dashboard-approved-real .premium-alert-drawer-list { display: grid; gap: 10px; }
+body.dashboard-approved-real .premium-alert-drawer-item {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--card);
+}
+body.dashboard-approved-real .premium-alert-drawer-item strong { color: #fff; }
+body.dashboard-approved-real .premium-alert-drawer-item small { color: var(--silver3); }
+body.dashboard-approved-real .premium-alert-drawer-item span {
+  width: max-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+body.dashboard-approved-real .premium-alert-drawer-item .danger { background: var(--brand-dim); color: #ffb7ad; }
+body.dashboard-approved-real .premium-alert-drawer-item .warning { background: var(--yellow-dim); color: var(--yellow); }
+body.dashboard-approved-real .premium-alert-drawer-item .ok { background: var(--green-dim); color: var(--green); }
+
+body.dashboard-approved-real .premium-confirm-dialog {
+  width: min(560px, calc(100vw - 28px));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--silver);
+  padding: 22px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.44);
+}
+body.dashboard-approved-real .premium-confirm-dialog::backdrop { background: rgba(0,0,0,0.68); backdrop-filter: blur(8px); }
+body.dashboard-approved-real .premium-confirm-dialog h3 { color: #fff; font-size: 1.1rem; }
+body.dashboard-approved-real .premium-confirm-dialog .muted { color: var(--silver3); margin-top: 6px; line-height: 1.5; }
+body.dashboard-approved-real .premium-action-dialog-grid,
+body.dashboard-approved-real .premium-search-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+body.dashboard-approved-real .premium-action-dialog-grid a,
+body.dashboard-approved-real .premium-search-results a {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: #fff;
+  font-weight: 700;
+}
+
+body.dashboard-approved-real .dashboard-mobile-bottom-nav {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 190;
+  display: none;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(20,21,28,0.94);
+  backdrop-filter: blur(18px);
+}
+body.dashboard-approved-real .dashboard-mobile-bottom-nav a,
+body.dashboard-approved-real .dashboard-mobile-bottom-nav button {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--silver3);
+  padding: 7px 4px;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+body.dashboard-approved-real .dashboard-mobile-bottom-nav a.active {
+  background: var(--brand-glow);
+  color: #fff;
+}
+body.dashboard-approved-real .dashboard-mobile-bottom-nav span,
+body.dashboard-approved-real .dashboard-mobile-drawer-grid span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--surface2);
+  color: var(--brand);
+}
+body.dashboard-approved-real .dashboard-mobile-bottom-nav span svg,
+body.dashboard-approved-real .dashboard-mobile-drawer-grid span svg { width: 13px; height: 13px; }
+body.dashboard-approved-real .dashboard-mobile-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+body.dashboard-approved-real .dashboard-mobile-drawer-grid a,
+body.dashboard-approved-real .dashboard-mobile-drawer-grid button {
+  min-height: 74px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: #fff;
+  font-weight: 800;
+  text-align: left;
+}
+
+body.dashboard-approved-real .empty-state {
+  padding: 14px;
+  border: 1px dashed var(--border-hi);
+  border-radius: var(--r-sm);
+  color: var(--silver3);
+  font-size: 0.76rem;
+}
+
+@media (max-width: 1200px) {
+  body.dashboard-approved-real .stats-grid,
+  body.dashboard-approved-real .approved-action-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  body.dashboard-approved-real .grid-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  body.dashboard-approved-real .right-panel {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  body.dashboard-approved-real .sidebar { width: 76px; }
+  body.dashboard-approved-real .main { margin-left: 76px; }
+  body.dashboard-approved-real .nav-group-label,
+  body.dashboard-approved-real .nav-link:not(.approved-logout) {
+    font-size: 0 !important;
+  }
+  body.dashboard-approved-real .approved-logout {
+    font-size: 0 !important;
+  }
+  body.dashboard-approved-real .nav-link,
+  body.dashboard-approved-real .premium-nav a.nav-link,
+  body.dashboard-approved-real .approved-logout {
+    justify-content: center;
+  }
+  body.dashboard-approved-real .top-search { max-width: 320px; }
+}
+
+@media (max-width: 768px) {
+  body.dashboard-approved-real {
+    font-size: 12px;
+  }
+  body.dashboard-approved-real .topbar {
+    padding: 0 12px;
+    gap: 10px;
+  }
+  body.dashboard-approved-real .top-menu {
+    display: flex;
+  }
+  body.dashboard-approved-real .top-logo {
+    padding-right: 0;
+    border-right: 0;
+  }
+  body.dashboard-approved-real .logo-avatar {
+    width: 34px;
+    height: 34px;
+  }
+  body.dashboard-approved-real .top-search,
+  body.dashboard-approved-real .help-btn,
+  body.dashboard-approved-real .user-pill span:not(.user-av) {
+    display: none;
+  }
+  body.dashboard-approved-real .sidebar {
+    display: none;
+  }
+  body.dashboard-approved-real .main {
+    margin-left: 0;
+  }
+  body.dashboard-approved-real .page {
+    padding: 18px 14px 106px;
+  }
+  body.dashboard-approved-real .page-header {
+    display: grid;
+    gap: 12px;
+  }
+  body.dashboard-approved-real .ph-actions {
+    justify-content: stretch;
+  }
+  body.dashboard-approved-real .ph-actions select,
+  body.dashboard-approved-real .ph-actions button {
+    flex: 1 1 130px;
+  }
+  body.dashboard-approved-real .stats-grid,
+  body.dashboard-approved-real .grid-main,
+  body.dashboard-approved-real .right-panel,
+  body.dashboard-approved-real .approved-action-strip,
+  body.dashboard-approved-real .approved-lower-grid {
+    grid-template-columns: 1fr !important;
+  }
+  body.dashboard-approved-real .quick-actions {
+    display: block;
+  }
+  body.dashboard-approved-real .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  body.dashboard-approved-real .chart-area,
+  body.dashboard-approved-real .approved-line-chart {
+    height: 150px;
+  }
+  body.dashboard-approved-real .dashboard-mobile-bottom-nav {
+    display: grid;
+  }
+}
+
+@media (max-width: 480px) {
+  body.dashboard-approved-real .page {
+    padding: 14px 10px 104px;
+  }
+  body.dashboard-approved-real .ph-title {
+    font-size: 1.25rem !important;
+  }
+  body.dashboard-approved-real .stat-card,
+  body.dashboard-approved-real .mini-stat,
+  body.dashboard-approved-real .ia-head,
+  body.dashboard-approved-real .card-head {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  body.dashboard-approved-real .ia-body {
+    grid-template-columns: 1fr;
+  }
+  body.dashboard-approved-real .quick-grid,
+  body.dashboard-approved-real .approved-module-grid,
+  body.dashboard-approved-real .premium-action-dialog-grid,
+  body.dashboard-approved-real .premium-search-results,
+  body.dashboard-approved-real .dashboard-mobile-drawer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 <title>Dashboard SaaS | Sistema Carioca's</title>
 </head>
-<body class="premium-app-body dashboard-mobile-fix dashboard-saas-page">
+<body class="premium-app-body dashboard-mobile-fix dashboard-saas-page dashboard-approved-real">
+<header class="topbar" aria-label="Topo principal">
+  <button id="dashboard-mobile-menu" class="top-menu" type="button" aria-label="Abrir menu">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+
+  <a class="top-logo" href="dashboard-saas.html" aria-label="Carioca's Pro">
+    <span class="logo-avatar">C</span>
+    <span class="logo-info">
+      <span class="logo-name">Carioca's <span class="logo-badge">PRO</span></span>
+      <span class="logo-sub">Operação de Controle</span>
+    </span>
+  </a>
+
+  <button id="dashboard-search-button" class="top-search" type="button" aria-label="Buscar no sistema">
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9 9l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    <span>Buscar no sistema...</span>
+    <kbd>⌘ K</kbd>
+  </button>
+
+  <div class="top-spacer"></div>
+
+  <div class="top-actions">
+    <button id="dashboard-alert-button" class="notif-btn" type="button" aria-label="Abrir alertas" aria-expanded="false" aria-controls="dashboard-alert-drawer-backdrop">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span class="notif-count">8</span>
+    </button>
+    <button class="help-btn" type="button" aria-label="Ajuda">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5a2 2 0 1 1 2.8 1.8C8.3 8.6 8 9 8 9.5M8 11.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <button class="user-pill" type="button" aria-label="Usuário logado">
+      <span id="dashboard-user-initials" class="user-av">--</span>
+      <span>
+        <span id="dashboard-user-name" class="user-name-top">Carregando...</span>
+        <span id="dashboard-user-role" class="user-role-top">Perfil</span>
+      </span>
+    </button>
+  </div>
+</header>
+
+<div class="body-wrap approved-body-wrap">
+  <aside class="sidebar approved-sidebar" aria-label="Menu principal">
+    <nav class="premium-nav" aria-label="Menu principal">
+      <div class="nav-group">
+        <a class="nav-link active" href="dashboard-saas.html"><span class="nav-ic red">D</span>Visão Geral</a>
+        <a class="nav-link" href="estoque.html"><span class="nav-ic orange">E</span>Central de Estoque</a>
+        <a class="nav-link" href="alertas-reposicao.html"><span class="nav-ic teal">R</span>Reposição Inteligente</a>
+        <a class="nav-link" href="producao-etiquetas.html"><span class="nav-ic blue">P</span>Produção</a>
+        <a class="nav-link" href="compras.html"><span class="nav-ic purple">C</span>Inteligência de Compras</a>
+      </div>
+      <div class="nav-divider" aria-hidden="true"></div>
+      <div class="nav-group">
+        <div class="nav-group-label">Gestão</div>
+        <a class="nav-link" href="fornecedores.html"><span class="nav-ic green">F</span>Fornecedores</a>
+        <a class="nav-link" href="desperdicio.html"><span class="nav-ic yellow">!</span>Desperdício</a>
+        <a class="nav-link" href="impressora.html"><span class="nav-ic gray">T</span>Etiquetas</a>
+        <a class="nav-link" href="whatsapp-ia.html"><span class="nav-ic gray">W</span>WhatsApp e IA</a>
+      </div>
+      <div class="nav-divider" aria-hidden="true"></div>
+      <div class="nav-group">
+        <div class="nav-group-label">Sistema</div>
+        <a class="nav-link" href="funcionarios.html"><span class="nav-ic gray">U</span>Equipe</a>
+        <a class="nav-link" href="treinamento.html"><span class="nav-ic gray">A</span>Treinamentos</a>
+        <a class="nav-link" href="saas.html"><span class="nav-ic gray">S</span>Configurações</a>
+        <button class="nav-link approved-logout" type="button" data-logout-button><span class="nav-ic red">X</span>Sair</button>
+      </div>
+    </nav>
+    <span id="user-info" hidden></span>
+  </aside>
+
+  <main class="main approved-main">
+    <section class="page approved-dashboard-page">
+      <header class="page-header">
+        <div>
+          <h1 class="ph-title">Dashboard Executivo</h1>
+          <p class="ph-sub">Visão completa da operação da unidade · Atualizado agora</p>
+        </div>
+        <div class="ph-actions">
+          <select id="store-filter" class="btn btn-ghost" aria-label="Selecionar loja">
+            <option value="all">Todas as lojas</option>
+            <option value="matriz">Matriz</option>
+            <option value="dark">Dark Kitchen</option>
+            <option value="delivery">Unidade Delivery</option>
+          </select>
+          <select id="period-filter" class="btn btn-ghost" aria-label="Selecionar período">
+            <option value="today">Hoje</option>
+            <option value="week" selected>7 dias</option>
+            <option value="month">30 dias</option>
+          </select>
+          <button id="dashboard-quick-action-button" class="btn btn-primary" type="button">Ação rápida</button>
+        </div>
+      </header>
+
+      <section class="stats-grid" aria-label="Indicadores principais">
+        <article class="stat-card">
+          <div class="sc-top">
+            <div class="sc-label">Valor em Estoque</div>
+            <div class="sc-icon" style="background:rgba(58,142,246,0.15)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--blue)" aria-hidden="true"><rect x="1" y="5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M1 9h16M5 9v6" stroke="currentColor" stroke-width="1.4"/></svg>
+            </div>
+          </div>
+          <div class="sc-value sensitive-value-row">
+            <span id="kpi-stock-value">R$ 0,00</span>
+            <button id="kpi-stock-value-toggle" class="sensitive-value-toggle approved-eye" type="button" title="Mostrar/Ocultar valor" aria-label="Mostrar ou ocultar valor total em estoque" hidden>Ver</button>
+          </div>
+          <div class="sc-delta"><span class="delta-up" id="kpi-stock-note">Valor atualizado</span></div>
+          <div class="sc-glow" style="background:var(--blue)"></div>
+        </article>
+
+        <article class="stat-card">
+          <div class="sc-top">
+            <div class="sc-label">Saúde do Estoque</div>
+            <div class="sc-icon" style="background:rgba(41,196,122,0.15)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--green)" aria-hidden="true"><path d="M2 13L6 7.5l4 4 3-4.5 3 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div id="kpi-health" class="sc-value">0%</div>
+          <div class="sc-delta"><span class="delta-up" id="kpi-health-note">Calculando...</span></div>
+          <div class="sc-glow" style="background:var(--green)"></div>
+        </article>
+
+        <article class="stat-card dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=criticos" role="link" tabindex="0" aria-label="Abrir itens críticos no estoque">
+          <div class="sc-top">
+            <div class="sc-label">Estoque Crítico</div>
+            <div class="sc-icon" style="background:rgba(245,200,66,0.15)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--yellow)" aria-hidden="true"><path d="M9 2L16 15H2L9 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 7v4M9 12.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <div id="kpi-risk" class="sc-value" style="color:var(--yellow)">0</div>
+          <div class="sc-delta"><span style="color:var(--yellow)" id="kpi-risk-note">Precisam de atenção</span></div>
+          <div class="sc-glow" style="background:var(--yellow)"></div>
+        </article>
+
+        <article class="stat-card dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=vencendo" role="link" tabindex="0" aria-label="Abrir produtos vencendo no estoque">
+          <div class="sc-top">
+            <div class="sc-label">Produtos Vencendo</div>
+            <div class="sc-icon" style="background:rgba(232,68,42,0.15)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--brand)" aria-hidden="true"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5v4.5l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <div id="kpi-warning" class="sc-value">0</div>
+          <div class="sc-delta"><span class="delta-down" id="kpi-warning-note">Produtos vencidos ou perto do vencimento</span></div>
+          <div class="sc-glow" style="background:var(--brand)"></div>
+        </article>
+      </section>
+
+      <section class="quick-actions" aria-label="Ações rápidas">
+        <h3>Ações rápidas</h3>
+        <div class="quick-grid">
+          <a href="estoque.html">Entrada de estoque</a>
+          <a href="reposicao-producao.html">Saída de estoque</a>
+          <a href="alertas-reposicao.html">Reposição</a>
+          <a href="impressora.html">Etiquetas</a>
+          <a href="estoque.html">Cadastrar produto</a>
+          <a href="whatsapp-ia.html">IA Carioquinha</a>
+        </div>
+      </section>
+
+      <section class="grid-main">
+        <article class="ia-card">
+          <div class="ia-head">
+            <div>
+              <div class="ia-name">IA Carioquinha</div>
+              <div class="ia-sub">Sua assistente inteligente</div>
+            </div>
+            <a class="ia-expand" href="whatsapp-ia.html" aria-label="Abrir central da IA">
+              <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 10l8-8M7 2h3v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="ia-body">
+            <div>
+              <div class="ia-robot-wrap">
+                <img id="carioquinha-photo-preview" alt="Imagem da IA Carioquinha">
+                <div id="carioquinha-photo-fallback" class="ia-robot-emoji">🤖</div>
+                <div class="ia-robot-dot"></div>
+              </div>
+              <label class="ia-upload-label">
+                Foto da IA
+                <input id="carioquinha-image-upload" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+            </div>
+            <div class="ia-message">
+              <div id="ai-insight" class="ia-msg-text">Carregando resumo inteligente...</div>
+              <div class="ia-chips">
+                <button id="generate-report" class="ia-chip chip-teal" type="button">Ver análise completa</button>
+                <button id="prepare-whatsapp" class="ia-chip chip-orange" type="button">Reposição urgente</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="alerts-card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Alertas Inteligentes</div>
+              <div class="card-sub">Atenções que precisam da sua ação</div>
+            </div>
+            <a class="card-link" href="alertas-reposicao.html">Ver todos</a>
+          </div>
+          <div id="critical-list" class="alert-list premium-alert-list"></div>
+        </article>
+
+        <aside class="right-panel" aria-label="Mini estatísticas">
+          <article class="mini-stat">
+            <div class="ms-icon" style="background:var(--green-dim)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--green)" aria-hidden="true"><path d="M3 13l4-5 3.5 3.5 3-4.5 3 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div><div class="ms-label">Compras</div><div id="mini-purchases" class="ms-value">R$ 0,00</div><div class="ms-delta" style="color:var(--green)">Período filtrado</div></div>
+          </article>
+          <article class="mini-stat">
+            <div class="ms-icon" style="background:var(--orange-dim)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--orange)" aria-hidden="true"><rect x="2" y="4" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h8M5 11h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div><div class="ms-label">Etiquetas</div><div id="mini-labels" class="ms-value">0</div><div class="ms-delta" style="color:var(--orange)">Emitidas</div></div>
+          </article>
+          <article class="mini-stat">
+            <div class="ms-icon" style="background:var(--brand-dim)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:var(--brand)" aria-hidden="true"><path d="M9 2L16 15H2L9 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 7v4M9 12.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </div>
+            <div><div class="ms-label">Perdas</div><div id="mini-waste" class="ms-value">R$ 0,00</div><div class="ms-delta" style="color:var(--brand)">Desperdício</div></div>
+          </article>
+        </aside>
+      </section>
+
+      <section class="approved-action-strip" aria-label="Prioridades de hoje">
+        <article class="stat-card premium-action-card urgent">
+          <div class="sc-label">Prioridade de hoje</div>
+          <strong id="action-primary" class="approved-action-value">Carregando operação...</strong>
+          <small id="action-primary-note">Aguarde a leitura dos dados.</small>
+        </article>
+        <article class="stat-card premium-action-card">
+          <div class="sc-label">Comprar agora</div>
+          <strong id="action-purchase" class="approved-action-value">0 itens</strong>
+          <small>Baseado no estoque mínimo.</small>
+        </article>
+        <article class="stat-card premium-action-card">
+          <div class="sc-label">Produção e etiquetas</div>
+          <strong id="action-production" class="approved-action-value">0 pendências</strong>
+          <small>Lotes, validade e impressão.</small>
+        </article>
+        <article class="stat-card premium-action-card">
+          <div class="sc-label">Perdas do período</div>
+          <strong id="action-waste" class="approved-action-value">R$ 0,00</strong>
+          <small>Desperdício registrado.</small>
+        </article>
+      </section>
+
+      <section class="chart-card">
+        <div class="card-head" style="padding:18px 20px 0">
+          <div>
+            <div class="card-title">Movimentação de Estoque</div>
+            <div class="card-sub">Entradas, saídas e consumo · Comparativo semanal</div>
+          </div>
+          <div class="seg">
+            <button class="seg-btn">Semanal</button>
+            <button class="seg-btn on">7 dias</button>
+            <button class="seg-btn">Mensal</button>
+          </div>
+        </div>
+        <div class="chart-body">
+          <div id="operations-chart" class="chart-area approved-line-chart" aria-label="Gráfico de operação"></div>
+          <div class="chart-legend">
+            <div class="cl-item"><span class="cl-dot" style="background:var(--green)"></span>Insumos</div>
+            <div class="cl-item"><span class="cl-dot" style="background:var(--blue)"></span>Produção</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="approved-lower-grid">
+        <article class="alerts-card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Movimentações de Hoje</div>
+              <div class="card-sub">Últimos lançamentos operacionais</div>
+            </div>
+            <a class="card-link" href="relatorio-diario.html">Ver todas</a>
+          </div>
+          <div id="movement-list" class="approved-movement-list"></div>
+        </article>
+
+        <article class="alerts-card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Módulos SaaS</div>
+              <div class="card-sub">Resumo rápido da plataforma</div>
+            </div>
+            <a class="card-link" href="saas.html">Escalar</a>
+          </div>
+          <div class="prototype-module-grid approved-module-grid">
+            <a href="estoque.html"><strong>Estoque</strong><span id="module-stock">0 itens</span></a>
+            <a href="compras.html"><strong>Compras</strong><span id="module-purchases">R$ 0,00</span></a>
+            <a href="producao-etiquetas.html"><strong>Etiquetas</strong><span id="module-labels">0 emitidas</span></a>
+            <a href="whatsapp-ia.html"><strong>WhatsApp e IA</strong><span id="module-whatsapp">0 comandos</span></a>
+            <a href="inventario.html"><strong>Inventário</strong><span id="module-inventory">conferência</span></a>
+            <a href="saas.html"><strong>SaaS</strong><span>escala</span></a>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div id="dashboard-alert-drawer-backdrop" class="premium-alert-drawer-backdrop approved-alert-drawer-backdrop" hidden>
+  <aside id="dashboard-alert-drawer" class="premium-alert-drawer approved-alert-drawer" role="dialog" aria-modal="true" aria-label="Alertas inteligentes">
+    <header>
+      <div>
+        <strong>Alertas inteligentes</strong>
+        <small>Prioridades geradas pelo Carioquinha.</small>
+      </div>
+      <button id="dashboard-alert-drawer-close" type="button" aria-label="Fechar alertas">×</button>
+    </header>
+    <div id="dashboard-alert-drawer-list" class="premium-alert-drawer-list"></div>
+  </aside>
+</div>
+
+<dialog id="dashboard-action-dialog" class="premium-confirm-dialog premium-action-dialog approved-dialog">
+  <form method="dialog">
+    <div>
+      <p class="eyebrow">Operação rápida</p>
+      <h3>Ação rápida</h3>
+      <p class="muted">Escolha o fluxo operacional sem sair do padrão premium do sistema.</p>
+    </div>
+    <div class="premium-action-dialog-grid">
+      <a href="estoque.html">Entrada de estoque</a>
+      <a href="reposicao-producao.html">Saída para produção</a>
+      <a href="producao-etiquetas.html">Produção e etiquetas</a>
+      <a href="compras.html">Gerar compra</a>
+      <a href="desperdicio.html">Registrar desperdício</a>
+      <a href="whatsapp-ia.html">Automação WhatsApp</a>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dashboard-search-dialog" class="premium-confirm-dialog premium-search-dialog approved-dialog">
+  <form method="dialog">
+    <div>
+      <p class="eyebrow">Busca global inteligente</p>
+      <h3>Buscar no sistema</h3>
+      <p class="muted">Atalho visual preparado para conectar busca global de insumos, fornecedores, compras, etiquetas e treinamentos.</p>
+    </div>
+    <div class="field-group">
+      <label for="dashboard-global-search">O que você procura?</label>
+      <input id="dashboard-global-search" placeholder="Ex.: pão brioche, fornecedor, etiqueta, CMV">
+    </div>
+    <div id="dashboard-search-results" class="premium-search-results">
+      <a href="estoque.html">Central de Estoque</a>
+      <a href="compras.html">Inteligência de Compras</a>
+      <a href="whatsapp-ia.html">IA do Carioquinha</a>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<nav class="dashboard-mobile-bottom-nav approved-mobile-bottom-nav" aria-label="Navegação mobile">
+  <a class="active" href="dashboard-saas.html"><span>D</span><strong>Dashboard</strong></a>
+  <a href="estoque.html"><span>E</span><strong>Estoque</strong></a>
+  <a href="producao-etiquetas.html"><span>P</span><strong>Produção</strong></a>
+  <a href="compras.html"><span>C</span><strong>Compras</strong></a>
+  <button id="dashboard-mobile-more" type="button" aria-expanded="false" aria-controls="dashboard-mobile-drawer">
+    <span>+</span><strong>Mais</strong>
+  </button>
+</nav>
+
+<div id="dashboard-mobile-drawer-backdrop" class="dashboard-mobile-drawer-backdrop approved-mobile-drawer-backdrop" hidden>
+  <section id="dashboard-mobile-drawer" class="dashboard-mobile-drawer" role="dialog" aria-modal="true" aria-label="Mais opções">
+    <header>
+      <div>
+        <strong>Mais opções</strong>
+        <small>Acesse todos os módulos da operação.</small>
+      </div>
+      <button id="dashboard-mobile-drawer-close" type="button" aria-label="Fechar menu">×</button>
+    </header>
+    <div class="dashboard-mobile-drawer-grid">
+      <a href="treinamento.html"><span>A</span><strong>Treinamento</strong></a>
+      <a href="fornecedores.html"><span>F</span><strong>Fornecedores</strong></a>
+      <a href="desperdicio.html"><span>!</span><strong>Desperdício</strong></a>
+      <a href="relatorio-diario.html"><span>R</span><strong>Relatórios</strong></a>
+      <a href="impressora.html"><span>T</span><strong>Etiquetas</strong></a>
+      <a href="whatsapp-ia.html"><span>W</span><strong>WhatsApp e IA</strong></a>
+      <a href="funcionarios.html"><span>U</span><strong>Funcionários</strong></a>
+      <a href="saas.html"><span>S</span><strong>Configurações</strong></a>
+      <button type="button" data-logout-button><span>X</span><strong>Sair</strong></button>
+    </div>
+  </section>
+</div>
+<!-- Legacy dashboard shell kept out of the DOM after the approved layout migration.
 <main class="premium-app-shell dashboard-shell">
   <aside class="premium-sidebar sidebar-premium">
     <a class="premium-brand brand-card" href="dashboard-saas.html" aria-label="Carioca's Pro
@@ -1416,6 +2877,7 @@ body.dashboard-saas-page .premium-lower-grid {
   </section>
 </div>
 
+-->
 <script type="module">
 import { db } from "./firebase.js";
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -1480,6 +2942,57 @@ function renderDashboardNavIcons() {
 
 renderDashboardNavIcons();
 
+const carioquinhaImageInput = document.getElementById("carioquinha-image-upload");
+const carioquinhaPhotoPreview = document.getElementById("carioquinha-photo-preview");
+const carioquinhaPhotoFallback = document.getElementById("carioquinha-photo-fallback");
+
+function renderCarioquinhaPhoto(imageData) {
+  if (!carioquinhaPhotoPreview || !carioquinhaPhotoFallback) {
+    return;
+  }
+
+  if (!imageData) {
+    carioquinhaPhotoPreview.removeAttribute("src");
+    carioquinhaPhotoPreview.style.display = "none";
+    carioquinhaPhotoFallback.style.display = "block";
+    return;
+  }
+
+  carioquinhaPhotoPreview.src = imageData;
+  carioquinhaPhotoPreview.style.display = "block";
+  carioquinhaPhotoFallback.style.display = "none";
+}
+
+renderCarioquinhaPhoto(localStorage.getItem("carioquinhaDashboardPhoto"));
+
+carioquinhaImageInput?.addEventListener("change", (event) => {
+  const [file] = event.target.files || [];
+  if (!file) {
+    return;
+  }
+
+  if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+    setStatus("Envie uma imagem JPG, PNG ou WEBP para a IA Carioquinha.", "error");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    setStatus("A imagem da IA precisa ter até 2 MB.", "error");
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    const imageData = String(reader.result || "");
+    localStorage.setItem("carioquinhaDashboardPhoto", imageData);
+    renderCarioquinhaPhoto(imageData);
+    setStatus("Foto da IA Carioquinha atualizada.", "success");
+  });
+  reader.readAsDataURL(file);
+});
+
 function getUserInitials(value) {
   return String(value || "U")
     .split(/\s+/)
@@ -1507,6 +3020,7 @@ if (mobileProfileButton) {
 }
 
 const mobileMoreButton = document.getElementById("dashboard-mobile-more");
+const mobileMenuButton = document.getElementById("dashboard-mobile-menu");
 const mobileDrawerBackdrop = document.getElementById("dashboard-mobile-drawer-backdrop");
 const mobileDrawerClose = document.getElementById("dashboard-mobile-drawer-close");
 
@@ -1521,6 +3035,9 @@ function toggleMobileDrawer(open) {
 }
 
 mobileMoreButton?.addEventListener("click", () => {
+  toggleMobileDrawer(mobileDrawerBackdrop?.hidden !== false);
+});
+mobileMenuButton?.addEventListener("click", () => {
   toggleMobileDrawer(mobileDrawerBackdrop?.hidden !== false);
 });
 mobileDrawerClose?.addEventListener("click", () => toggleMobileDrawer(false));
