@@ -2785,6 +2785,10 @@ button.active,
     grid-template-columns: 1fr;
   }
 
+  .premium-dashboard {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
   .premium-phone-card {
     place-items: stretch;
   }
@@ -4636,6 +4640,7 @@ pre {
     display: flex;
     flex: 0 0 auto;
     gap: 8px;
+    min-width: 0;
   }
 
   .dashboard-mobile-topbar-actions button {
@@ -4667,13 +4672,20 @@ pre {
     display: grid;
     grid-template-columns: 1fr 1fr;
     justify-content: stretch;
+    min-width: 0;
   }
 
   .premium-topbar-actions select,
+  .premium-topbar-actions button,
   .premium-icon-button,
   .premium-logout {
     min-width: 0;
     width: 100%;
+    max-width: 100%;
+  }
+
+  .premium-topbar-actions > * {
+    min-width: 0;
   }
 
   .premium-icon-button {
@@ -7705,6 +7717,10 @@ body .inventory-grid {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
+  body .premium-dashboard {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
   body .premium-page-hero,
   body .premium-page-header,
   body .mockup-header,
@@ -8062,7 +8078,7 @@ body .inventory-grid {
 
 /* =========================================================
    HOTFIX DASHBOARD MOBILE - iPhone 16 Pro
-   Corrige apenas a página inicial/dashboard
+   Corrige apenas a pï¿½gina inicial/dashboard
    ========================================================= */
 @media (max-width: 768px) {
   body.dashboard-page,
@@ -8165,7 +8181,7 @@ body .inventory-grid {
 
 /* =========================================================
    HOTFIX DASHBOARD MOBILE - iPhone 16 Pro
-   Corrige apenas a página inicial/dashboard
+   Corrige apenas a pï¿½gina inicial/dashboard
    ========================================================= */
 @media (max-width: 768px) {
   .dashboard-page .sidebar,
@@ -8319,5 +8335,18 @@ body .inventory-grid {
     margin-left: 0 !important;
     margin-right: 0 !important;
     box-sizing: border-box !important;
+  }
+
+  body.dashboard-mobile-fix .premium-dashboard,
+  body.dashboard-mobile-fix .premium-topbar,
+  body.dashboard-mobile-fix .dashboard-mobile-topbar,
+  body.dashboard-mobile-fix .premium-topbar-actions,
+  body.dashboard-mobile-fix .dashboard-mobile-action-grid,
+  body.dashboard-mobile-fix .dashboard-mobile-drawer-grid,
+  body.dashboard-mobile-fix .premium-dashboard-grid,
+  body.dashboard-mobile-fix .premium-lower-grid {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
