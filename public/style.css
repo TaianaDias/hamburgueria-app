@@ -8162,3 +8162,100 @@ body .inventory-grid {
     max-width: 100%;
   }
 }
+
+/* =========================================================
+   HOTFIX DASHBOARD MOBILE - iPhone 16 Pro
+   Corrige apenas a página inicial/dashboard
+   ========================================================= */
+@media (max-width: 768px) {
+  .dashboard-page .sidebar,
+  .dashboard-page aside,
+  .dashboard-page .app-sidebar,
+  .dashboard-page .desktop-sidebar,
+  .dashboard-main .sidebar,
+  .dashboard-content .sidebar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+  }
+
+  .dashboard-page .app-shell,
+  .dashboard-page .layout,
+  .dashboard-page .app-layout,
+  .dashboard-page .main-shell,
+  .dashboard-page .page-layout {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow-x: hidden !important;
+  }
+
+  .dashboard-main,
+  .dashboard-content,
+  main.dashboard-main,
+  main.dashboard-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 120px !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .dashboard-grid,
+  .dashboard-cards,
+  .dashboard-metrics,
+  .dashboard-stats,
+  .metrics-grid,
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    gap: 16px !important;
+  }
+
+  .dashboard-card,
+  .dashboard-main .card,
+  .dashboard-content .card,
+  .dashboard-main .glass-card,
+  .dashboard-content .glass-card,
+  .metric-card,
+  .stat-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-filters,
+  .dashboard-main .filters,
+  .dashboard-content .filters,
+  .filter-bar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-main *,
+  .dashboard-content * {
+    max-width: 100%;
+  }
+}
