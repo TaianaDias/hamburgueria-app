@@ -1,15 +1,15 @@
 const NAV_ITEMS = [
   { href: "dashboard-saas.html", label: "Vis\u00e3o Geral", icon: "home", matches: ["dashboard-saas.html", "dashboard.html", "index.html"] },
   { href: "estoque.html", label: "Central de Estoque", icon: "boxes", matches: ["estoque.html", "inventario.html"] },
-  { href: "producao-etiquetas.html", label: "Produ\u00e7\u00e3o", icon: "chef", matches: ["producao-etiquetas.html", "producao.html", "reposicao-producao.html"] },
-  { href: "compras.html", label: "Compras", icon: "cart", matches: ["compras.html", "dashboard-compras.html", "alertas-reposicao.html", "analise-compras.html"] },
-  { href: "treinamento.html", label: "Treinamento", icon: "graduation", matches: ["treinamento.html"] },
+  { href: "alertas-reposicao.html", label: "Reposi\u00e7\u00e3o Inteligente", icon: "package", matches: ["alertas-reposicao.html", "reposicao-producao.html"] },
+  { href: "producao-etiquetas.html", label: "Produ\u00e7\u00e3o", icon: "chef", matches: ["producao-etiquetas.html", "producao.html"] },
+  { href: "compras.html", label: "Intelig\u00eancia de Compras", icon: "cart", matches: ["compras.html", "dashboard-compras.html", "analise-compras.html"] },
   { href: "fornecedores.html", label: "Fornecedores", icon: "truck", matches: ["fornecedores.html"] },
   { href: "desperdicio.html", label: "Desperd\u00edcio", icon: "alert", matches: ["desperdicio.html"] },
-  { href: "relatorio-diario.html", label: "Relat\u00f3rios", icon: "chart", matches: ["relatorio-diario.html", "relatorio.html"] },
   { href: "impressora.html", label: "Etiquetas", icon: "tag", matches: ["impressora.html", "etiquetas.html"] },
   { href: "whatsapp-ia.html", label: "WhatsApp e IA", icon: "bot", matches: ["whatsapp-ia.html"] },
   { href: "funcionarios.html", label: "Equipe", icon: "users", matches: ["funcionarios.html", "funcionarias.html"] },
+  { href: "treinamento.html", label: "Treinamentos", icon: "graduation", matches: ["treinamento.html"] },
   { href: "saas.html", label: "Configura\u00e7\u00f5es", icon: "settings", matches: ["saas.html", "configuracoes.html"] }
 ];
 
@@ -17,6 +17,7 @@ function svgIcon(name) {
   const icons = {
     home: '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h5v-5h4v5h5v-9.5"/></svg>',
     boxes: '<svg viewBox="0 0 24 24"><path d="M7 8h10v10H7z"/><path d="M3 6h8v8H3z"/><path d="M13 6h8v8h-8z"/></svg>',
+    package: '<svg viewBox="0 0 24 24"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/><path d="m7.5 4.3 9 5.2"/><path d="m16.5 4.3-9 5.2"/></svg>',
     chef: '<svg viewBox="0 0 24 24"><path d="M6 18h12"/><path d="M7 18v-6"/><path d="M17 18v-6"/><path d="M8 12c-2 0-4-1.5-4-3.5S5.5 5 7.5 5c.8-1.8 2.4-3 4.5-3s3.7 1.2 4.5 3c2 0 3.5 1.5 3.5 3.5S18 12 16 12"/></svg>',
     cart: '<svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h3l3 12h10l3-8H7"/></svg>',
     truck: '<svg viewBox="0 0 24 24"><path d="M3 7h11v10H3z"/><path d="M14 11h4l3 3v3h-7"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>',

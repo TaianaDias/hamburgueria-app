@@ -321,9 +321,19 @@
           </select>
         </div>
 
-        <div class="field-group">
-          <label for="novo_imagem_url">Imagem do produto</label>
-          <input id="novo_imagem_url" placeholder="URL da imagem">
+        <div class="field-group product-image-manager">
+          <label for="novo_imagem_upload">Imagem do produto</label>
+          <div class="product-image-preview">
+            <img id="product-image-preview" alt="Prévia da imagem do produto" hidden>
+            <span id="product-image-placeholder">IMG</span>
+          </div>
+          <p id="product-image-origin" class="muted">Use a imagem encontrada pelo código de barras, envie uma foto ou mantenha o placeholder premium.</p>
+          <input id="novo_imagem_url" type="url" placeholder="URL manual da imagem, se preferir">
+          <input id="novo_imagem_upload" type="file" accept="image/jpeg,image/png,image/webp">
+          <div class="inline-actions product-image-actions">
+            <button id="use-cosmos-image" class="secondary" type="button" disabled>Usar imagem do Cosmos</button>
+            <button id="remove-product-image" class="secondary" type="button">Remover imagem</button>
+          </div>
         </div>
       </div>
 
@@ -594,7 +604,7 @@
 </main>
 
 <script type="module">
-import { db } from "./firebase.js";
+import { db, storage } from "./firebase.js";
 import { getCachedBarcodeProduct, saveCachedBarcodeProduct } from "./barcode-cache.js";
 import {
   addDoc,
@@ -610,6 +620,11 @@ import {
   where,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getDownloadURL,
+  ref as storageRef,
+  uploadBytes
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import {
   ORDER_WEEKDAYS,
   apiFetch,
@@ -680,6 +695,12 @@ const categoryInput = document.getElementById("novo_categoria");
 const categoryTypeInput = document.getElementById("novo_tipo_categoria");
 const categoryDatalist = document.getElementById("product-categories");
 const imageInput = document.getElementById("novo_imagem_url");
+const productImageUploadInput = document.getElementById("novo_imagem_upload");
+const productImagePreview = document.getElementById("product-image-preview");
+const productImagePlaceholder = document.getElementById("product-image-placeholder");
+const productImageOrigin = document.getElementById("product-image-origin");
+const useCosmosImageButton = document.getElementById("use-cosmos-image");
+const removeProductImageButton = document.getElementById("remove-product-image");
 const purchaseUnitInput = document.getElementById("novo_unidade_compra");
 const storageLocationInput = document.getElementById("novo_local_armazenamento");
 const productStatusInput = document.getElementById("novo_status_produto");
@@ -757,6 +778,198 @@ if (profile?.tipo === "estoque") {
 
 if (!isAdmin) {
   resetButton.hidden = true;
+}
+
+const PRODUCT_IMAGE_MAX_SIZE_BYTES = 2 * 1024 * 1024;
+const PRODUCT_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const productImageState = {
+  cosmosUrl: "",
+  uploadFile: null,
+  uploadPreviewUrl: "",
+  uploadUrl: "",
+  principal: "placeholder"
+};
+
+function getLookupImageUrl(product = {}) {
+  return normalizeLookupField(
+    product.imagemCosmosUrl ||
+    product.imagemUrl ||
+    product.imageUrl ||
+    product.image_url ||
+    product.thumbnail ||
+    product.foto ||
+    product.photoUrl ||
+    ""
+  );
+}
+
+function revokeProductImagePreviewUrl() {
+  if (productImageState.uploadPreviewUrl) {
+    URL.revokeObjectURL(productImageState.uploadPreviewUrl);
+    productImageState.uploadPreviewUrl = "";
+  }
+}
+
+function getCreateProductImagePreviewUrl() {
+  if (productImageState.principal === "upload") {
+    return productImageState.uploadPreviewUrl || productImageState.uploadUrl || imageInput.value.trim();
+  }
+
+  if (productImageState.principal === "cosmos") {
+    return productImageState.cosmosUrl;
+  }
+
+  return "";
+}
+
+function renderCreateProductImagePreview() {
+  const previewUrl = getCreateProductImagePreviewUrl();
+
+  if (productImagePreview) {
+    productImagePreview.hidden = !previewUrl;
+    productImagePreview.src = previewUrl || "";
+    productImagePreview.onerror = () => {
+      productImagePreview.hidden = true;
+
+      if (productImagePlaceholder) {
+        productImagePlaceholder.hidden = false;
+      }
+
+      if (productImageOrigin) {
+        productImageOrigin.textContent = "A imagem selecionada não carregou. O placeholder premium será usado se ela continuar indisponível.";
+      }
+    };
+  }
+
+  if (productImagePlaceholder) {
+    productImagePlaceholder.hidden = Boolean(previewUrl);
+  }
+
+  if (useCosmosImageButton) {
+    useCosmosImageButton.disabled = !productImageState.cosmosUrl;
+  }
+
+  if (productImageOrigin) {
+    const labels = {
+      upload: "Imagem manual selecionada. Ela terá prioridade como imagem principal.",
+      cosmos: "Imagem encontrada automaticamente pelo Cosmos. Revise antes de salvar.",
+      placeholder: productImageState.cosmosUrl
+        ? "Imagem do Cosmos disponível. Clique em Usar imagem do Cosmos para aplicar."
+        : "Nenhuma imagem selecionada. O sistema usará o placeholder premium."
+    };
+    productImageOrigin.textContent = labels[productImageState.principal] || labels.placeholder;
+  }
+}
+
+function resetProductImageState() {
+  revokeProductImagePreviewUrl();
+  productImageState.cosmosUrl = "";
+  productImageState.uploadFile = null;
+  productImageState.uploadUrl = "";
+  productImageState.principal = "placeholder";
+
+  if (productImageUploadInput) {
+    productImageUploadInput.value = "";
+  }
+
+  if (imageInput) {
+    imageInput.value = "";
+  }
+
+  renderCreateProductImagePreview();
+}
+
+function setCosmosProductImage(url) {
+  productImageState.cosmosUrl = normalizeLookupField(url);
+
+  if (productImageState.cosmosUrl && productImageState.principal !== "upload") {
+    productImageState.principal = "cosmos";
+  }
+
+  renderCreateProductImagePreview();
+}
+
+function validateProductImageFile(file) {
+  if (!file) {
+    return;
+  }
+
+  if (!PRODUCT_IMAGE_TYPES.has(file.type)) {
+    throw new Error("A imagem precisa estar em JPG, PNG ou WEBP.");
+  }
+
+  if (file.size > PRODUCT_IMAGE_MAX_SIZE_BYTES) {
+    throw new Error("A imagem precisa ter no máximo 2 MB.");
+  }
+}
+
+function setUploadProductImage(file) {
+  validateProductImageFile(file);
+  revokeProductImagePreviewUrl();
+  productImageState.uploadFile = file || null;
+  productImageState.uploadUrl = "";
+  productImageState.uploadPreviewUrl = file ? URL.createObjectURL(file) : "";
+  productImageState.principal = file ? "upload" : (productImageState.cosmosUrl ? "cosmos" : "placeholder");
+  renderCreateProductImagePreview();
+}
+
+function getFinalProductImageUrl(item = {}) {
+  const uploadUrl = item.imagemUploadUrl || (item.imagemPrincipal === "upload" ? item.imagemUrl : "");
+  const cosmosUrl = item.imagemCosmosUrl || (item.imagemPrincipal === "cosmos" ? item.imagemUrl : "");
+
+  if (uploadUrl) {
+    return uploadUrl;
+  }
+
+  if (cosmosUrl) {
+    return cosmosUrl;
+  }
+
+  return item.imagem || item.imagemUrl || item.imageUrl || item.foto || item.photoUrl || "";
+}
+
+function sanitizeStorageFileName(value = "produto") {
+  return normalizeText(value || "produto").replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "produto";
+}
+
+async function uploadProductImage(file, productKey) {
+  if (!file) {
+    return "";
+  }
+
+  validateProductImageFile(file);
+  const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const safeName = sanitizeStorageFileName(productKey);
+  const imageRef = storageRef(storage, `produtos/${safeName}-${Date.now()}.${extension}`);
+  await uploadBytes(imageRef, file, { contentType: file.type });
+  return getDownloadURL(imageRef);
+}
+
+async function buildCreateProductImagePayload(productKey) {
+  const manualUrl = imageInput.value.trim();
+  let uploadUrl = manualUrl;
+
+  if (productImageState.uploadFile) {
+    uploadUrl = await uploadProductImage(productImageState.uploadFile, productKey);
+  }
+
+  const principal = uploadUrl
+    ? "upload"
+    : productImageState.principal === "cosmos" && productImageState.cosmosUrl
+      ? "cosmos"
+      : "placeholder";
+  const finalUrl = principal === "upload"
+    ? uploadUrl
+    : principal === "cosmos"
+      ? productImageState.cosmosUrl
+      : "";
+
+  return {
+    imagemCosmosUrl: productImageState.cosmosUrl,
+    imagemUploadUrl: uploadUrl,
+    imagemPrincipal: principal,
+    imagemUrl: finalUrl
+  };
 }
 
 let fornecedores = [];
@@ -1029,6 +1242,8 @@ async function lookupQuickBoxProduct() {
           nome: normalizeLookupField(response?.product?.nome),
           marca: normalizeLookupField(response?.product?.marca),
           categoria: normalizeLookupField(response?.product?.categoria),
+          imagemCosmosUrl: normalizeLookupField(response?.product?.imagemCosmosUrl),
+          imagemUrl: normalizeLookupField(response?.product?.imagemUrl || response?.product?.imageUrl),
           fonte: response?.source || "codigo-barras"
         }))
         .catch((error) => {
@@ -1105,6 +1320,10 @@ function buildQuickBoxProductPayload(nextStockBoxes, movement) {
   const currentUnitCost = toNumber(quickBoxState.product?.unit_cost ?? quickBoxState.product?.custoUnitario, 0);
   const existingMeasureUnit = quickBoxState.product?.unidadeMedida || (movement?.unit === "unidade" ? "un" : (movement?.unit || "caixa"));
   const existingUsageUnit = quickBoxState.product?.unidadeUso || "un";
+  const externalImageUrl = getLookupImageUrl(quickBoxState.externalProduct);
+  const currentImageUploadUrl = quickBoxState.product?.imagemUploadUrl || "";
+  const currentImageCosmosUrl = quickBoxState.product?.imagemCosmosUrl || externalImageUrl;
+  const currentImagePrincipal = currentImageUploadUrl ? "upload" : currentImageCosmosUrl ? "cosmos" : "placeholder";
   const equivalentBoxes = Math.max(0, movement?.stockDeltaBoxes ?? 0);
   const effectiveBoxCost = entryTotalCost > 0 && equivalentBoxes > 0
     ? entryTotalCost / equivalentBoxes
@@ -1151,6 +1370,10 @@ function buildQuickBoxProductPayload(nextStockBoxes, movement) {
     custoCompra: effectiveBoxCost || currentBoxPrice,
     custoUnitario: unitCost,
     custo: unitCost,
+    imagemCosmosUrl: currentImageCosmosUrl,
+    imagemUploadUrl: currentImageUploadUrl,
+    imagemPrincipal: currentImagePrincipal,
+    imagemUrl: currentImageUploadUrl || currentImageCosmosUrl || "",
     origemCadastro: "codigo_barras_operacao",
     atualizadoEm: serverTimestamp()
   };
@@ -1504,6 +1727,7 @@ function applyBarcodeLookupProduct(product, options = {}) {
   syncUnitMeasureFields();
 
   const nextName = normalizeLookupField(product?.nome);
+  const imageUrl = getLookupImageUrl(product);
 
   if (nextName && (!preserveName || !nameInput.value.trim())) {
     nameInput.value = nextName;
@@ -1513,10 +1737,14 @@ function applyBarcodeLookupProduct(product, options = {}) {
     nameInput.value = "";
   }
 
+  if (imageUrl) {
+    setCosmosProductImage(imageUrl);
+  }
+
   setStatus(
     "barcode-status",
     nextName
-      ? `Produto localizado via ${source}. Revise os dados e salve quando estiver tudo certo.`
+      ? `Produto localizado via ${source}. ${imageUrl ? "Imagem encontrada automaticamente. " : ""}Revise os dados e salve quando estiver tudo certo.`
       : "Produto não encontrado nas bases automáticas. Continue com o cadastro manual.",
     nextName ? "success" : "info"
   );
@@ -1531,7 +1759,7 @@ function resetCreateProductForm() {
   brandInput.value = "";
   categoryInput.value = "";
   categoryTypeInput.value = "";
-  imageInput.value = "";
+  resetProductImageState();
   purchaseUnitInput.value = "caixa";
   storageLocationInput.value = "";
   productStatusInput.value = "ativo";
@@ -1595,6 +1823,8 @@ async function lookupBarcodeProduct(barcode) {
       nome: normalizeLookupField(response?.product?.nome),
       marca: normalizeLookupField(response?.product?.marca),
       categoria: normalizeLookupField(response?.product?.categoria),
+      imagemCosmosUrl: normalizeLookupField(response?.product?.imagemCosmosUrl),
+      imagemUrl: normalizeLookupField(response?.product?.imagemUrl || response?.product?.imageUrl),
       fonte: response?.source || "manual"
     };
 
@@ -2185,7 +2415,7 @@ function getProductSku(item = {}) {
 }
 
 function getProductImage(item = {}) {
-  return item.imagem || item.imagemUrl || item.imageUrl || item.foto || item.photoUrl || "";
+  return getFinalProductImageUrl(item);
 }
 
 function getProductInitials(name = "") {
@@ -3249,8 +3479,14 @@ function renderProducts(items) {
     fields.appendChild(createField(`expiration_${item.id}`, "Validade original", item.validadeOriginal || "", {
       type: "date"
     }));
-    fields.appendChild(createField(`image_${item.id}`, "Imagem", getProductImage(item), {
-      type: "text"
+    fields.appendChild(createField(`image_${item.id}`, "Imagem principal", getProductImage(item), {
+      type: "url"
+    }));
+    fields.appendChild(createField(`image_cosmos_${item.id}`, "Imagem Cosmos", item.imagemCosmosUrl || "", {
+      type: "url"
+    }));
+    fields.appendChild(createField(`image_upload_${item.id}`, "Imagem manual", item.imagemUploadUrl || "", {
+      type: "url"
     }));
 
     const orderDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasPedido");
@@ -3425,6 +3661,14 @@ function renderProducts(items) {
         const localArmazenamento = document.getElementById(`storage_${item.id}`).value.trim();
         const validadeOriginal = document.getElementById(`expiration_${item.id}`).value || "";
         const imagemUrl = document.getElementById(`image_${item.id}`).value.trim();
+        const imagemCosmosUrl = document.getElementById(`image_cosmos_${item.id}`).value.trim();
+        const imagemUploadUrl = document.getElementById(`image_upload_${item.id}`).value.trim();
+        const imagemPrincipal = imagemUploadUrl || (imagemUrl && imagemUrl !== imagemCosmosUrl)
+          ? "upload"
+          : imagemCosmosUrl
+            ? "cosmos"
+            : "placeholder";
+        const imagemFinal = imagemUploadUrl || imagemCosmosUrl || imagemUrl || "";
         const duplicateBarcode = codigoBarras
           ? produtos.some((candidate) => candidate.id !== item.id && normalizeBarcode(candidate.codigoBarras) === codigoBarras)
           : false;
@@ -3460,7 +3704,10 @@ function renderProducts(items) {
           maximo,
           localArmazenamento,
           validadeOriginal,
-          imagemUrl,
+          imagemCosmosUrl,
+          imagemUploadUrl,
+          imagemPrincipal,
+          imagemUrl: imagemFinal,
           origemCadastro: codigoBarras ? "codigo_barras" : "manual",
           ...buildPrimarySupplierFields(nextSuppliers, item),
           atualizadoEm: serverTimestamp()
@@ -3564,7 +3811,7 @@ function renderProducts(items) {
       <div class="inventory-product-topline">
         <div class="inventory-product-media" aria-hidden="true">
           ${productImage
-            ? `<img src="${escapeHtml(productImage)}" alt="">`
+            ? `<img src="${escapeHtml(productImage)}" alt="" onerror="this.hidden=true; this.nextElementSibling.hidden=false;"><span hidden>${escapeHtml(getProductInitials(item.nome))}</span>`
             : `<span>${escapeHtml(getProductInitials(item.nome))}</span>`}
         </div>
         <div class="inventory-product-title">
@@ -4510,6 +4757,59 @@ manualProductToggle.addEventListener("change", async () => {
 lookupBarcodeButton.addEventListener("click", async () => {
   await lookupBarcodeProduct(barcodeInput.value);
 });
+
+productImageUploadInput?.addEventListener("change", () => {
+  try {
+    const file = productImageUploadInput.files?.[0] || null;
+    setUploadProductImage(file);
+    setStatus("status", file ? "Imagem manual pronta para upload ao salvar o produto." : "", "info");
+  } catch (error) {
+    productImageUploadInput.value = "";
+    setStatus("status", error.message || "Não foi possível carregar a imagem.", "error");
+  }
+});
+
+imageInput?.addEventListener("input", () => {
+  const url = imageInput.value.trim();
+
+  if (url) {
+    revokeProductImagePreviewUrl();
+    productImageState.uploadFile = null;
+    productImageState.uploadUrl = url;
+    productImageState.principal = "upload";
+  } else if (productImageState.principal === "upload" && !productImageState.uploadFile) {
+    productImageState.uploadUrl = "";
+    productImageState.principal = productImageState.cosmosUrl ? "cosmos" : "placeholder";
+  }
+
+  renderCreateProductImagePreview();
+});
+
+useCosmosImageButton?.addEventListener("click", () => {
+  if (!productImageState.cosmosUrl) {
+    setStatus("status", "Nenhuma imagem do Cosmos foi encontrada para este produto.", "info");
+    return;
+  }
+
+  productImageState.principal = "cosmos";
+  productImageState.uploadFile = null;
+  productImageState.uploadUrl = "";
+  revokeProductImagePreviewUrl();
+
+  if (productImageUploadInput) {
+    productImageUploadInput.value = "";
+  }
+
+  imageInput.value = "";
+  renderCreateProductImagePreview();
+  setStatus("status", "Imagem do Cosmos selecionada como imagem principal.", "success");
+});
+
+removeProductImageButton?.addEventListener("click", () => {
+  resetProductImageState();
+  setStatus("status", "Imagem removida. O placeholder premium será usado.", "info");
+});
+
 startScanButton.addEventListener("click", async () => {
   await startBarcodeScanner();
 });
@@ -4670,6 +4970,8 @@ form.addEventListener("submit", async (event) => {
       throw new Error("Adicione pelo menos um fornecedor ao produto antes de salvar.");
     }
 
+    const productImagePayload = await buildCreateProductImagePayload(codigoBarras || nome);
+
     await addDoc(collection(db, "estoque"), {
       codigoBarras,
       codigoBarrasNormalizado: codigoBarras,
@@ -4680,7 +4982,10 @@ form.addEventListener("submit", async (event) => {
       marca,
       categoria,
       tipoCategoria,
-      imagemUrl: imageInput.value.trim(),
+      imagemCosmosUrl: productImagePayload.imagemCosmosUrl,
+      imagemUploadUrl: productImagePayload.imagemUploadUrl,
+      imagemPrincipal: productImagePayload.imagemPrincipal,
+      imagemUrl: productImagePayload.imagemUrl,
       unidadeCompra,
       unidadeMedida,
       quantidade,
@@ -4708,6 +5013,8 @@ form.addEventListener("submit", async (event) => {
         nome,
         marca,
         categoria,
+        imagemCosmosUrl: productImagePayload.imagemCosmosUrl,
+        imagemUrl: productImagePayload.imagemUrl,
         fonte: cadastroManual ? "cadastro-manual" : "codigo-barras"
       }).catch(() => null);
     }

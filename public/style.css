@@ -5251,6 +5251,207 @@ textarea:focus {
   box-shadow: var(--shadow-premium);
 }
 
+/* Ajuste fino para aproximar o dashboard real do blueprint premium React. */
+.premium-app-shell {
+  display: flex;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    #070707;
+}
+
+.premium-sidebar,
+.premium-global-sidebar {
+  width: 288px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.premium-brand,
+.premium-global-brand {
+  display: block;
+  margin-bottom: 16px;
+  padding: 20px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #dc2626, #7f1d1d);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 20px 45px rgba(127, 29, 29, 0.40);
+  transition: transform 0.2s ease;
+}
+
+.premium-brand:hover,
+.premium-global-brand:hover {
+  transform: scale(1.02);
+}
+
+.premium-brand .brand-eyebrow,
+.premium-global-brand small:first-child {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(254, 226, 226, 0.82);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.premium-brand > strong,
+.premium-global-brand > strong {
+  display: block;
+  margin-top: 2px;
+  color: #fff;
+  font-size: 1.55rem;
+  line-height: 1.05;
+  font-weight: 900;
+}
+
+.premium-brand > small,
+.premium-global-brand > small {
+  display: block;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+}
+
+.dashboard-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.dashboard-user-chip .premium-brand-mark {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+}
+
+.dashboard-user-chip strong,
+.dashboard-user-chip small {
+  display: block;
+}
+
+.premium-nav,
+.premium-global-nav {
+  display: grid;
+  gap: 4px;
+}
+
+.premium-nav a,
+.premium-global-nav a,
+.premium-nav-logout,
+.premium-global-logout {
+  min-height: 46px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 0.92rem;
+}
+
+.premium-nav a.active,
+.premium-global-nav a.active {
+  background: #fff;
+  color: #000;
+}
+
+.premium-dashboard {
+  flex: 1;
+  padding: 32px;
+}
+
+.mockup-unit-label {
+  margin: 0 0 4px;
+  color: #a1a1aa;
+  font-size: 0.9rem;
+}
+
+.premium-topbar h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.premium-kpi-grid {
+  gap: 16px;
+}
+
+.premium-kpi-card {
+  min-height: 178px;
+  padding: 22px;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.premium-kpi-card.green,
+.premium-kpi-card.amber,
+.premium-kpi-card.red,
+.premium-kpi-card.violet {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032)),
+    rgba(0, 0, 0, 0.30);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.premium-panel,
+.premium-phone-card,
+.premium-action-card {
+  border-radius: 32px;
+}
+
+.premium-action-card {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.premium-alert-drawer {
+  max-width: 448px;
+  background: #101010;
+}
+
+/* Imagem inteligente no cadastro de insumos. */
+.product-image-manager {
+  grid-column: 1 / -1;
+}
+
+.product-image-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 260px);
+  min-height: 150px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.15), transparent 42%),
+    rgba(0, 0, 0, 0.30);
+  overflow: hidden;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.30);
+}
+
+.product-image-preview img {
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  object-fit: cover;
+}
+
+.product-image-preview span {
+  color: #fecaca;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.product-image-actions {
+  margin-top: 4px;
+}
+
 /* Glassmorphism premium: deixa cards e painéis com aparência real de vidro escuro. */
 :root {
   --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032));

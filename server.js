@@ -704,7 +704,7 @@ async function recordOperationalCommand(payload = {}) {
 
 async function lookupOpenFoodFactsProduct(barcode) {
   const response = await fetch(
-    `https://world.openfoodfacts.net/api/v2/product/${barcode}?fields=code,product_name,brands,categories,categories_tags`,
+    `https://world.openfoodfacts.net/api/v2/product/${barcode}?fields=code,product_name,brands,categories,categories_tags,image_url,image_front_url,selected_images`,
     {
       headers: {
         "User-Agent": "BurgerOps/1.0 (barcode lookup)"
@@ -726,12 +726,21 @@ async function lookupOpenFoodFactsProduct(barcode) {
   const product = payload.product;
   const categoryText = normalizeLookupText(product.categories);
   const inferredCategory = inferCategoryFromText(categoryText);
+  const imagemUrl = normalizeLookupText(
+    product.image_front_url ||
+    product.image_url ||
+    product?.selected_images?.front?.display?.pt ||
+    product?.selected_images?.front?.display?.en ||
+    ""
+  );
 
   return {
     barcode,
     nome: normalizeLookupText(product.product_name),
     marca: normalizeLookupText(product.brands),
     categoria: inferredCategory || categoryText || "insumo",
+    imagemUrl,
+    imagemCosmosUrl: "",
     fonte: "open-food-facts"
   };
 }
@@ -846,12 +855,31 @@ async function lookupCosmosProduct(barcode) {
   const payload = await response.json();
   const gpcCategory = normalizeLookupText(payload?.gpc?.description);
   const inferredCategory = inferCategoryFromText(gpcCategory);
+  const imagemCosmosUrl = normalizeLookupText(
+    payload?.thumbnail ||
+    payload?.image ||
+    payload?.imageUrl ||
+    payload?.image_url ||
+    payload?.picture ||
+    payload?.pictureUrl ||
+    payload?.picture_url ||
+    payload?.urlImage ||
+    payload?.gtin?.thumbnail ||
+    payload?.gtin?.image ||
+    payload?.product?.thumbnail ||
+    payload?.product?.image ||
+    payload?.product?.imageUrl ||
+    payload?.product?.image_url ||
+    ""
+  );
 
   return {
     barcode,
     nome: normalizeLookupText(payload?.description),
     marca: normalizeLookupText(payload?.brand?.name),
     categoria: inferredCategory || gpcCategory || "insumo",
+    imagemCosmosUrl,
+    imagemUrl: imagemCosmosUrl,
     fonte: "cosmos"
   };
 }
