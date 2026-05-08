@@ -8362,3 +8362,355 @@ body .inventory-grid {
     max-width: 100% !important;
   }
 }
+
+/* =========================================================
+   AUDITORIA FINAL DE TEMA
+   Esta camada fica por ultimo para neutralizar sobras do layout antigo
+   em verde, azul, laranja, roxo e slate. O sistema oficial agora usa
+   preto, vermelho e branco em todas as paginas.
+   ========================================================= */
+:root {
+  --bg-main: #070707;
+  --bg-panel: rgba(255, 255, 255, 0.055);
+  --bg-card-dark: rgba(0, 0, 0, 0.30);
+  --border-soft: rgba(255, 255, 255, 0.10);
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --red-main: #dc2626;
+  --red-dark: #7f1d1d;
+  --red-soft: rgba(239, 68, 68, 0.15);
+  --green-soft: rgba(220, 38, 38, 0.12);
+  --bg: #070707;
+  --bg-soft: #101010;
+  --panel: rgba(255, 255, 255, 0.055);
+  --card: rgba(255, 255, 255, 0.055);
+  --line: rgba(255, 255, 255, 0.10);
+  --border: rgba(255, 255, 255, 0.10);
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --brand: #dc2626;
+  --brand-soft: #ef4444;
+  --primary: #dc2626;
+  --primary-soft: rgba(220, 38, 38, 0.14);
+  --accent: #dc2626;
+  --success: #f4f4f5;
+  --warning: #f87171;
+  --danger: #ef4444;
+}
+
+html,
+body,
+body.premium-app-body,
+body.premium-global-body,
+body.login-premium-body,
+body.dashboard-saas-page {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.22), transparent 32%),
+    radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.07), transparent 24%),
+    linear-gradient(135deg, #070707 0%, #0d0d0f 58%, #140909 100%) !important;
+  color: #f4f4f5 !important;
+}
+
+body .premium-global-sidebar,
+body .premium-sidebar,
+body .sidebar-premium,
+body .premium-topbar,
+body .premium-page-hero,
+body .premium-page-header,
+body .mockup-header,
+body .stock-header,
+body .dashboard-header,
+body .login-premium-card,
+body .login-premium-panel,
+body .premium-panel,
+body .premium-card,
+body .premium-kpi-card,
+body .premium-action-card,
+body .prototype-kpi-card,
+body .purchase-highlight-card,
+body .purchase-dashboard-month-card,
+body .analytics-month-card-high,
+body .analytics-month-card-low,
+body .alert-card,
+body .employee-kpi-grid .card,
+body .stats-grid .card,
+body .operation-action-card,
+body .training-progress-card,
+body .training-start-card,
+body .training-step-card,
+body .training-video-card,
+body .training-profile-card,
+body .supplier-price-card,
+body .supplier-entry,
+body .inventory-product-card,
+body .product-card,
+body .inventory-card,
+body .stock-command-panel,
+body .quick-box-panel,
+body .stock-daily-entry-panel,
+body .waste-entry-panel,
+body .waste-form-card,
+body .waste-history-card,
+body .replenishment-card,
+body .automation-alert-choice,
+body .automation-log-card,
+body .panel,
+body .card,
+body .modal-premium,
+body .drawer-premium,
+body .premium-alert-drawer,
+body .dashboard-mobile-drawer,
+body .premium-confirm-dialog {
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: linear-gradient(180deg, rgba(19, 19, 22, 0.98), rgba(9, 9, 11, 0.98)) !important;
+  color: #f4f4f5 !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.40) !important;
+}
+
+body .premium-global-sidebar::before,
+body .premium-sidebar::before,
+body .premium-topbar::before,
+body .premium-page-hero::before,
+body .premium-page-header::before,
+body .mockup-header::before,
+body .stock-header::before,
+body .dashboard-header::before,
+body .premium-panel::before,
+body .premium-card::before,
+body .premium-kpi-card::before,
+body .premium-action-card::before,
+body .panel::before,
+body .card::before,
+body .product-card::before,
+body .inventory-card::before,
+body .inventory-product-card::before,
+body .stock-kpi-card::before {
+  background: radial-gradient(circle at top left, rgba(220, 38, 38, 0.16), transparent 42%) !important;
+  opacity: 1 !important;
+}
+
+body .premium-brand,
+body .brand-card,
+body .dashboard-mobile-brand span,
+body .login-logo-mark,
+body .premium-brand-mark {
+  border-color: rgba(220, 38, 38, 0.44) !important;
+  background: linear-gradient(135deg, #dc2626, #7f1d1d) !important;
+  color: #ffffff !important;
+  box-shadow: 0 18px 42px rgba(127, 29, 29, 0.34) !important;
+}
+
+body .premium-nav a.active,
+body .sidebar-nav a.active,
+body .nav-item.active,
+body .dashboard-mobile-bottom-nav a.active,
+body .premium-mobile-dock a.active,
+body .mobile-bottom-nav a.active {
+  border-color: rgba(220, 38, 38, 0.42) !important;
+  background: rgba(220, 38, 38, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+body .premium-nav span,
+body .sidebar-nav span,
+body .nav-item span,
+body .premium-svg-icon,
+body .dashboard-mobile-bottom-nav span,
+body .dashboard-mobile-drawer-grid span,
+body .premium-mobile-dock span,
+body .mobile-bottom-nav span {
+  border-color: rgba(220, 38, 38, 0.22) !important;
+  background: rgba(220, 38, 38, 0.14) !important;
+  color: #fecaca !important;
+}
+
+body h1,
+body h2,
+body h3,
+body h4,
+body strong,
+body .premium-kpi-card strong,
+body .premium-action-card strong,
+body .stock-kpi-card strong,
+body .prototype-kpi-card strong,
+body .kpi-value,
+body .premium-kpi-value {
+  color: #ffffff !important;
+  letter-spacing: 0 !important;
+}
+
+body .muted,
+body small,
+body .premium-kpi-card span,
+body .premium-action-card span,
+body .prototype-kpi-card span,
+body .stock-kpi-card span,
+body label {
+  color: #a1a1aa !important;
+}
+
+body .eyebrow,
+body .brand-eyebrow,
+body .mockup-unit-label,
+body .premium-page-chip,
+body .premium-panel-header a,
+body .login-card-head .eyebrow,
+body .login-hero-copy .eyebrow {
+  color: #f87171 !important;
+}
+
+body button,
+body .button,
+body .btn-primary,
+body .premium-primary-action,
+body .login-submit-button,
+body .create-product-button,
+body input[type="submit"] {
+  border: 1px solid rgba(220, 38, 38, 0.44) !important;
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 34px rgba(127, 29, 29, 0.24) !important;
+}
+
+body button.secondary,
+body .button.secondary,
+body .btn-secondary,
+body .premium-icon-button,
+body .login-lang-button,
+body .password-toggle,
+body select {
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: #f4f4f5 !important;
+  box-shadow: none !important;
+}
+
+body input,
+body textarea,
+body select {
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: #0b0b0d !important;
+  color: #ffffff !important;
+}
+
+body input:focus,
+body textarea:focus,
+body select:focus {
+  border-color: rgba(220, 38, 38, 0.76) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16) !important;
+}
+
+body .premium-kpi-card.green,
+body .premium-kpi-card.amber,
+body .premium-kpi-card.orange,
+body .premium-kpi-card.blue,
+body .premium-kpi-card.violet,
+body .premium-kpi-card.purple,
+body .premium-action-card.green,
+body .premium-action-card.amber,
+body .premium-action-card.orange,
+body .premium-action-card.blue,
+body .premium-action-card.violet,
+body .premium-action-card.purple,
+body .premium-action-card.urgent,
+body .purchase-highlight-card.success,
+body .purchase-highlight-card.warning,
+body .purchase-highlight-card.info,
+body .analytics-month-card-high,
+body .analytics-month-card-low {
+  border-color: rgba(220, 38, 38, 0.32) !important;
+  background:
+    radial-gradient(circle at top left, rgba(220, 38, 38, 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(19, 19, 22, 0.98), rgba(9, 9, 11, 0.98)) !important;
+}
+
+body .status.info,
+body .status.warning,
+body .status.success,
+body .status.error,
+body .stock-lookup-chip,
+body .stock-badge,
+body .stock-badge.ok,
+body .badge,
+body .pill-danger,
+body .pill-success,
+body .replenishment-status,
+body .supplier-chip,
+body .category-chip {
+  border: 1px solid rgba(220, 38, 38, 0.30) !important;
+  background: rgba(220, 38, 38, 0.12) !important;
+  color: #fecaca !important;
+}
+
+body .premium-health-ring,
+body .premium-health-row > strong {
+  border-color: rgba(220, 38, 38, 0.86) !important;
+}
+
+body .premium-movement-icon.green,
+body .premium-movement-icon.blue,
+body .premium-movement-icon.purple,
+body .premium-movement-icon.red,
+body .premium-alert-icon.green,
+body .premium-alert-icon.amber,
+body .premium-alert-icon.red,
+body .premium-phone-actions .green,
+body .premium-phone-actions .orange,
+body .premium-phone-actions .blue,
+body .premium-phone-actions .purple,
+body .premium-phone-actions .amber,
+body .premium-phone-actions .cyan,
+body .premium-phone-actions .teal,
+body .dashboard-mobile-action-grid .green,
+body .dashboard-mobile-action-grid .orange,
+body .dashboard-mobile-action-grid .blue,
+body .dashboard-mobile-action-grid .purple,
+body .dashboard-mobile-action-grid .amber,
+body .dashboard-mobile-action-grid .cyan,
+body .dashboard-mobile-action-grid .teal,
+body .operation-action-card span,
+body .training-step-card span,
+body .login-feature-grid article span {
+  border-color: rgba(220, 38, 38, 0.24) !important;
+  background: rgba(220, 38, 38, 0.14) !important;
+  color: #fecaca !important;
+  box-shadow: none !important;
+}
+
+body .premium-chart-line.green,
+body .premium-chart-line.blue,
+body .premium-chart-dot,
+body .premium-chart-point,
+body .month-bar-fill,
+body .replenishment-progress-green,
+body .replenishment-progress-amber,
+body .replenishment-progress-red {
+  stroke: #dc2626 !important;
+  fill: #dc2626 !important;
+  background: linear-gradient(90deg, #dc2626, #991b1b) !important;
+}
+
+body th {
+  background: #111113 !important;
+  color: #ffffff !important;
+}
+
+body td {
+  background: #0d0d0f !important;
+  color: #d4d4d8 !important;
+}
+
+body .empty-state,
+body .list > article,
+body .list > div,
+body details,
+body summary,
+body .advanced-config-section,
+body .product-card-details,
+body .supplier-price-grid > *,
+body .thermal-label-preview {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: #f4f4f5 !important;
+}

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070707">
+<title>Mockup Clean Premium | Carioca's Food Service</title>
+<style>
+:root {
+  --bg: #070707;
+  --panel: #111113;
+  --panel-soft: #17171a;
+  --line: rgba(255, 255, 255, 0.10);
+  --text: #f5f5f5;
+  --muted: #a1a1aa;
+  --red: #dc2626;
+  --red-soft: rgba(220, 38, 38, 0.14);
+  --shadow: 0 28px 80px rgba(0, 0, 0, 0.46);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.18), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.06), transparent 22%),
+    var(--bg);
+}
+
+a,
+button {
+  font: inherit;
+}
+
+.app {
+  width: min(100%, 1720px);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  gap: 24px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.sidebar,
+.topbar,
+.card,
+.panel,
+.drawer-preview {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(22, 22, 25, 0.98), rgba(10, 10, 12, 0.98));
+  box-shadow: var(--shadow);
+}
+
+.sidebar {
+  position: sticky;
+  top: 20px;
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 28px;
+}
+
+.brand {
+  min-height: 86px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 18px;
+  border: 1px solid rgba(220, 38, 38, 0.38);
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--red), #7f1d1d);
+}
+
+.brand small {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.76rem;
+}
+
+.brand strong {
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
+.nav {
+  display: grid;
+  gap: 8px;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  color: #d4d4d8;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.nav a span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--red-soft);
+  color: #fecaca;
+}
+
+.nav a.active,
+.nav a:hover {
+  background: rgba(220, 38, 38, 0.16);
+  color: white;
+}
+
+.account {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--red-soft);
+  color: #fecaca;
+  font-weight: 950;
+}
+
+.main {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 24px;
+  border-radius: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #f87171;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.top-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.055);
+  color: white;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.btn.primary {
+  border-color: rgba(220, 38, 38, 0.46);
+  background: linear-gradient(135deg, var(--red), #991b1b);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card {
+  position: relative;
+  min-height: 152px;
+  display: grid;
+  align-content: space-between;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.card::before,
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at top left, rgba(220, 38, 38, 0.13), transparent 44%);
+}
+
+.card > *,
+.panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.card small {
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card strong {
+  font-size: clamp(2rem, 4vw, 2.85rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.tag {
+  width: max-content;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--red-soft);
+  color: #fecaca;
+  font-size: 0.77rem;
+  font-weight: 850;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+  gap: 18px;
+}
+
+.panel {
+  position: relative;
+  min-width: 0;
+  padding: 22px;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.tasks {
+  display: grid;
+  gap: 10px;
+}
+
+.task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.task i {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--red-soft);
+  color: #fecaca;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.task em {
+  color: #f87171;
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.assistant {
+  display: grid;
+  gap: 14px;
+}
+
+.bubble {
+  border: 1px solid rgba(220, 38, 38, 0.26);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(220, 38, 38, 0.11);
+  line-height: 1.6;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.module-grid a {
+  min-height: 104px;
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  color: white;
+  text-decoration: none;
+}
+
+.module-grid a:hover,
+.task:hover,
+.card:hover {
+  border-color: rgba(220, 38, 38, 0.46);
+  transform: translateY(-2px);
+}
+
+.drawer-preview {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .topbar,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobile-nav {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: rgba(10, 10, 12, 0.94);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-nav a {
+    display: grid;
+    place-items: center;
+    gap: 4px;
+    min-height: 52px;
+    border-radius: 16px;
+    color: #d4d4d8;
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  .mobile-nav a.active {
+    background: var(--red-soft);
+    color: white;
+  }
+}
+
+@media (max-width: 720px) {
+  .app {
+    padding: 12px 12px 104px;
+  }
+
+  .topbar,
+  .panel,
+  .card {
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .kpis,
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .top-actions {
+    justify-content: stretch;
+  }
+
+  .top-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .task {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .task em {
+    grid-column: 2;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <small>Carioca's Pro</small>
+      <strong>Food Service OS</strong>
+      <small>Controle, lucro e escala.</small>
+    </div>
+    <nav class="nav" aria-label="Menu principal">
+      <a class="active" href="#"><span>D</span>Dashboard</a>
+      <a href="#"><span>E</span>Estoque</a>
+      <a href="#"><span>P</span>Produção</a>
+      <a href="#"><span>C</span>Compras</a>
+      <a href="#"><span>W</span>Carioquinha</a>
+      <a href="#"><span>R</span>Relatórios</a>
+      <a href="#"><span>S</span>Configurações</a>
+    </nav>
+    <div class="account">
+      <span class="avatar">TD</span>
+      <span>
+        <strong>Taiana Dias</strong><br>
+        <small class="muted">Administrador</small>
+      </span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Painel executivo</p>
+        <h1>Operação clara, lucrativa e sob controle.</h1>
+        <p class="muted" style="margin-top: 12px;">Um dashboard premium para mostrar ao dono exatamente o que exige ação hoje.</p>
+      </div>
+      <div class="top-actions">
+        <button class="btn">Filtrar período</button>
+        <button class="btn">Alertas</button>
+        <button class="btn primary">Ação rápida</button>
+      </div>
+    </header>
+
+    <section class="kpis" aria-label="Indicadores principais">
+      <article class="card">
+        <small>Valor em estoque</small>
+        <strong>R$ 45.231</strong>
+        <span class="tag">+12,5% no mês</span>
+      </article>
+      <article class="card">
+        <small>Itens críticos</small>
+        <strong>23</strong>
+        <span class="tag">Comprar hoje</span>
+      </article>
+      <article class="card">
+        <small>CMV estimado</small>
+        <strong>28,4%</strong>
+        <span class="tag">Dentro da meta</span>
+      </article>
+      <article class="card">
+        <small>Perdas do mês</small>
+        <strong>R$ 186</strong>
+        <span class="tag">Atenção</span>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Prioridades de hoje</h2>
+            <p class="muted">Ações que reduzem ruptura, perda e improviso na operação.</p>
+          </div>
+          <span class="tag">Carioquinha</span>
+        </div>
+        <div class="tasks">
+          <div class="task"><i>1</i><span><strong>Comprar pão brioche</strong><br><small class="muted">Estoque atual abaixo do mínimo operacional.</small></span><em>urgente</em></div>
+          <div class="task"><i>2</i><span><strong>Imprimir etiquetas de molho</strong><br><small class="muted">Produção registrada sem etiqueta final.</small></span><em>hoje</em></div>
+          <div class="task"><i>3</i><span><strong>Revisar cheddar</strong><br><small class="muted">Fornecedor subiu preço acima da média.</small></span><em>atenção</em></div>
+          <div class="task"><i>4</i><span><strong>Conferir vencimentos</strong><br><small class="muted">3 itens vencem nas próximas 48 horas.</small></span><em>prevenir</em></div>
+        </div>
+      </article>
+
+      <aside class="panel assistant">
+        <div class="panel-head">
+          <div>
+            <h2>IA Carioquinha</h2>
+            <p class="muted">Resumo simples para decisão rápida.</p>
+          </div>
+        </div>
+        <div class="bubble">Encontrei 3 oportunidades para reduzir custo hoje: comprar pão brioche antes do pico, revisar fornecedor de cheddar e etiquetar a produção pendente.</div>
+        <button class="btn primary">Gerar plano de ação</button>
+        <div class="drawer-preview">
+          <strong>Alertas inteligentes</strong>
+          <small class="muted">Estoque mínimo, vencimento, compra sugerida e saída para produção.</small>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Módulos que vendem valor</h2>
+          <p class="muted">Cada módulo deve parecer uma central de decisão, não apenas cadastro.</p>
+        </div>
+      </div>
+      <div class="module-grid">
+        <a href="#"><strong>Central de Estoque</strong><small class="muted">Insumos, validade, custo e mínimo.</small></a>
+        <a href="#"><strong>Compras Inteligentes</strong><small class="muted">Preço, fornecedor e sugestão.</small></a>
+        <a href="#"><strong>Produção e Etiquetas</strong><small class="muted">Lote, validade e padrão.</small></a>
+        <a href="#"><strong>CMV e Ficha Técnica</strong><small class="muted">Margem real por produto.</small></a>
+        <a href="#"><strong>WhatsApp Operacional</strong><small class="muted">Admin sempre informado.</small></a>
+        <a href="#"><strong>Treinamento</strong><small class="muted">Equipe aprendendo sem suporte.</small></a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="mobile-nav" aria-label="Navegação mobile">
+  <a class="active" href="#">Dashboard</a>
+  <a href="#">Estoque</a>
+  <a href="#">Produção</a>
+  <a href="#">Compras</a>
+  <a href="#">Mais</a>
+</nav>
+</body>
+</html>
