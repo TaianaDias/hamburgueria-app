@@ -10002,13 +10002,11 @@ body.premium-clean-shell:not(.dashboard-approved-real) .stock-topbar-search {
 /* Regras específicas para dashboard-saas-page */
 body.dashboard-saas-page .premium-kpi-grid {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
   gap: 16px !important;
   margin-bottom: 20px !important;
-  max-width: 1400px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding: 0 20px !important;
+  max-width: 100% !important;
+  padding: 0 !important;
 }
 
 body.dashboard-saas-page .premium-kpi-card {
@@ -10029,7 +10027,7 @@ body.dashboard-saas-page .premium-kpi-card > strong {
 /* Media queries para responsividade */
 @media (max-width: 1180px) {
   body.dashboard-saas-page .premium-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
     padding: 0 16px !important;
   }
 }
