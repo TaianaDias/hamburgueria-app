@@ -2212,8 +2212,8 @@ button.active,
 .premium-kpi-card > strong {
   display: block;
   margin-top: 20px;
-  font-size: 2.35rem;
-  line-height: 1;
+  font-size: clamp(1.95rem, 2.6vw, 2.15rem);
+  line-height: 1.02;
 }
 
 .premium-kpi-card small {
@@ -2256,12 +2256,12 @@ button.active,
 .premium-health-row > strong {
   display: inline-grid;
   place-items: center;
-  width: 74px;
-  height: 74px;
-  border: 6px solid rgba(134, 239, 172, 0.9);
+  width: 68px;
+  height: 68px;
+  border: 5px solid rgba(134, 239, 172, 0.9);
   border-right-color: rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 .premium-health-row b {
@@ -4828,7 +4828,8 @@ pre {
 
   .premium-kpi-card > strong {
     margin-top: 12px;
-    font-size: 1.9rem;
+    font-size: clamp(1.65rem, 4vw, 1.85rem);
+    line-height: 1.02;
   }
 
   .premium-kpi-card > span {
@@ -4836,9 +4837,9 @@ pre {
   }
 
   .premium-health-row > strong {
-    width: 66px;
-    height: 66px;
-    font-size: 1.05rem;
+    width: 64px;
+    height: 64px;
+    font-size: 1rem;
   }
 
   .premium-movement-item,

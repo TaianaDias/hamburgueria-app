@@ -326,14 +326,14 @@ body.dashboard-saas-page .dashboard-mobile-quick-actions {
     </div>
   </header>
 
-  <section class="premium-dashboard">
-    <header class="premium-topbar">
+  <section class="page dashboard-page">
+    <header class="page-header premium-topbar">
       <div>
         <p class="mockup-unit-label">Unidade Vila de Cava • Operação aberta</p>
         <h1>Visão Geral</h1>
         <p class="muted">Controle a saúde da operação em tempo real.</p>
       </div>
-      <div class="premium-topbar-actions">
+      <div class="actions premium-topbar-actions">
         <button id="dashboard-search-button" class="premium-icon-button" type="button">
           <span class="premium-action-icon" aria-hidden="true">⌕</span>
           Buscar
@@ -361,7 +361,7 @@ body.dashboard-saas-page .dashboard-mobile-quick-actions {
     </header>
 
     <section class="premium-kpi-grid">
-      <article class="premium-kpi-card green">
+      <article class="panel stock-kpi-card premium-kpi-card green">
         <span>Saúde do Estoque</span>
         <div class="premium-health-row">
           <strong id="kpi-health">0%</strong>
@@ -371,17 +371,17 @@ body.dashboard-saas-page .dashboard-mobile-quick-actions {
           </span>
         </div>
       </article>
-      <article class="premium-kpi-card amber dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=criticos" role="link" tabindex="0" aria-label="Abrir itens críticos no estoque">
+      <article class="panel stock-kpi-card premium-kpi-card amber dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=criticos" role="link" tabindex="0" aria-label="Abrir itens críticos no estoque">
         <span>Itens Críticos</span>
         <strong id="kpi-risk">0</strong>
         <small id="kpi-risk-note">Precisam de atenção</small>
       </article>
-      <article class="premium-kpi-card red dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=vencendo" role="link" tabindex="0" aria-label="Abrir produtos vencendo no estoque">
+      <article class="panel stock-kpi-card premium-kpi-card red dashboard-clickable-card" data-dashboard-target="estoque.html?filtro=vencendo" role="link" tabindex="0" aria-label="Abrir produtos vencendo no estoque">
         <span>Produtos Vencendo</span>
         <strong id="kpi-warning">0</strong>
         <small id="kpi-warning-note">Produtos vencidos ou perto do vencimento</small>
       </article>
-      <article class="premium-kpi-card violet sensitive-dashboard-kpi">
+      <article class="panel stock-kpi-card premium-kpi-card violet sensitive-dashboard-kpi">
         <span>Valor Total em Estoque</span>
         <div class="sensitive-value-row">
           <strong id="kpi-stock-value">R$ 0,00</strong>
@@ -391,7 +391,7 @@ body.dashboard-saas-page .dashboard-mobile-quick-actions {
       </article>
     </section>
 
-    <section class="premium-action-strip" aria-label="Ações prioritárias de hoje">
+    <section class="panel stock-command-panel premium-action-strip" aria-label="Ações prioritárias de hoje">
       <article class="premium-action-card urgent">
         <span>Prioridade de hoje</span>
         <strong id="action-primary">Carregando operação...</strong>
