@@ -6895,3 +6895,265 @@ body .stock-kpi-grid > article.panel.stock-kpi-card strong {
   letter-spacing: -0.04em !important;
   line-height: 1 !important;
 }
+
+/* Camada final de consistência comercial: remove resquícios de paletas antigas
+   e mantém o produto inteiro no visual SaaS premium vermelho/preto. */
+body.premium-global-body,
+body.premium-app-body,
+body.login-premium-body {
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.22), transparent 32%),
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.08), transparent 25%),
+    #070707 !important;
+  color: #f4f4f5;
+}
+
+body.premium-global-body::before,
+body.premium-app-body::before,
+body.login-premium-body::before {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px) !important;
+  background-size: 72px 72px !important;
+  opacity: 0.16 !important;
+}
+
+body .page-header,
+body .premium-page-hero,
+body .premium-topbar,
+body .dashboard-prototype-hero,
+body .purchase-dashboard-hero,
+body .login-marketing-panel,
+body .login-premium-card,
+body .premium-store-card,
+body .premium-user-card {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.18), transparent 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.078), rgba(255, 255, 255, 0.028)),
+    rgba(0, 0, 0, 0.34) !important;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(22px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(130%) !important;
+}
+
+body .premium-kpi-card,
+body .premium-kpi-card.green,
+body .premium-kpi-card.amber,
+body .premium-kpi-card.red,
+body .premium-kpi-card.violet,
+body .premium-action-card,
+body .premium-action-card.urgent,
+body .prototype-kpi-card,
+body .prototype-kpi-card.healthy,
+body .prototype-kpi-card.warning,
+body .prototype-kpi-card.urgent,
+body .purchase-highlight-card,
+body .purchase-dashboard-month-card,
+body .analytics-month-card-high,
+body .analytics-month-card-low,
+body .alert-card,
+body .alert-card-attention,
+body .alert-card-urgent,
+body .employee-kpi-grid .card,
+body .stats-grid .card,
+body .operation-action-card,
+body .training-progress-card,
+body .training-start-card,
+body .training-step-card,
+body .training-video-card,
+body .training-profile-card,
+body .supplier-price-card,
+body .supplier-entry,
+body .inventory-product-card,
+body .product-card,
+body .inventory-card,
+body .stock-command-panel,
+body .quick-box-panel,
+body .stock-daily-entry-panel,
+body .waste-entry-panel,
+body .waste-form-card,
+body .waste-history-card,
+body .replenishment-card,
+body .automation-alert-choice,
+body .automation-log-card,
+body .panel,
+body .card {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background:
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.10), transparent 36%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.078), rgba(255, 255, 255, 0.026)),
+    rgba(0, 0, 0, 0.30) !important;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(22px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(130%) !important;
+}
+
+body .premium-kpi-card:hover,
+body .premium-action-card:hover,
+body .prototype-kpi-card:hover,
+body .purchase-highlight-card:hover,
+body .purchase-dashboard-month-card:hover,
+body .analytics-month-card-high:hover,
+body .analytics-month-card-low:hover,
+body .alert-card:hover,
+body .employee-kpi-grid .card:hover,
+body .stats-grid .card:hover,
+body .operation-action-card:hover,
+body .training-video-card:hover,
+body .supplier-price-card:hover,
+body .supplier-entry:hover,
+body .inventory-product-card:hover,
+body .product-card:hover,
+body .inventory-card:hover,
+body .replenishment-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(248, 113, 113, 0.52) !important;
+  background:
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.15), transparent 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.038)),
+    rgba(0, 0, 0, 0.34) !important;
+}
+
+body .premium-kpi-card > span,
+body .premium-kpi-card small,
+body .premium-action-card > span,
+body .premium-action-card small,
+body .prototype-kpi-card span,
+body .prototype-kpi-card small,
+body .panel .muted,
+body .card .muted {
+  color: #a1a1aa !important;
+}
+
+body .premium-kpi-card > strong,
+body .premium-action-card strong,
+body .prototype-kpi-card strong,
+body .employee-kpi-grid strong,
+body .stats-grid strong,
+body .panel h2,
+body .panel h3,
+body .card h2,
+body .card h3 {
+  color: #f4f4f5 !important;
+}
+
+body .premium-nav a.active,
+body .premium-global-nav a.active,
+body .premium-mobile-dock a.active,
+body .premium-mobile-menu-grid a.active,
+body .dashboard-mobile-bottom-nav .active,
+body .stock-view-toggle .active,
+body .auth-tab.active,
+body .prototype-command.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+body .premium-nav a.active span,
+body .premium-global-nav a.active span,
+body .premium-mobile-dock a.active span,
+body .premium-mobile-menu-grid a.active span,
+body .dashboard-mobile-bottom-nav .active span {
+  color: #000000 !important;
+}
+
+body .premium-phone-actions .green,
+body .premium-phone-actions .orange,
+body .premium-phone-actions .blue,
+body .dashboard-mobile-action-grid .green,
+body .dashboard-mobile-action-grid .orange,
+body .dashboard-mobile-action-grid .blue,
+body .dashboard-mobile-action-grid .purple,
+body .dashboard-mobile-action-grid .teal,
+body .operation-action-card span,
+body .training-step-card span,
+body .login-feature-grid article span,
+body .premium-brand-mark,
+body .premium-global-brand span:not(.premium-svg-icon),
+body .dashboard-mobile-brand span {
+  background: linear-gradient(135deg, #dc2626, #7f1d1d) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 35px rgba(127, 29, 29, 0.40) !important;
+}
+
+body .eyebrow,
+body .brand-eyebrow,
+body .premium-page-chip,
+body .mockup-unit-label,
+body .premium-panel-header a,
+body .supplier-products-preview b,
+body .supplier-entry-summary-side strong,
+body .login-card-head .eyebrow,
+body .login-hero-copy .eyebrow {
+  color: #f87171 !important;
+}
+
+body input,
+body select,
+body textarea,
+body .stock-category-manager input,
+body .stock-category-manager select,
+body .supplier-product-picker,
+body .product-supplier-card,
+body .product-card-details,
+body .product-card-details-summary,
+body .advanced-config-section,
+body .automation-log-card pre,
+body .automation-watch-list li {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  background: rgba(0, 0, 0, 0.30) !important;
+  color: #f4f4f5 !important;
+}
+
+body table,
+body thead,
+body tbody,
+body tr,
+body td,
+body th {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+body th {
+  color: #f4f4f5 !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+}
+
+body td {
+  color: #d4d4d8 !important;
+}
+
+body .status.info,
+body .status.warning,
+body .status.success,
+body .status.error,
+body .stock-lookup-chip,
+body .stock-badge,
+body .badge,
+body .pill-danger,
+body .pill-success {
+  border: 1px solid rgba(248, 113, 113, 0.24) !important;
+  background: rgba(220, 38, 38, 0.13) !important;
+  color: #fecaca !important;
+}
+
+body .status.success,
+body .stock-badge.ok,
+body .pill-success {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #bbf7d0 !important;
+}
+
+body .premium-chart-line.green,
+body .premium-chart-line.blue {
+  stroke: #f87171 !important;
+}
+
+body .premium-chart-dot,
+body .premium-store-card small,
+body .dashboard-store-card small {
+  color: #fecaca !important;
+}
