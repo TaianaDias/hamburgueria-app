@@ -109,18 +109,20 @@ function buildTopbar() {
       <kbd>Ctrl K</kbd>
     </label>
     <div class="top-spacer clean-topbar-spacer"></div>
-    <button class="notif-btn clean-notification-button" type="button" aria-label="Notifica\u00e7\u00f5es">
-      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      <b class="notif-count">8</b>
-    </button>
-    <a class="help-btn clean-help-button" href="treinamento.html" aria-label="Treinamentos">?</a>
-    <button class="user-pill clean-user-pill" type="button" aria-label="Perfil">
-      <span class="user-av" data-shell-user-initials>TD</span>
-      <span>
-        <strong class="user-name-top" data-shell-user-name>Taiana Dias</strong>
-        <small class="user-role-top" data-shell-user-role>Admin</small>
-      </span>
-    </button>
+    <div class="top-actions">
+      <button class="notif-btn clean-notification-button" type="button" aria-label="Notifica\u00e7\u00f5es">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <b class="notif-count">8</b>
+      </button>
+      <a class="help-btn clean-help-button" href="treinamento.html" aria-label="Treinamentos">?</a>
+      <button class="user-pill clean-user-pill" type="button" aria-label="Perfil">
+        <span class="user-av" data-shell-user-initials>TD</span>
+        <span>
+          <strong class="user-name-top" data-shell-user-name>Taiana Dias</strong>
+          <small class="user-role-top" data-shell-user-role>Admin</small>
+        </span>
+      </button>
+    </div>
   `;
   document.body.prepend(topbar);
 }

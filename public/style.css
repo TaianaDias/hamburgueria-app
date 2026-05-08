@@ -9852,6 +9852,37 @@ body.premium-clean-shell:not(.dashboard-approved-real) .top-spacer {
   flex: 1;
 }
 
+body.premium-clean-shell:not(.dashboard-approved-real) .top-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .top-menu svg,
+body.premium-clean-shell:not(.dashboard-approved-real) .top-search svg,
+body.premium-clean-shell:not(.dashboard-approved-real) .notif-btn svg,
+body.premium-clean-shell:not(.dashboard-approved-real) .help-btn svg {
+  width: 15px !important;
+  height: 15px !important;
+  min-width: 15px !important;
+  min-height: 15px !important;
+  max-width: 15px !important;
+  max-height: 15px !important;
+  display: block !important;
+  flex: 0 0 15px !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .top-search svg {
+  width: 13px !important;
+  height: 13px !important;
+  min-width: 13px !important;
+  min-height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
+  flex-basis: 13px !important;
+}
+
 body.premium-clean-shell:not(.dashboard-approved-real) .notif-btn,
 body.premium-clean-shell:not(.dashboard-approved-real) .help-btn {
   position: relative !important;
@@ -9888,6 +9919,9 @@ body.premium-clean-shell:not(.dashboard-approved-real) .user-pill {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 34px !important;
   padding: 5px 10px 5px 5px !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--r-sm) !important;
@@ -9919,6 +9953,136 @@ body.premium-clean-shell:not(.dashboard-approved-real) .user-role-top {
   display: block !important;
   color: var(--silver3) !important;
   font-size: 0.6rem !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1fr) minmax(260px, 420px) auto !important;
+  align-items: end !important;
+  gap: 24px !important;
+  margin: 0 0 22px !important;
+  padding: 0 0 22px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .eyebrow {
+  margin-bottom: 10px !important;
+  color: var(--brand) !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.18em !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header h1 {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header #user-info {
+  margin-top: 12px !important;
+  color: var(--silver2) !important;
+  font-size: 0.82rem !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-topbar-search {
+  width: 100% !important;
+  max-width: 420px !important;
+  display: grid !important;
+  gap: 7px !important;
+  margin: 0 !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-topbar-search label {
+  color: var(--silver3) !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-topbar-search input {
+  width: 100% !important;
+  height: 42px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-sm) !important;
+  background: var(--bg2) !important;
+  color: var(--silver) !important;
+  padding: 0 14px !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions button {
+  min-height: 42px !important;
+  white-space: nowrap !important;
+  border-radius: var(--r-sm) !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  margin: 0 0 24px !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-card {
+  min-width: 0 !important;
+  min-height: 132px !important;
+  display: grid !important;
+  align-content: space-between !important;
+  justify-items: start !important;
+  padding: 18px 20px 16px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  background:
+    radial-gradient(circle at top left, rgba(232,68,42,0.12), transparent 42%),
+    var(--card) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-card span {
+  color: var(--silver3) !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-card strong {
+  width: 100% !important;
+  margin: 10px 0 !important;
+  color: #fff !important;
+  font-size: clamp(2.2rem, 4vw, 3.1rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-card small {
+  width: 100% !important;
+  color: var(--silver3) !important;
+  font-size: 0.7rem !important;
+  line-height: 1.35 !important;
+  text-align: center !important;
+}
+
+body.premium-clean-shell:not(.dashboard-approved-real) .stock-command-panel {
+  margin-top: 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  background: var(--card) !important;
+  box-shadow: none !important;
 }
 
 body.premium-clean-shell:not(.dashboard-approved-real) .sidebar.premium-global-sidebar {
@@ -10127,6 +10291,18 @@ body.premium-clean-shell:not(.dashboard-approved-real) .premium-mobile-menu-grid
 }
 
 @media (max-width: 1024px) {
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
   body.premium-clean-shell:not(.dashboard-approved-real) {
     padding-left: 76px !important;
   }
@@ -10147,6 +10323,23 @@ body.premium-clean-shell:not(.dashboard-approved-real) .premium-mobile-menu-grid
 }
 
 @media (max-width: 768px) {
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions {
+    justify-content: stretch !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions button {
+    flex: 1 1 0 !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
   body.premium-clean-shell:not(.dashboard-approved-real) {
     padding-left: 0 !important;
     padding-bottom: 96px !important;
@@ -10179,6 +10372,23 @@ body.premium-clean-shell:not(.dashboard-approved-real) .premium-mobile-menu-grid
 }
 
 @media (max-width: 480px) {
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header h1 {
+    font-size: 1.8rem !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions,
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions button {
+    width: 100% !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-page-header .actions {
+    display: grid !important;
+  }
+
+  body.premium-clean-shell:not(.dashboard-approved-real) .stock-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
   body.premium-clean-shell:not(.dashboard-approved-real) main.page,
   body.premium-clean-shell:not(.dashboard-approved-real) .premium-page {
     padding: 14px 10px 104px !important;
