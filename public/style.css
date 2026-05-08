@@ -9115,10 +9115,10 @@ body.dashboard-saas-page .premium-nav-logout {
 body .premium-page,
 body.dashboard-saas-page .page.dashboard-page {
   width: 100% !important;
-  max-width: 1480px !important;
+  max-width: 1400px !important;
   min-width: 0 !important;
   margin: 0 auto !important;
-  padding: 24px 26px 52px !important;
+  padding: 24px 20px 52px !important;
 }
 
 body.dashboard-saas-page .premium-app-shell.dashboard-shell {
@@ -9997,6 +9997,62 @@ body.premium-clean-shell:not(.dashboard-approved-real) .stock-topbar-search {
   display: grid !important;
   gap: 7px !important;
   margin: 0 !important;
+}
+
+/* Regras específicas para dashboard-saas-page */
+body.dashboard-saas-page .premium-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin-bottom: 20px !important;
+  max-width: 1400px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 0 20px !important;
+}
+
+body.dashboard-saas-page .premium-kpi-card {
+  min-height: 166px !important;
+  padding: 22px !important;
+  border-radius: 28px !important;
+  max-width: 100% !important;
+}
+
+body.dashboard-saas-page .premium-kpi-card > strong {
+  display: block !important;
+  margin-top: 20px !important;
+  font-size: clamp(1.6rem, 2.5vw, 2.0rem) !important;
+  line-height: 1.02 !important;
+  font-weight: 900 !important;
+}
+
+/* Media queries para responsividade */
+@media (max-width: 1180px) {
+  body.dashboard-saas-page .premium-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 0 16px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  body.dashboard-saas-page .premium-kpi-grid {
+    grid-template-columns: 1fr !important;
+    padding: 0 12px !important;
+  }
+
+  body.dashboard-saas-page .premium-kpi-card {
+    min-height: 140px !important;
+    padding: 18px !important;
+  }
+
+  body.dashboard-saas-page .premium-kpi-card > strong {
+    font-size: clamp(1.4rem, 3vw, 1.8rem) !important;
+  }
+
+  body .premium-page,
+  body.dashboard-saas-page .page.dashboard-page {
+    padding: 16px 12px 80px !important;
+  }
 }
 
 body.premium-clean-shell:not(.dashboard-approved-real) .stock-topbar-search label {
