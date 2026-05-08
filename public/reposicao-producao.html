@@ -122,6 +122,7 @@ import {
   bindLogoutButton,
   can,
   describeProfile,
+  handleStockAutomationEvent,
   normalizeText,
   requireAuth,
   setStatus,
@@ -468,6 +469,7 @@ confirmButton.addEventListener("click", async () => {
   try {
     const batch = writeBatch(db);
     const itensHistorico = [];
+    const automationEvents = [];
 
     insumos = insumos.map((item) => {
       const selected = selecionados[item.id];
@@ -493,6 +495,39 @@ confirmButton.addEventListener("click", async () => {
         estoqueDepois
       });
 
+      automationEvents.push({
+        type: "productionExit",
+        productName: item.nome,
+        quantity: retirar,
+        unit: getWithdrawalUnitLabel(unidadeRetirada).toLowerCase(),
+        previousStock: item.estoque,
+        currentStock: estoqueDepois,
+        supplier: "",
+        destination: "Produção",
+        reason: "Reposição para produção",
+        responsibleUser: profileContext?.profile?.nome || profileContext?.profile?.email || "Usuário",
+        userId: profileContext?.profile?.id || "",
+        empresaId: profileContext?.profile?.empresaId || "",
+        lojaId: profileContext?.profile?.lojaId || "",
+        date: new Date()
+      });
+
+      if (estoqueDepois <= minimoDia) {
+        automationEvents.push({
+          type: "lowStock",
+          productName: item.nome,
+          currentStock: estoqueDepois,
+          minStock: minimoDia,
+          supplier: "",
+          recommendation: "Repor imediatamente",
+          responsibleUser: profileContext?.profile?.nome || profileContext?.profile?.email || "Usuário",
+          userId: profileContext?.profile?.id || "",
+          empresaId: profileContext?.profile?.empresaId || "",
+          lojaId: profileContext?.profile?.lojaId || "",
+          date: new Date()
+        });
+      }
+
       return { ...item, estoque: estoqueDepois };
     });
 
@@ -508,6 +543,7 @@ confirmButton.addEventListener("click", async () => {
     });
 
     await batch.commit();
+    await Promise.allSettled(automationEvents.map((alert) => handleStockAutomationEvent(alert)));
 
     historico.unshift({
       id: historyRef.id,

@@ -1142,6 +1142,24 @@ export function registerWhatsAppRoutes(app, {
     }
   });
 
+  router.post("/admin-stock-alert", async (req, res) => {
+    try {
+      const payload = enrichPayload(req);
+      const result = await evolutionService.sendAdminStockAlert(
+        payload.type || payload.alertType || payload.tipo || "stockAdjustment",
+        payload
+      );
+
+      return res.json({
+        ok: true,
+        success: true,
+        ...result
+      });
+    } catch (error) {
+      return sendRouteError(res, error);
+    }
+  });
+
   router.post("/supplier-order-suggestion", async (req, res) => {
     try {
       const result = await evolutionService.sendSupplierOrderSuggestion(enrichPayload(req));

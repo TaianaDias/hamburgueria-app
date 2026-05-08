@@ -888,7 +888,17 @@ function getAutomationAlertKey(type = "") {
     saida: "stockOut",
     stockIn: "stockIn",
     stockOut: "stockOut",
-    lowStock: "lowStock"
+    lowStock: "lowStock",
+    minStock: "lowStock",
+    productionExit: "productionExit",
+    productionPending: "productionExit",
+    stockAdjustment: "stockAdjustment",
+    manualAdjustment: "stockAdjustment",
+    quantityCorrection: "quantityCorrection",
+    productZeroed: "productZeroed",
+    expiring: "expiring",
+    expired: "expired",
+    purchaseSuggestion: "purchaseSuggestion"
   };
 
   return map[type] || type;
@@ -898,7 +908,9 @@ function getAutomationLogStatusLabel(status = "") {
   const labels = {
     simulado: "Simulado",
     pendente_api: "Pendente API",
+    pendente: "Pendente",
     enviado: "Enviado",
+    falhou: "Falhou",
     enviado_futuro: "Enviado futuramente",
     erro_futuro: "Erro futuramente"
   };
@@ -917,6 +929,10 @@ export async function loadAutomationConfig() {
     alertTypes: {
       stockIn: true,
       stockOut: true,
+      productionExit: true,
+      stockAdjustment: true,
+      quantityCorrection: true,
+      productZeroed: true,
       lowStock: true,
       expiring: true,
       expired: true,
@@ -979,6 +995,30 @@ export function buildStockWhatsAppMessage(event = {}) {
     ].join("\n");
   }
 
+  const eventLabels = {
+    productionExit: "📤 Carioquinha | Saída para Produção",
+    stockAdjustment: "🛠️ Carioquinha | Ajuste Manual",
+    quantityCorrection: "🧾 Carioquinha | Correção de Quantidade",
+    productZeroed: "🚨 Carioquinha | Produto Zerado",
+    expiring: "⏳ Carioquinha | Produto Vencendo",
+    expired: "🚫 Carioquinha | Produto Vencido",
+    purchaseSuggestion: "🛒 Carioquinha | Compra Sugerida"
+  };
+
+  if (eventLabels[event.type]) {
+    return [
+      eventLabels[event.type],
+      "",
+      `Produto: ${event.productName || "-"}`,
+      `Quantidade: ${formatAutomationQuantity(event.quantity ?? event.currentStock)} ${event.unit || "unidade"}(s)`,
+      `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+      `Fornecedor: ${event.supplier || "-"}`,
+      `Responsável: ${event.responsibleUser || "-"}`,
+      `Ação recomendada: ${event.recommendation || event.recommendedAction || "Conferir operação"}`,
+      `Data: ${dateLabel}`
+    ].join("\n");
+  }
+
   return [
     "⚠️ Alerta de Reposição",
     "",
@@ -1035,7 +1075,14 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
     const endpointByType = {
       stockIn: "/whatsapp/stock-entry",
       stockOut: "/whatsapp/stock-exit",
-      lowStock: "/whatsapp/low-stock"
+      lowStock: "/whatsapp/low-stock",
+      purchaseSuggestion: "/whatsapp/supplier-order-suggestion",
+      productionExit: "/whatsapp/admin-stock-alert",
+      stockAdjustment: "/whatsapp/admin-stock-alert",
+      quantityCorrection: "/whatsapp/admin-stock-alert",
+      productZeroed: "/whatsapp/admin-stock-alert",
+      expiring: "/whatsapp/admin-stock-alert",
+      expired: "/whatsapp/admin-stock-alert"
     };
     const endpoint = endpointByType[event.type] || "/api/whatsapp/send";
     const body = endpoint === "/api/whatsapp/send"
@@ -1070,7 +1117,8 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
     providerMessageId = response.providerMessageId || "";
     backendRegisteredLog = true;
   } catch (error) {
-    console.warn("Envio real ainda não concluído. Log será salvo como pendente de API.", error);
+    status = "falhou";
+    console.warn("Envio real não concluído. O estoque segue funcionando e o log local será salvo.", error);
   }
 
   if (!backendRegisteredLog) {
@@ -1097,7 +1145,18 @@ export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) 
 export async function handleStockAutomationEvent(event = {}) {
   const alertKey = getAutomationAlertKey(event.type);
   const config = await loadAutomationConfig();
-  const mandatoryAdminEvent = ["stockIn", "stockOut", "lowStock"].includes(alertKey);
+  const mandatoryAdminEvent = [
+    "stockIn",
+    "stockOut",
+    "productionExit",
+    "stockAdjustment",
+    "quantityCorrection",
+    "productZeroed",
+    "lowStock",
+    "expiring",
+    "expired",
+    "purchaseSuggestion"
+  ].includes(alertKey);
 
   if (!config.enabled && !mandatoryAdminEvent) {
     return {
