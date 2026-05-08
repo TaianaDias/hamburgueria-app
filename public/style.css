@@ -2766,10 +2766,21 @@ button.active,
     height: auto;
     display: grid;
     grid-template-columns: 1fr;
+    min-width: 0;
   }
 
   .premium-nav {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    min-width: 0;
+  }
+
+  .premium-nav a,
+  .premium-nav-logout {
+    white-space: normal;
   }
 
   .premium-user-card {
