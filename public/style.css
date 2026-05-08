@@ -5251,6 +5251,82 @@ textarea:focus {
   box-shadow: var(--shadow-premium);
 }
 
+/* Override definitivo dos cards do topo: mesmo padrão premium vermelho/preto em todas as páginas. */
+body.premium-global-body main.page > .page-header,
+body.premium-global-body main.page > .premium-page-hero,
+.premium-page > .page-header,
+.premium-page > .premium-page-hero,
+.stock-page-header {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 32px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032)),
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.18), transparent 38%),
+    rgba(0, 0, 0, 0.30) !important;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(22px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(130%) !important;
+}
+
+body.premium-global-body main.page > .page-header .eyebrow,
+body.premium-global-body main.page > .premium-page-hero .eyebrow,
+.premium-page > .page-header .eyebrow,
+.premium-page > .premium-page-hero .eyebrow,
+.stock-page-header .eyebrow {
+  color: #f87171 !important;
+}
+
+.premium-page-chip,
+body.premium-global-body main.page > .page-header .premium-page-chip,
+body.premium-global-body main.page > .premium-page-hero .premium-page-chip {
+  border-color: rgba(248, 113, 113, 0.30) !important;
+  background: rgba(220, 38, 38, 0.16) !important;
+  color: #fecaca !important;
+}
+
+.stock-kpi-card,
+.stock-kpi-card:first-child,
+.stock-kpi-card.warning,
+.stock-kpi-card.danger,
+.employee-kpi-grid .card,
+.stats-grid .card {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 28px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032)),
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.11), transparent 36%),
+    rgba(0, 0, 0, 0.30) !important;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  backdrop-filter: blur(22px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(130%) !important;
+}
+
+.stock-kpi-card:hover,
+.employee-kpi-grid .card:hover,
+.stats-grid .card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(248, 113, 113, 0.50) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.042)),
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.14), transparent 36%),
+    rgba(0, 0, 0, 0.30) !important;
+}
+
+.stock-kpi-card span,
+.stock-kpi-card small,
+.employee-kpi-grid .card span,
+.employee-kpi-grid .card small,
+.stats-grid .card span,
+.stats-grid .card small {
+  color: #a1a1aa !important;
+}
+
+.stock-kpi-card strong,
+.employee-kpi-grid .card strong,
+.stats-grid .card strong {
+  color: #f4f4f5 !important;
+}
+
 /* Override final: mantém Fornecedores no mesmo padrão glass premium após todos os blocos globais. */
 .premium-page > .page-header,
 .premium-page-hero,
