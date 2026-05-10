@@ -669,7 +669,7 @@ const ROLE_LABELS = Object.freeze({
 
 export const PERMISSION_DENIED_MESSAGE = "Seu perfil não possui permissão para esta ação. Solicite liberação ao administrador.";
 
-function normalizePermissionRole(value) {
+export function normalizePermissionRole(value) {
   const normalized = normalizeText(value).replace(/\s+/g, "_") || "funcionario";
   const aliases = {
     administrador: "admin",

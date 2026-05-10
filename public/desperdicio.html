@@ -154,6 +154,7 @@ import {
   describeProfile,
   escapeHtml,
   formatCurrency,
+  normalizePermissionRole,
   normalizeText,
   requireAuth,
   setStatus,
@@ -188,20 +189,21 @@ bindLogoutButton();
 
 const { profile } = await requireAuth();
 
-if (!["admin", "estoque"].includes(profile?.tipo)) {
+const wasteAccessRole = normalizePermissionRole(profile?.perfilPrincipal || profile?.tipo);
+if (!["admin", "estoque"].includes(wasteAccessRole)) {
   window.location.href = "index.html";
   throw new Error("Acesso restrito.");
 }
 
 userInfo.textContent = describeProfile(profile);
-stockLink.hidden = profile.tipo !== "admin";
+stockLink.hidden = wasteAccessRole !== "admin";
 
 let products = [];
 let wasteEvents = [];
 let wasteEmployees = [];
 let selectedProduct = null;
 let selectedReason = "Sobra final";
-const isAdmin = profile.tipo === "admin";
+const isAdmin = wasteAccessRole === "admin";
 const WASTE_UNITS = Object.freeze({
   unidade: {
     label: "unidade",

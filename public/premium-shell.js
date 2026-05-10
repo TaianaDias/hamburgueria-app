@@ -6,11 +6,10 @@ const NAV_ITEMS = [
   { href: "compras.html", label: "Intelig\u00eancia de Compras", icon: "C", matches: ["compras.html", "dashboard-compras.html", "analise-compras.html"] },
   { href: "fornecedores.html", label: "Fornecedores", icon: "F", matches: ["fornecedores.html"] },
   { href: "desperdicio.html", label: "Desperd\u00edcio", icon: "!", matches: ["desperdicio.html"] },
-  { href: "impressora.html", label: "Etiquetas", icon: "T", matches: ["impressora.html", "etiquetas.html"] },
+  { href: "etiquetas.html", label: "Etiquetas", icon: "T", matches: ["etiquetas.html", "impressora.html"] },
+  { href: "funcionarios.html", label: "Funcion\u00e1rios", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
   { href: "whatsapp-ia.html", label: "WhatsApp e IA", icon: "W", matches: ["whatsapp-ia.html"] },
-  { href: "funcionarios.html", label: "Equipe", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
-  { href: "treinamento.html", label: "Treinamentos", icon: "A", matches: ["treinamento.html"] },
-  { href: "saas.html", label: "Configura\u00e7\u00f5es", icon: "S", matches: ["saas.html", "configuracoes.html"] }
+  { href: "configuracoes.html", label: "Configura\u00e7\u00f5es", icon: "S", matches: ["configuracoes.html", "saas.html"] }
 ];
 
 function getCurrentPage() {
@@ -93,7 +92,7 @@ function buildTopbar() {
   const topbar = document.createElement("header");
   topbar.className = "topbar clean-topbar";
   topbar.innerHTML = `
-    <button class="top-menu clean-menu-button" type="button" aria-label="Abrir menu">
+    <button class="top-menu clean-menu-button" type="button" aria-label="Menu" aria-pressed="false">
       <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     </button>
     <a class="top-logo clean-brand" href="dashboard-saas.html" aria-label="Carioca's Operacao de Controle">
@@ -110,11 +109,11 @@ function buildTopbar() {
     </label>
     <div class="top-spacer clean-topbar-spacer"></div>
     <div class="top-actions">
-      <button class="notif-btn clean-notification-button" type="button" aria-label="Notifica\u00e7\u00f5es">
+      <button class="notif-btn clean-notification-button" type="button" aria-label="Notifica\u00e7\u00f5es" title="Notifica\u00e7\u00f5es integradas em breve. Use Reposi\u00e7\u00e3o e Estoque para alertas operacionais.">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         <b class="notif-count">8</b>
       </button>
-      <a class="help-btn clean-help-button" href="treinamento.html" aria-label="Treinamentos">?</a>
+      <a class="help-btn clean-help-button" href="treinamento.html" aria-label="Ajuda e treinamentos">?</a>
       <button class="user-pill clean-user-pill" type="button" aria-label="Perfil">
         <span class="user-av" data-shell-user-initials>TD</span>
         <span>
@@ -140,7 +139,7 @@ function buildSidebar() {
     <nav class="premium-nav premium-global-nav">
       <div class="nav-group">
       ${NAV_ITEMS.map((item, index) => {
-        const tones = ["red", "orange", "teal", "blue", "purple", "green", "yellow", "gray", "gray", "gray", "gray", "gray"];
+        const tones = ["red", "orange", "teal", "blue", "purple", "green", "yellow", "gray", "gray", "gray", "gray"];
         return `
         <a class="nav-link ${isActive(item, current) ? "active" : ""}" href="${item.href}">
           <span class="nav-ic ${tones[index] || "gray"}">${item.icon}</span>
@@ -236,14 +235,58 @@ function toggleMobileMenu(open) {
   genericMore?.setAttribute("aria-expanded", String(open));
 }
 
+function syncDesktopMenuTogglePressed() {
+  const menuBtn = document.querySelector(".clean-menu-button");
+  if (!menuBtn) {
+    return;
+  }
+  menuBtn.setAttribute("aria-pressed", document.body.classList.contains("sidebar-desktop-collapsed") ? "true" : "false");
+}
+
+function applySavedSidebarState() {
+  if (!document.body.classList.contains("premium-saas-shell-body") || !document.querySelector(".premium-global-sidebar")) {
+    return;
+  }
+  try {
+    if (localStorage.getItem("premium-shell-sidebar-collapsed") === "1") {
+      document.body.classList.add("sidebar-desktop-collapsed");
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  syncDesktopMenuTogglePressed();
+}
+
 function bindShellInteractions() {
-  document.querySelector(".clean-menu-button")?.addEventListener("click", () => toggleMobileMenu(true));
+  const menuBtn = document.querySelector(".clean-menu-button");
+  menuBtn?.addEventListener("click", () => {
+    if (window.matchMedia("(min-width: 1025px)").matches) {
+      document.body.classList.toggle("sidebar-desktop-collapsed");
+      try {
+        localStorage.setItem(
+          "premium-shell-sidebar-collapsed",
+          document.body.classList.contains("sidebar-desktop-collapsed") ? "1" : "0"
+        );
+      } catch (_) {
+        /* ignore */
+      }
+      syncDesktopMenuTogglePressed();
+      return;
+    }
+    toggleMobileMenu(true);
+  });
   document.querySelector(".premium-mobile-more")?.addEventListener("click", () => toggleMobileMenu(true));
   document.querySelector(".premium-mobile-menu-close")?.addEventListener("click", () => toggleMobileMenu(false));
   document.querySelector(".premium-mobile-menu-backdrop")?.addEventListener("click", (event) => {
     if (event.target === event.currentTarget) {
       toggleMobileMenu(false);
     }
+  });
+  document.querySelectorAll(".premium-mobile-menu-grid a[href]").forEach((link) => {
+    link.addEventListener("click", () => toggleMobileMenu(false));
+  });
+  document.querySelector(".premium-mobile-menu-grid button[data-logout-button]")?.addEventListener("click", () => {
+    toggleMobileMenu(false);
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -262,7 +305,7 @@ function decorateBody() {
   }
 
   if (document.body.classList.contains("dashboard-saas-page")) {
-    document.body.classList.add("premium-clean-shell");
+    document.body.classList.add("premium-clean-shell", "app-shell");
     return true;
   }
 
@@ -271,7 +314,7 @@ function decorateBody() {
     return false;
   }
 
-  document.body.classList.add("premium-global-body", "premium-saas-shell-body", "premium-clean-shell");
+  document.body.classList.add("premium-global-body", "premium-saas-shell-body", "premium-clean-shell", "app-shell");
   page.classList.add("premium-page");
   return true;
 }
@@ -302,6 +345,7 @@ function initPremiumShell() {
   buildMobileMenu();
   decorateContent();
   bindShellInteractions();
+  applySavedSidebarState();
   watchUserInfo();
 }
 

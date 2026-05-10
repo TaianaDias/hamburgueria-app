@@ -13,6 +13,9 @@
     "whatsapp:health": "node scripts/whatsapp-health.mjs",
     "check:html": "node scripts/check-html-modules.mjs",
     "check:smoke": "node scripts/smoke-test.mjs",
+    "check:phase3": "node scripts/phase3-visual-check.mjs",
+    "check:phase4": "node scripts/phase4-authenticated-audit.mjs",
+    "audit:firestore-user": "node scripts/phase4-firestore-usuario.mjs",
     "ci": "npm run check:html && npm run check:smoke",
     "mobile:copy": "npx cap copy",
     "mobile:sync": "npx cap sync",
@@ -31,5 +34,8 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "firebase-admin": "^13.8.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0"
   }
 }
