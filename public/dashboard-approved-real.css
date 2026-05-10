@@ -471,15 +471,39 @@ body.dashboard-approved-real .delta-up { color: var(--green); }
 body.dashboard-approved-real .delta-down { color: var(--brand); }
 body.dashboard-approved-real .delta-neu { color: var(--silver3); }
 body.dashboard-approved-real .sc-glow {
-  position: absolute;
-  right: -20px;
-  bottom: -20px;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  filter: blur(20px);
-  opacity: 0.4;
-  pointer-events: none;
+  display: none !important;
+}
+
+/* KPI: ícones neutros (sem “manchas” de cor por card) */
+body.dashboard-approved-real .stats-grid .stat-card .sc-icon {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border);
+}
+
+body.dashboard-approved-real .stats-grid .stat-card .sc-icon svg {
+  color: var(--silver2) !important;
+}
+
+/* Bloco IA: sem barra multicolor no topo */
+body.dashboard-approved-real .ia-card::before {
+  display: none;
+}
+
+/* Faixa “Prioridades”: sem overlay gradiente global (.premium-action-card::before) */
+body.dashboard-approved-real .premium-action-card::before {
+  content: none !important;
+  background: none !important;
+  opacity: 0 !important;
+}
+
+/* Mini stats lateral: ícones alinhados ao KPI */
+body.dashboard-approved-real .mini-stat .ms-icon {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border);
+}
+
+body.dashboard-approved-real .mini-stat .ms-icon svg {
+  color: var(--silver2) !important;
 }
 
 body.dashboard-approved-real .grid-main {
