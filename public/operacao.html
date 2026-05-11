@@ -3,22 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#070707">
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dashboard-saas-page.css">
+<link rel="stylesheet" href="dashboard-approved-real.css">
 <script src="premium-shell.js" defer></script>
 <title>Modo Operação | Hamburgueria</title>
 </head>
-<body>
-<main class="page">
+<body class="premium-app-body dashboard-mobile-fix dashboard-approved-real">
+<header class="topbar" aria-label="Topo principal">
+  <button id="dashboard-mobile-menu" class="top-menu" type="button" aria-label="Abrir menu">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+
+  <a class="top-logo" href="dashboard-saas.html" aria-label="Carioca's Pro">
+    <span class="logo-avatar">C</span>
+    <span class="logo-info">
+      <span class="logo-name">Carioca's <span class="logo-badge">PRO</span></span>
+      <span class="logo-sub">Operação de Controle</span>
+    </span>
+  </a>
+
+  <button id="dashboard-search-button" class="top-search" type="button" aria-label="Buscar no sistema">
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9 9l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    <span>Buscar no sistema...</span>
+    <kbd>⌘ K</kbd>
+  </button>
+
+  <div class="top-spacer"></div>
+
+  <div class="top-actions">
+    <button id="dashboard-alert-button" class="notif-btn" type="button" aria-label="Abrir alertas" aria-expanded="false" aria-controls="dashboard-alert-drawer-backdrop">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span class="notif-count">8</span>
+    </button>
+    <button class="help-btn" type="button" aria-label="Ajuda">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5a2 2 0 1 1 2.8 1.8C8.3 8.6 8 9 8 9.5M8 11.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <button class="user-pill" type="button" aria-label="Usuário logado">
+      <span id="dashboard-user-initials" class="user-av">--</span>
+      <span>
+        <span id="dashboard-user-name" class="user-name-top">Carregando...</span>
+        <span id="dashboard-user-role" class="user-role-top">Perfil</span>
+      </span>
+    </button>
+  </div>
+</header>
+
+<div class="body-wrap approved-body-wrap">
+  <aside class="sidebar approved-sidebar premium-global-sidebar" aria-label="Menu principal">
+    <nav class="premium-nav" aria-label="Menu principal">
+      <div class="nav-group">
+        <a class="nav-link" href="dashboard-saas.html"><span class="nav-ic red">D</span>Visão Geral</a>
+        <a class="nav-link" href="estoque.html"><span class="nav-ic orange">E</span>Central de Estoque</a>
+        <a class="nav-link" href="alertas-reposicao.html"><span class="nav-ic teal">R</span>Reposição Inteligente</a>
+        <a class="nav-link" href="producao-etiquetas.html"><span class="nav-ic blue">P</span>Produção</a>
+        <a class="nav-link" href="compras.html"><span class="nav-ic purple">C</span>Inteligência de Compras</a>
+      </div>
+      <div class="nav-divider" aria-hidden="true"></div>
+      <div class="nav-group">
+        <div class="nav-group-label">Gestão</div>
+        <a class="nav-link" href="fornecedores.html"><span class="nav-ic green">F</span>Fornecedores</a>
+        <a class="nav-link" href="desperdicio.html"><span class="nav-ic yellow">!</span>Desperdício</a>
+        <a class="nav-link" href="etiquetas.html"><span class="nav-ic gray">T</span>Etiquetas</a>
+        <a class="nav-link" href="whatsapp-ia.html"><span class="nav-ic gray">W</span>WhatsApp e IA</a>
+      </div>
+      <div class="nav-divider" aria-hidden="true"></div>
+      <div class="nav-group">
+        <div class="nav-group-label">Sistema</div>
+        <a class="nav-link" href="funcionarios.html"><span class="nav-ic gray">U</span>Funcionários</a>
+        <a class="nav-link" href="configuracoes.html"><span class="nav-ic gray">S</span>Configurações</a>
+        <button class="nav-link approved-logout" type="button" data-logout-button><span class="nav-ic red">X</span>Sair</button>
+      </div>
+    </nav>
+    <span id="user-info" hidden></span>
+  </aside>
+
+<main class="main approved-main">
+<section class="page">
   <header class="page-header">
     <div>
       <p class="eyebrow">Central rápida</p>
       <h1>Modo operação correria</h1>
-      <p id="user-info" class="muted"></p>
-    </div>
+</div>
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
     </div>
@@ -75,7 +145,97 @@
     </form>
     <div id="command-preview" class="status info" hidden></div>
   </section>
-</main>
+</section>
+  </main>
+</div>
+
+<div id="dashboard-alert-drawer-backdrop" class="premium-alert-drawer-backdrop approved-alert-drawer-backdrop" hidden>
+  <aside id="dashboard-alert-drawer" class="premium-alert-drawer approved-alert-drawer" role="dialog" aria-modal="true" aria-label="Alertas inteligentes">
+    <header>
+      <div>
+        <strong>Alertas inteligentes</strong>
+        <small>Prioridades geradas pelo Carioquinha.</small>
+      </div>
+      <button id="dashboard-alert-drawer-close" type="button" aria-label="Fechar alertas">×</button>
+    </header>
+    <div id="dashboard-alert-drawer-list" class="premium-alert-drawer-list"></div>
+  </aside>
+</div>
+
+<dialog id="dashboard-action-dialog" class="premium-confirm-dialog premium-action-dialog approved-dialog">
+  <form method="dialog">
+    <div>
+      <p class="eyebrow">Operação rápida</p>
+      <h3>Ação rápida</h3>
+      <p class="muted">Escolha o fluxo operacional sem sair do padrão premium do sistema.</p>
+    </div>
+    <div class="premium-action-dialog-grid">
+      <a href="estoque.html">Entrada de estoque</a>
+      <a href="reposicao-producao.html">Saída para produção</a>
+      <a href="producao-etiquetas.html">Produção e etiquetas</a>
+      <a href="compras.html">Gerar compra</a>
+      <a href="desperdicio.html">Registrar desperdício</a>
+      <a href="whatsapp-ia.html">Automação WhatsApp</a>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dashboard-search-dialog" class="premium-confirm-dialog premium-search-dialog approved-dialog">
+  <form method="dialog">
+    <div>
+      <p class="eyebrow">Busca global inteligente</p>
+      <h3>Buscar no sistema</h3>
+      <p class="muted">Atalho visual preparado para conectar busca global de insumos, fornecedores, compras, etiquetas e treinamentos.</p>
+    </div>
+    <div class="field-group">
+      <label for="dashboard-global-search">O que você procura?</label>
+      <input id="dashboard-global-search" placeholder="Ex.: pão brioche, fornecedor, etiqueta, CMV">
+    </div>
+    <div id="dashboard-search-results" class="premium-search-results">
+      <a href="estoque.html">Central de Estoque</a>
+      <a href="compras.html">Inteligência de Compras</a>
+      <a href="whatsapp-ia.html">IA do Carioquinha</a>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<nav class="dashboard-mobile-bottom-nav approved-mobile-bottom-nav" aria-label="Navegação mobile">
+  <a href="dashboard-saas.html"><span>D</span><strong>Dashboard</strong></a>
+  <a href="estoque.html"><span>E</span><strong>Estoque</strong></a>
+  <a href="producao-etiquetas.html"><span>P</span><strong>Produção</strong></a>
+  <a href="compras.html"><span>C</span><strong>Compras</strong></a>
+  <button id="dashboard-mobile-more" type="button" aria-expanded="false" aria-controls="dashboard-mobile-drawer">
+    <span>+</span><strong>Mais</strong>
+  </button>
+</nav>
+
+<div id="dashboard-mobile-drawer-backdrop" class="dashboard-mobile-drawer-backdrop approved-mobile-drawer-backdrop" hidden>
+  <section id="dashboard-mobile-drawer" class="dashboard-mobile-drawer" role="dialog" aria-modal="true" aria-label="Mais opções">
+    <header>
+      <div>
+        <strong>Mais opções</strong>
+        <small>Acesse todos os módulos da operação.</small>
+      </div>
+      <button id="dashboard-mobile-drawer-close" type="button" aria-label="Fechar menu">×</button>
+    </header>
+    <div class="dashboard-mobile-drawer-grid">
+      <a href="alertas-reposicao.html"><span>R</span><strong>Reposição Inteligente</strong></a>
+      <a href="fornecedores.html"><span>F</span><strong>Fornecedores</strong></a>
+      <a href="desperdicio.html"><span>!</span><strong>Desperdício</strong></a>
+      <a href="etiquetas.html"><span>T</span><strong>Etiquetas</strong></a>
+      <a href="whatsapp-ia.html"><span>W</span><strong>WhatsApp e IA</strong></a>
+      <a href="funcionarios.html"><span>U</span><strong>Funcionários</strong></a>
+      <a href="configuracoes.html"><span>S</span><strong>Configurações</strong></a>
+      <button type="button" data-logout-button><span>X</span><strong>Sair</strong></button>
+    </div>
+  </section>
+</div>
 
 <script type="module">
 import { db } from "./firebase.js";

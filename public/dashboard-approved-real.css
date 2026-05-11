@@ -78,7 +78,7 @@ body.dashboard-approved-real .topbar {
 body.dashboard-approved-real .top-menu {
   width: 32px;
   height: 32px;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   border: 0;
@@ -86,6 +86,7 @@ body.dashboard-approved-real .top-menu {
   background: transparent;
   color: var(--silver3);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 body.dashboard-approved-real .top-menu:hover { background: var(--surface2); color: var(--silver); }
@@ -315,6 +316,7 @@ body.dashboard-approved-real .premium-nav a.nav-link.active {
   background: var(--brand-glow) !important;
   color: #fff !important;
   font-weight: 700 !important;
+  box-shadow: 0 0 0 1px rgba(232, 68, 42, 0.35) inset, 0 8px 28px rgba(232, 68, 42, 0.10);
 }
 
 body.dashboard-approved-real .nav-ic,
@@ -1095,4 +1097,71 @@ body.dashboard-approved-real .empty-state {
   body.dashboard-approved-real .dashboard-mobile-drawer-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* --- Tipografia centrada (conteúdo editorial); formulários/tabelas/listas à esquerda --- */
+body.dashboard-approved-real .approved-main section.page {
+  text-align: center;
+}
+
+body.dashboard-approved-real .approved-main .page-header {
+  justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+body.dashboard-approved-real .approved-main .page-header .actions {
+  justify-content: center;
+}
+
+body.dashboard-approved-real .approved-main .compact-header {
+  text-align: center;
+}
+
+body.dashboard-approved-real .approved-main .ph-actions {
+  text-align: center;
+}
+
+body.dashboard-approved-real .approved-main .ph-actions select,
+body.dashboard-approved-real .approved-main .ph-actions button {
+  text-align: left;
+}
+
+body.dashboard-approved-real .approved-main .form-grid,
+body.dashboard-approved-real .approved-main table,
+body.dashboard-approved-real .approved-main thead,
+body.dashboard-approved-real .approved-main tbody,
+body.dashboard-approved-real .approved-main tr,
+body.dashboard-approved-real .approved-main th,
+body.dashboard-approved-real .approved-main td,
+body.dashboard-approved-real .approved-main .field-group,
+body.dashboard-approved-real .approved-main .inline-choice,
+body.dashboard-approved-real .approved-main .password-field,
+body.dashboard-approved-real .approved-main .page-header .field-group,
+body.dashboard-approved-real .approved-main .stock-topbar-search,
+body.dashboard-approved-real .approved-main .stock-command-panel,
+body.dashboard-approved-real .approved-main .stock-category-filters,
+body.dashboard-approved-real .approved-main .stock-category-manager,
+body.dashboard-approved-real .approved-main .stock-view-toggle,
+body.dashboard-approved-real .approved-main .stock-product-table,
+body.dashboard-approved-real .approved-main .list,
+body.dashboard-approved-real .approved-main .summary-line,
+body.dashboard-approved-real .approved-main .supplier-entry,
+body.dashboard-approved-real .approved-main .supplier-product-picker,
+body.dashboard-approved-real .approved-main .supplier-price-grid,
+body.dashboard-approved-real .approved-main .product-card-details,
+body.dashboard-approved-real .approved-main .analytics-month-meta,
+body.dashboard-approved-real .approved-main .alert-meta-grid,
+body.dashboard-approved-real .approved-main .inline-actions,
+body.dashboard-approved-real .approved-main .timeline-list,
+body.dashboard-approved-real .approved-main .auth-switcher,
+body.dashboard-approved-real .approved-main .premium-alert-drawer-list,
+body.dashboard-approved-real .approved-main dialog,
+body.dashboard-approved-real .approved-main pre,
+body.dashboard-approved-real .approved-main .status {
+  text-align: left;
+}
+
+body.dashboard-approved-real .approved-main .list .empty-state {
+  text-align: center;
 }

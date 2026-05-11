@@ -15,6 +15,8 @@
     "check:smoke": "node scripts/smoke-test.mjs",
     "check:phase3": "node scripts/phase3-visual-check.mjs",
     "check:phase4": "node scripts/phase4-authenticated-audit.mjs",
+    "check:phase5": "node scripts/phase5-operational-validation.mjs",
+    "diag:fornecedores-phase5": "node scripts/phase5-fornecedores-diagnostic.mjs",
     "audit:firestore-user": "node scripts/phase4-firestore-usuario.mjs",
     "ci": "npm run check:html && npm run check:smoke",
     "mobile:copy": "npx cap copy",

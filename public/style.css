@@ -524,6 +524,72 @@ body.premium-saas-shell-body main.page.premium-page {
   gap: 8px;
 }
 
+/* Callout demo: fundo opaco para não mostrar o vermelho do body .panel::before por baixo */
+.login-demo-callout {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+  border: 1px solid rgba(96, 165, 250, 0.38);
+  background: linear-gradient(165deg, #1e293b 0%, #0f172a 52%, #0c1222 100%);
+  color: #e2e8f0;
+  text-align: left;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 28px rgba(0, 0, 0, 0.42);
+}
+
+/* Login: o cartão é .panel — o ::before global vermelho vaza por gradientes transparentes */
+body.login-premium-body .login-premium-card.panel::before {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 42%) !important;
+  opacity: 0.45 !important;
+}
+
+body.login-premium-body .login-premium-card {
+  background: linear-gradient(195deg, rgba(17, 24, 39, 0.98), rgba(9, 12, 22, 0.98)) !important;
+}
+
+.login-demo-callout strong {
+  color: #f8fafc;
+  font-size: 0.95rem;
+}
+
+.login-demo-callout span {
+  color: rgba(226, 232, 240, 0.88);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.login-demo-callout code {
+  display: block;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fef3c7;
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+/* Login: títulos e copy centrados; campos e ações sociais à esquerda */
+body.login-premium-body .page.page-login,
+body.login-premium-body .login-marketing-panel,
+body.login-premium-body .login-premium-card {
+  text-align: center;
+}
+
+body.login-premium-body .login-premium-card .form-grid,
+body.login-premium-body .login-premium-card .auth-switcher,
+body.login-premium-body .login-premium-card .login-form-options,
+body.login-premium-body .login-premium-card .login-social-block,
+body.login-premium-body .login-demo-callout {
+  text-align: left;
+}
+
 .login-social-block {
   display: grid;
   gap: 12px;
@@ -8829,9 +8895,9 @@ body {
   overflow-x: hidden !important;
 }
 
-body.premium-clean-shell,
-body.premium-global-body,
-body.dashboard-saas-page {
+body.premium-clean-shell:not(.dashboard-approved-real),
+body.premium-global-body:not(.dashboard-approved-real),
+body.dashboard-saas-page:not(.dashboard-approved-real) {
   min-height: 100vh;
   background:
     linear-gradient(135deg, rgba(232, 68, 42, 0.07), transparent 30%),
@@ -8845,9 +8911,9 @@ body.premium-saas-shell-body {
   padding-left: var(--clean-sidebar) !important;
 }
 
-body.premium-clean-shell img,
-body.premium-clean-shell svg,
-body.premium-clean-shell canvas {
+body.premium-clean-shell:not(.dashboard-approved-real) img,
+body.premium-clean-shell:not(.dashboard-approved-real) svg,
+body.premium-clean-shell:not(.dashboard-approved-real) canvas {
   max-width: 100%;
 }
 

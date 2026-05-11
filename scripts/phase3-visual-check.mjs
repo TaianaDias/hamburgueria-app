@@ -102,6 +102,30 @@ async function measureOverflow(page) {
   });
 }
 
+/** Evita falha intermitente quando Firebase ou redirect destrói o contexto a meio do evaluate. */
+async function measureOverflowSafe(page) {
+  const attempts = 8;
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await measureOverflow(page);
+    } catch (err) {
+      lastErr = err;
+      const msg = err?.message || String(err);
+      const retriable =
+        msg.includes("Execution context was destroyed") ||
+        msg.includes("Target page") ||
+        msg.includes("has been closed");
+      if (retriable && i < attempts - 1) {
+        await delay(350 + i * 200);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
 async function runShellDesktopToggle(page) {
   const menu = page.locator(".clean-menu-button").first();
   const visible = await menu.isVisible().catch(() => false);
@@ -160,8 +184,9 @@ async function runProbeSuite(page, summary) {
   for (const vp of VIEWPORTS) {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await page.goto(`${baseUrl}/dev-shell-probe.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForLoadState("load", { timeout: 15000 }).catch(() => {});
     await delay(400);
-    const ov = await measureOverflow(page);
+    const ov = await measureOverflowSafe(page);
     summary.probe.overflow[vp.name] = ov;
     if (ov.delta > worstDelta) {
       worstDelta = ov.delta;
@@ -215,10 +240,11 @@ async function main() {
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await page.goto(`${baseUrl}${p}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.waitForLoadState("load", { timeout: 15000 }).catch(() => {});
         await delay(postGotoWait);
         summary.byPage[p].finalUrls[vp.name] = page.url();
 
-        const ov = await measureOverflow(page);
+        const ov = await measureOverflowSafe(page);
         summary.byPage[p].overflow[vp.name] = ov;
         if (ov.delta > worstDelta) {
           worstDelta = ov.delta;

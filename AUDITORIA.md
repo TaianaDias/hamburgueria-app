@@ -11,10 +11,31 @@
 | Tipo | Arquivos |
 |------|------------|
 | **CSS** | `public/style.css` (~10k linhas, design system principal), `public/dashboard-saas-page.css` (tema/layout dashboard SaaS) |
-| **JS front** | `public/app.js` (módulo Firebase, auth, APIs), `public/premium-shell.js` (topbar/sidebar/dock injetados), `public/firebase.js`, `public/operational-core.js`, `public/barcode-cache.js`, `public/sw.js` |
+| **JS front** | `public/app.js` (módulo Firebase, auth, APIs), `public/premium-shell.js` (shell aprovado + injeção legada), `public/firebase.js`, `public/operational-core.js`, `public/barcode-cache.js`, `public/sw.js` |
+| **Scripts auditoria** | `scripts/phase4-authenticated-audit.mjs` (`check:phase4`), `scripts/phase5-operational-validation.mjs` (`check:phase5`), `scripts/phase4-firestore-usuario.mjs` |
 | **HTML operacionais** | `dashboard-saas.html`, `estoque.html`, `compras.html`, `producao.html`, `producao-etiquetas.html`, `fornecedores.html`, `desperdicio.html`, `etiquetas.html`, `impressora.html`, `funcionarios.html`, `funcionarias.html`, `whatsapp-ia.html`, `configuracoes.html`, `saas.html`, `login.html`, `alertas-reposicao.html`, `reposicao-producao.html`, `inventario.html`, `analise-compras.html`, `dashboard-compras.html`, `treinamento.html`, etc. |
 | **HTML protótipo / mock** | `mockup*.html`, `mackup-clean-premium.html`, `saas-dashboard-prototype.html`, `demo*.html`, `layout-aprovacao.html` |
 | **Entrada** | `index.html` → redireciona para `dashboard-saas.html` |
+| **Template operacional** | `public/approved-shell-template.html` — cópia de referência para novas páginas (ver secção abaixo). |
+
+---
+
+## Padrão oficial de páginas operacionais
+
+Toda **nova página operacional** (autenticada, com navegação global) deve seguir o mesmo esqueleto que o layout **dashboard-approved-real**, carregando **`premium-shell.js`** para menu, gavetas, busca (⌘K / Ctrl+K), estado ativo da navegação e **sincronização automática** do utilizador entre `#user-info` (oculto na sidebar) e o topbar (`#dashboard-user-name`, `#dashboard-user-role`, `#dashboard-user-initials`).
+
+| Requisito | Detalhe |
+|-----------|---------|
+| **Ficheiro modelo** | `public/approved-shell-template.html` — copiar e renomear; não servir como rota de produção sem ajustar título, permissão e conteúdo. |
+| **`<head>`** | `style.css` → `dashboard-saas-page.css` → `dashboard-approved-real.css` (nesta ordem); `premium-shell.js` com `defer`. Meta PWA alinhadas ao dashboard (`theme-color` `#070707`, `apple-mobile-web-app-title` “Sistema Carioca's”, etc.). |
+| **`<body>`** | `class="premium-app-body dashboard-mobile-fix dashboard-approved-real"`. **Não** usar `dashboard-saas-page` no body (reservado ao `dashboard-saas.html` e lógica específica do executivo). |
+| **Estrutura** | `header.topbar` → `div.body-wrap.approved-body-wrap` → `aside.sidebar.approved-sidebar.premium-global-sidebar` (com `nav.premium-nav` + `<span id="user-info" hidden></span>`) → `main.main.approved-main` → `section.page` (conteúdo do módulo). |
+| **Chrome global** | Após o `body-wrap`: backdrop de alertas, `dialog` de ação rápida e de busca, `nav.dashboard-mobile-bottom-nav.approved-mobile-bottom-nav`, gaveta `#dashboard-mobile-drawer` (IDs estáveis para `premium-shell.js`). |
+| **Utilizador** | Um único `#user-info` no DOM, oculto; após `requireAuth`, definir `textContent` (ex.: `describeProfile(profile)`). O `MutationObserver` em `premium-shell.js` propaga para o topbar. |
+| **Script módulo mínimo** | `bindLogoutButton()` + `requireAuth({ permission: "…" })` com a permissão real do módulo; evitar segundo `#user-info` visível no `page-header`. |
+| **Automação** | Para aplicar o mesmo invólucro em HTML existente, existe `scripts/apply-approved-shell.mjs` (ver histórico de migração no repositório). |
+
+**Exceções (não obrigam este padrão):** `login.html`, páginas só de redirecionamento, mockups/demos e ferramentas de desenvolvimento.
 
 ---
 
@@ -392,9 +413,79 @@
 
 ---
 
-## FASE 5 — (reservado)
+## FASE 5 — Validação operacional real
 
-**Regra:** qualquer automação ou documentação futura nesta fase deve usar **somente** credenciais da conta de auditoria **atual** via variáveis de ambiente (`PHASE4_EMAIL` / `PHASE4_PASSWORD` ou nomes documentados no `package.json` quando existirem). **Proibido:** UIDs ou e-mails de contas revogadas no código ou em relatórios versionados.
+**Regra de credenciais:** usar **exclusivamente** `PHASE4_EMAIL` e `PHASE4_PASSWORD` no ambiente (conta de auditoria **atual**). Não versionar e-mails, UIDs nem senhas. Não reutilizar contas antigas revogadas.
+
+**Comando:** `npm run check:phase5` (equivale a `node scripts/phase5-operational-validation.mjs`).
+
+**Artefacto local (não versionado):** `reports/phase5-raw.json` — resultado bruto (passos, viewports, erros de consola filtrados, respostas calculadas). A pasta `reports/` está no `.gitignore`.
+
+### O que o script faz
+
+| Etapa | Descrição |
+|-------|-----------|
+| Login | Mesmo fluxo da Fase 4 (`login.html` → `dashboard-saas.html`). |
+| Fornecedor | Cria (ou aceita duplicado) `TESTE_AUDITORIA_FORNECEDOR` em `fornecedores.html`. **Requer** `fornecedores.ver` e perfil que **não** seja redirecionado por `tipo === "estoque"` (ver `fornecedores.html`: redireciona para `index.html`). |
+| Insumo | Abre cadastro em `estoque.html`, preenche `TESTE_AUDITORIA_INSUMO`, categoria canónica, código de barras fixo do script, vincula fornecedor, observação na ficha com referências `TESTE_AUDITORIA_ENTRADA` / `TESTE_AUDITORIA_SAIDA`. |
+| Entrada / saída | Caixa rápida (`Registrar entrada` / `Registrar saída`) após lookup do código de barras. |
+| Busca | Prefixo `TESTE_AUDITORIA_` na busca do estoque e no diálogo de busca global (topbar aprovada). |
+| Módulos | Navegação leve a alertas, compras, relatório diário, produção/etiquetas, impressora (deteção de `login` ou `permission-denied` por módulo). |
+| Layout | Viewports desktop/tablet/mobile em `estoque.html` (overflow), toggle ☰ / gaveta (`#dashboard-mobile-menu`), logout. |
+
+### Diagnóstico `fornecedores.html` (fill `#nome` / timeout)
+
+**Comando:** `npm run diag:fornecedores-phase5` (com `PHASE4_EMAIL` e `PHASE4_PASSWORD`). Escreve `reports/fornecedores-phase5-diag.json` e captura `reports/fornecedores-phase5-diag.png`.
+
+**Conclusão da revisão de código (sem mudança de regra de negócio):**
+
+| Questão | Resposta |
+|--------|----------|
+| Há modal “Novo fornecedor”? | **Não.** O título `#form-title` e o formulário `#supplier-form` estão **sempre** no painel principal (não há abertura de modal para criar). |
+| `#nome` existe? | **Sim.** `<input id="nome">` dentro de `#supplier-form` (`public/fornecedores.html`). |
+| Seletor recomendado no Playwright | **`#supplier-form input#nome`** (equivalente a `#nome` nesta página, mas evita ambiguidade se outro módulo ganhar `id="nome"`). |
+| Por que o E2E esperava tanto? | O gargalo era **sincronização Firestore** (`getDocs(estoque)` + `getDocs(fornecedores)`) **em sequência** após `requireAuth`, mais `renderSuppliers`. O Playwright não deve confiar só no HTML estático. |
+| Sinal de readiness na app | `window.__fornecedoresReadiness.ready === true` após `init()`; marcas em `marks` (ms desde o início de `init()`). Evento `fornecedores-ready`. **`check:phase5`** espera `appReady` + input acionável (com fallback legado se a API não existir). |
+| Loading se >2s | Faixa `#supplier-panel-loading` (aria-live) visível após **2 s** se ainda não `ready`; oculta no fim de `init()`. |
+| Paralelização | `loadStockProducts()` e `loadSuppliers()` passam a correr em **`Promise.all`** (menor tempo até `resetForm` / lista). **Sem** alterar regras de gravação ou permissões. |
+
+### Classificação percebida (tempo total `init()` até `ready`)
+
+Medido em `totalMs` / `marks.totalToReadyMs` no objeto global (diagnóstico: `npm run diag:fornecedores-phase5` → `browserReadiness`).
+
+| Classe | Intervalo | Rótulo |
+|--------|-------------|--------|
+| excelente | &lt; 2000 ms | Excelente (&lt;2s) |
+| muito_bom | 2000–3999 ms | Muito bom (2–4s) |
+| bom | 4000–7999 ms | Bom (4–8s) |
+| regular | ≥ 8000 ms | Regular (&gt;8s) |
+
+### Limitações conhecidas (sem alteração de regra de negócio)
+
+- O documento gravado em `historico` na movimentação rápida **não** inclui campos de texto livre para `TESTE_AUDITORIA_ENTRADA` / `SAIDA`; as referências canónicas ficam na **ficha técnica** (`fichaTecnicaObservacoes`) no cadastro do insumo quando o script completa esse passo. Para rastreio só em movimentos, seria evolução futura de produto (fora do âmbito desta entrega).
+- `estoque.html` é muito pesado; o Playwright pode demorar ou exceder timeout em máquinas lentas — nesse caso, repetir o comando ou validar os mesmos passos **manualmente** com os nomes canónicos.
+- Impressão física de etiquetas e hardware não são cobertos pelo headless.
+
+### Limpeza pós-teste
+
+1. Em **Estoque** / **Fornecedores**, filtrar por `TESTE_AUDITORIA_`.  
+2. Remover apenas registos criados para auditoria (insumo com nome/código do script, fornecedor canónico).  
+3. Opcional: consola Firebase — coleções `estoque`, `fornecedores`, `historico` — com o mesmo prefixo de texto, **após** confirmar que não há dependências em produção.
+
+### Respostas objetivas (checklist operacional)
+
+Execução numérica depende de `check:phase5` bem-sucedido na conta atual; abaixo, o estado **esperado** do produto quando permissões e rede estão corretas:
+
+1. **Cadastro de insumo está pronto?** **Sim** (formulário valida nome, código de barras ou modo manual, fornecedor obrigatório, persistência em `estoque`).  
+2. **Cadastro de fornecedor está pronto?** **Sim** para perfis com acesso; **não** para utilizador apenas com fluxo bloqueado em `fornecedores.html` (redirecionamento por `tipo`).  
+3. **Entrada está pronta?** **Sim** (fluxo rápido exige custo > 0 na entrada; grava `historico` e atualiza quantidade).  
+4. **Saída está pronta?** **Sim**, desde que exista saldo suficiente em embalagens/unidade coerente com o fluxo.  
+5. **Histórico está íntegro?** **Sim** a nível de coleção `historico` para movimentos registrados pela caixa rápida; conferência visual/listagens continua recomendada após cada bateria de testes.  
+6. **Reposição funciona?** **OK\*** — módulo e automações dependem de dados, mínimos e avaliação de reposição (não garantido só pelo script).  
+7. **Etiquetas funcionam?** **OK\*** — UI em `producao-etiquetas.html` / `impressora.html`; dispositivo físico é validação manual.  
+8. **Há inconsistência de dados?** Duplicidade de nome/barcode é **bloqueada** no cadastro; inconsistências reais exigem processo operacional (dois operadores, import XML, etc.) — mitigar com regras Firestore e disciplina de dados.  
+9. **Há erro crítico?** Nenhum **novo** identificado nesta fase na revisão de código; falhas de execução headless tratam-se de **timeout/perfil/rede**, não de bug lógico obrigatório.  
+10. **O sistema já pode começar a ser alimentado oficialmente?** **Sim com reservas:** backup, revisão das regras Firestore, conta com permissões completas para fornecedores/estoque, validação manual ou `check:phase5` verde na conta atual, e exclusão dos registos `TESTE_AUDITORIA_*` antes de operação “limpa” se desejado.
 
 ---
 

@@ -1,7 +1,8 @@
 # Checklist de testes — Operação / Dashboard SaaS
 
-**Última atualização:** 9 de maio de 2026 — **FASE 4: auditoria autenticada (Firebase + Playwright)**  
-**Métodos Fase 4:** `npm run check:phase4` com `PHASE4_EMAIL` e `PHASE4_PASSWORD` no ambiente (nunca commite credenciais); `node scripts/phase4-firestore-usuario.mjs` com `PHASE4_EMAIL` ou `PHASE4_UID` (Admin SDK local).  
+**Última atualização:** 10 de maio de 2026 — **FASE 5: validação operacional real** + Fase 4 mantida.  
+**Métodos Fase 5:** `npm run check:phase5` com `PHASE4_EMAIL` e `PHASE4_PASSWORD` (mesma conta de auditoria **atual**); relatório local `reports/phase5-raw.json` (gitignored). Logs de etapa no stderr (`[phase5] …`); `PHASE5_DEBUG=1` aumenta detalhe.  
+**Métodos Fase 4:** `npm run check:phase4`; `node scripts/phase4-firestore-usuario.mjs` com `PHASE4_EMAIL` ou `PHASE4_UID` (Admin SDK local).  
 **Fases anteriores:** Fase 3 (`check:phase3`), Fase 2 (`check:smoke`, `check:html`).
 
 **Legenda:** OK | FALHA | N/A | **OK\*** (OK com ressalva documentada)
@@ -17,14 +18,22 @@
 - **Ativa:** a conta definida **no momento da execução** por `PHASE4_EMAIL` e `PHASE4_PASSWORD` (ambiente local ou CI seguro). **Não** versionar e-mail, UID ou senha no repositório.
 - **Descontinuada:** uma conta de auditoria anterior foi **eliminada no Firebase** (senha perdida); **não** a utilize nem restaure artefactos (`reports/*.json`, capturas) que a identifiquem. Apague ficheiros locais antigos em `reports/` se existirem.
 
-### FASE 5 (quando existir)
+### FASE 5 — Validação operacional real
 
-- Deve usar **exclusivamente** as mesmas variáveis `PHASE4_EMAIL` / `PHASE4_PASSWORD` (ou sucessor documentado) para a conta de auditoria **atual**. Não codificar UIDs nem e-mails de teste em scripts.
+- Usar **somente** `PHASE4_EMAIL` / `PHASE4_PASSWORD` da conta de auditoria **atual** (nunca commite credenciais nem contas antigas).
+- Dados canónicos: `TESTE_AUDITORIA_INSUMO`, `TESTE_AUDITORIA_FORNECEDOR`, `TESTE_AUDITORIA_ENTRADA`, `TESTE_AUDITORIA_SAIDA` (ver tabela abaixo e `AUDITORIA.md` → **FASE 5**).
+- O script cobre login, **fornecedor antes de insumo** (dependência do dropdown), insumo em estoque, entrada/saída rápidas, busca por prefixo, rotas de módulos, viewports e logout (no modo completo). **Perfil** deve permitir `fornecedores.html` (não ser bloqueado pelo redirect de `tipo === "estoque"` nessa página).
+- **Timeout global:** `PHASE5_TIMEOUT_MS` (padrão **180000**). Se estourar: `reports/phase5-timeout-<timestamp>.png`, `.html`, e `phase5-raw.json` **parcial** (`partial: true`, `timeoutStage`); exit **1**.
+- **Modo curto:** `PHASE5_SHORT=1` — só login → fornecedor → estoque (insumo) → entrada → saída (+ passo registado `historico_implicito`); salta buscas, módulos extra, viewports, shell e logout.
+- Após o run: limpar registos com prefixo `TESTE_AUDITORIA_` se não forem necessários (UI ou Firestore).
+- **Nota:** `estoque.html` é pesado; timeouts podem ocorrer — repetir o comando ou completar os passos manualmente com os mesmos nomes.
 
 ### Comandos
 
 | Comando | Descrição |
 |---------|-----------|
+| `PHASE4_EMAIL=... PHASE4_PASSWORD=... npm run check:phase5` | Modo completo: ciclo canónico + módulos + viewports + logout. Variáveis: `PHASE5_TIMEOUT_MS` (default 180000), `PHASE5_FORN_WAIT_MS` (poll fornecedores), `PHASE5_DEBUG=1`, `PHASE5_SHORT=1` (só core). Relatório: `reports/phase5-raw.json`; em timeout ver também `phase5-timeout-*.png` / `.html`. |
+| `PHASE4_EMAIL=... PHASE4_PASSWORD=... npm run diag:fornecedores-phase5` | Readiness profundo: tempos desde o `goto` (DOM complete, form no DOM, input acionável, `user-info`, `__fornecedoresReadiness`), `staticAnalysis`, `browserReadiness.marks` — `reports/fornecedores-phase5-diag.json` + `.png`. |
 | `PHASE4_EMAIL=... PHASE4_PASSWORD=... npm run check:phase4` | Login real + percorrer módulos em 7 viewports + shell + logout. |
 | `PHASE4_EMAIL=... node scripts/phase4-firestore-usuario.mjs` | Resolve UID por e-mail e lê `usuarios/{uid}` via Admin SDK. |
 | `PHASE4_UID=... node scripts/phase4-firestore-usuario.mjs` | Lê `usuarios/{uid}` quando o UID já é conhecido (conta atual). |
@@ -189,5 +198,5 @@ Correr `npm run check:phase4` e `npm run audit:firestore-user` com **`PHASE4_EMA
 
 - Comando: `npm run check:phase3` (requer `playwright` instalado — ver `package.json`).  
 - Comando: `npm run check:phase4` — credenciais só por ambiente (`PHASE4_EMAIL`, `PHASE4_PASSWORD`) da **conta de auditoria atual**; pasta `reports/` ignorada pelo git — apagar artefactos locais antigos se contiverem dados de contas revogadas.  
-- FASE 5 (quando existir): mesma regra de credenciais; ver `AUDITORIA.md`.  
+- FASE 5: `npm run check:phase5` — mesma regra de credenciais; detalhes em `AUDITORIA.md` → **FASE 5**.  
 - `dev-shell-probe.html`: `noindex`; uso previsto para CI / diagnóstico local.
