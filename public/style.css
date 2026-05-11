@@ -1826,6 +1826,35 @@ button.active,
   color: var(--muted);
 }
 
+.supplier-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  padding: 1.1rem 1rem;
+  text-align: center;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+/* Estoque: placeholder premium para imagem quando foto não carrega */
+#product-image-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.07);
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#product-image-origin {
+  margin-top: 10px;
+}
+
 .metric-value {
   display: block;
   margin-top: 10px;
@@ -3159,7 +3188,9 @@ pre {
 }
 
 .product-card-details[open] .product-card-details-summary {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, rgba(232, 68, 42, 0.12), rgba(15, 23, 42, 0.32));
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .product-card-details-summary::-webkit-details-marker {
@@ -3483,6 +3514,27 @@ pre {
   font-size: 0.76rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Sticky header + zebra leve para leitura premium */
+.stock-product-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(17, 17, 19, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.stock-product-table tbody tr:nth-child(odd) td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.stock-product-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.00) !important;
+}
+
+.stock-product-table tbody tr:hover td {
+  background: rgba(232, 68, 42, 0.10) !important;
 }
 
 .stock-product-table td {
@@ -10702,5 +10754,256 @@ body.premium-clean-shell .clean-topbar {
   body.dashboard-saas-page.dashboard-sidebar-collapsed .premium-nav-logout {
     grid-template-columns: 1fr !important;
     justify-items: center !important;
+  }
+}
+
+/* --- Lote visual premium: estoque, fornecedores, compras, alertas, producao (approved shell) --- */
+.supplier-panel-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.supplier-panel-loading[hidden] {
+  display: none !important;
+}
+
+.supplier-loading-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand, #e8442a);
+  animation: supplier-loading-pulse 1s ease-in-out infinite;
+}
+
+@keyframes supplier-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+body.dashboard-approved-real .supplier-panel-loading {
+  border-color: rgba(232, 68, 42, 0.22);
+  background: rgba(232, 68, 42, 0.06);
+}
+
+body.dashboard-approved-real .approved-main #lista.list,
+body.dashboard-approved-real .approved-main #alerts-list.list {
+  display: grid;
+  gap: 14px;
+}
+
+body.dashboard-approved-real .approved-main .empty-state {
+  margin-inline: auto;
+  max-width: 520px;
+  text-align: center;
+  padding: 1.35rem 1.25rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(2, 6, 23, 0.38));
+}
+
+body.dashboard-approved-real .alert-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px 16px;
+}
+
+body.dashboard-approved-real .layout-grid {
+  align-items: start;
+}
+
+body.dashboard-approved-real .thermal-label-preview {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(2, 6, 23, 0.45));
+}
+
+body.dashboard-approved-real .timeline-list span {
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+body.dashboard-approved-real .timeline-list span:hover {
+  border-color: rgba(232, 68, 42, 0.28);
+  background: rgba(232, 68, 42, 0.06);
+}
+
+@media (max-width: 768px) {
+  body.dashboard-approved-real .page-header .actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+}
+
+/* --- Refinamento premium por módulo (compras, fornecedores, producao, alertas) --- */
+
+/* Compras: hierarquia de decisão + leitura financeira */
+body.dashboard-approved-real .page-module-compras #purchase-register-section.panel {
+  border-left: 3px solid rgba(232, 68, 42, 0.75);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.24);
+}
+
+body.dashboard-approved-real .page-module-compras #purchase-form #purchase-total {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(232, 68, 42, 0.28);
+  border-radius: 12px;
+}
+
+body.dashboard-approved-real .page-module-compras #purchase-form .inline-choice {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.dashboard-approved-real .page-module-compras .purchase-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-compras .purchase-history-item .summary-line span:last-child {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dashboard-approved-real .page-module-compras #lista.list {
+  display: grid;
+  gap: 16px;
+}
+
+body.dashboard-approved-real .page-module-compras #lista .card .supplier-price-grid {
+  margin-top: 14px;
+}
+
+body.dashboard-approved-real .page-module-compras .actions.compact-actions {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Fornecedores: zona de vínculo produto ↔ fornecedor */
+body.dashboard-approved-real .page-module-fornecedores .supplier-products-field {
+  position: relative;
+  padding: 14px 14px 16px;
+  margin-top: 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(232, 68, 42, 0.24);
+  background: linear-gradient(145deg, rgba(232, 68, 42, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-products-field > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-products-field > span:first-child::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand, #e8442a);
+  box-shadow: 0 0 14px rgba(232, 68, 42, 0.55);
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-product-picker {
+  max-height: min(44vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  margin-top: 10px;
+  padding: 6px 8px 8px 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(2, 6, 23, 0.35);
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-product-picker:focus-within {
+  border-color: rgba(232, 68, 42, 0.35);
+  box-shadow: 0 0 0 1px rgba(232, 68, 42, 0.12);
+}
+
+/* Produção: fluxo formulário → preview → histórico */
+body.dashboard-approved-real .page-module-producao #etiqueta.panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-producao #etiqueta.panel h3::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  min-width: 24px;
+  background: linear-gradient(90deg, rgba(232, 68, 42, 0.45), transparent);
+}
+
+body.dashboard-approved-real .page-module-producao #label-preview {
+  border-radius: 20px;
+}
+
+body.dashboard-approved-real .page-module-producao #label-history {
+  display: grid;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-producao .layout-grid {
+  gap: 18px;
+}
+
+/* Alertas: métricas, ações e histórico mais escaneáveis */
+body.dashboard-approved-real .page-module-alertas .stats-grid {
+  gap: 14px;
+}
+
+body.dashboard-approved-real .page-module-alertas .stats-grid > .card {
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+body.dashboard-approved-real .page-module-alertas .stats-grid > .card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+body.dashboard-approved-real .page-module-alertas #history-list.list {
+  display: grid;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-alertas .alert-card .inline-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  body.dashboard-approved-real .page-module-alertas .alert-card .inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.dashboard-approved-real .page-module-alertas .alert-card .inline-actions button {
+    width: 100%;
+    justify-content: center;
   }
 }
