@@ -1,44 +1,117 @@
 :root {
   color-scheme: dark;
-  --bg-main: #08090b;
-  --bg-panel: rgba(255, 255, 255, 0.055);
-  --bg-card-dark: rgba(0, 0, 0, 0.30);
-  --border-soft: rgba(255, 255, 255, 0.10);
-  --text-main: #f4f4f5;
-  --text-muted: #a1a1aa;
+
+  /* Design System — Luxury Black & Gold (tokens oficiais) */
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #1a1a1a;
+  --color-surface-primary: #242424;
+  --color-surface-secondary: #2d2d2d;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b3b3b3;
+  --color-text-tertiary: #808080;
+  --color-accent: #c9a95e;
+  --color-accent-hover: #d4b567;
+  --color-border: #404040;
+  --color-border-hover: #555555;
+
+  --font-family-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --line-height-base: 1.5;
+  --line-height-heading: 1.2;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  --z-tooltip: 10;
+  --z-dropdown: 20;
+  --z-modal: 50;
+  --z-overlay: 40;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Borda única cards / sidebar (pedido DS) */
+  --ds-border-subtle: #27272a;
+
+  /* Compat: raios da UI legada (mantém proporções de botões e painéis) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+
+  /* Glass / painéis (blur 12px alinhado ao DS) */
+  --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  --glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.035));
+  --glass-border: var(--ds-border-subtle);
+  --glass-border-hot: rgba(201, 169, 94, 0.45);
+  --glass-shadow: 0 26px 70px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* Mapa legado → tokens (app existente) */
+  --bg-main: var(--color-bg-primary);
+  --bg-soft: var(--color-bg-secondary);
+  --bg-panel: color-mix(in srgb, var(--color-surface-primary) 82%, transparent);
+  --bg-card-dark: rgba(0, 0, 0, 0.35);
+  --border-soft: var(--ds-border-subtle);
+  --text-main: var(--color-text-primary);
+  --text-muted: var(--color-text-secondary);
   --red-main: #dc2626;
   --red-dark: #7f1d1d;
   --red-soft: rgba(239, 68, 68, 0.15);
   --green-soft: rgba(16, 185, 129, 0.15);
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
-  --shadow-premium: 0 25px 60px rgba(0, 0, 0, 0.35);
-  --bg: var(--bg-main);
-  --bg-soft: #101010;
+  --shadow-premium: 0 25px 60px rgba(0, 0, 0, 0.45);
+  --bg: var(--color-bg-primary);
   --panel: var(--bg-panel);
   --card: var(--bg-panel);
-  --line: var(--border-soft);
-  --border: var(--border-soft);
-  --text: var(--text-main);
-  --muted: var(--text-muted);
-  --brand: var(--red-main);
-  --brand-soft: #f87171;
+  --line: var(--ds-border-subtle);
+  --border: var(--color-border);
+  --text: var(--color-text-primary);
+  --muted: var(--color-text-secondary);
+  --brand: var(--color-accent);
+  --brand-soft: var(--color-accent-hover);
 
-  /* SaaS premium (briefing) — aliases compatíveis com tokens existentes */
-  --bg-sidebar: #0b0c10;
-  --bg-topbar: #111217;
-  --bg-card-saas: #15171d;
-  --bg-card-soft: #1b1d24;
-  --border-red-line: rgba(239, 68, 68, 0.45);
+  --bg-sidebar: var(--color-bg-secondary);
+  --bg-topbar: var(--color-bg-secondary);
+  --bg-card-saas: var(--color-surface-primary);
+  --bg-card-soft: var(--color-surface-secondary);
+  --border-red-line: rgba(201, 169, 94, 0.35);
   --primary-red: #ef4444;
   --primary-red-hover: #dc2626;
   --primary-red-dark: #7f1d1d;
-  --text-soft: #64748b;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --shadow-soft-saas: 0 18px 45px rgba(0, 0, 0, 0.35);
+  --text-soft: var(--color-text-tertiary);
+  --shadow-soft-saas: 0 18px 45px rgba(0, 0, 0, 0.4);
   --container-max: 1240px;
+
+  --primary: var(--color-accent);
+  --primary-dark: color-mix(in srgb, var(--color-accent) 72%, #000);
+  --primary-soft: rgba(201, 169, 94, 0.14);
+  --accent: var(--color-accent);
 }
 
 * {
@@ -57,28 +130,28 @@ body {
 }
 
 body {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-family-primary);
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(239, 68, 68, 0.12), transparent 30%),
-    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.05), transparent 24%),
-    var(--bg-main);
+    radial-gradient(circle at top left, rgba(201, 169, 94, 0.07), transparent 32%),
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.03), transparent 26%),
+    var(--color-bg-primary);
 }
 
 .premium-app-body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(239, 68, 68, 0.12), transparent 30%),
-    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.05), transparent 24%),
-    var(--bg-main);
+    radial-gradient(circle at top left, rgba(201, 169, 94, 0.07), transparent 32%),
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.03), transparent 26%),
+    var(--color-bg-primary);
 }
 
 .premium-global-body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(239, 68, 68, 0.12), transparent 30%),
-    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.05), transparent 24%),
-    var(--bg-main);
+    radial-gradient(circle at top left, rgba(201, 169, 94, 0.07), transparent 32%),
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.03), transparent 26%),
+    var(--color-bg-primary);
 }
 
 .premium-saas-shell-body {
@@ -99,12 +172,12 @@ button,
   border: none;
   border-radius: 14px;
   padding: 0.95rem 1.2rem;
-  background: linear-gradient(135deg, var(--brand), var(--brand-soft));
-  color: white;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+  color: #0a0a0a;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform var(--transition-fast), filter var(--transition-fast);
 }
 
 button:hover,
@@ -159,8 +232,8 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid rgba(249, 115, 22, 0.26);
-  border-color: rgba(249, 115, 22, 0.4);
+  outline: 2px solid rgba(201, 169, 94, 0.28);
+  border-color: rgba(201, 169, 94, 0.45);
 }
 
 .page {
@@ -687,11 +760,12 @@ h3 {
 .panel,
 .card {
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--ds-border-subtle);
   border-radius: 20px;
   padding: 18px;
-  box-shadow: 0 18px 50px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .premium-surface,
@@ -748,11 +822,12 @@ h3 {
   flex-direction: column;
   width: 220px;
   padding: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid var(--ds-border-subtle);
   border-radius: 24px;
-  background: rgba(2, 6, 23, 0.82);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
-  backdrop-filter: blur(20px);
+  background: color-mix(in srgb, var(--color-surface-primary) 78%, transparent);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .premium-global-brand {
@@ -770,9 +845,9 @@ h3 {
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(249, 115, 22, 0.38);
+  border: 1px solid rgba(201, 169, 94, 0.35);
   border-radius: 14px;
-  background: #020617;
+  background: var(--color-bg-secondary);
   overflow: hidden;
 }
 
@@ -5954,15 +6029,7 @@ button.active,
     var(--bg-panel);
 }
 
-/* Glassmorphism premium: deixa cards e painéis com aparência real de vidro escuro. */
-:root {
-  --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032));
-  --glass-bg-strong: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.042));
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-border-hot: rgba(248, 113, 113, 0.52);
-  --glass-shadow: 0 26px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
-
+/* Glassmorphism premium: variáveis em :root (Luxury DS — ver topo do ficheiro). */
 .premium-card,
 .premium-card-surface,
 .premium-surface,
@@ -6009,8 +6076,8 @@ button.active,
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(22px) saturate(130%);
-  -webkit-backdrop-filter: blur(22px) saturate(130%);
+  backdrop-filter: blur(12px) saturate(125%);
+  -webkit-backdrop-filter: blur(12px) saturate(125%);
 }
 
 .premium-card::before,
@@ -6061,8 +6128,8 @@ button.active,
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 28%),
-    radial-gradient(circle at top right, rgba(248, 113, 113, 0.12), transparent 34%);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 28%),
+    radial-gradient(circle at top right, rgba(201, 169, 94, 0.1), transparent 34%);
   opacity: 0.85;
 }
 
@@ -8512,37 +8579,36 @@ body .inventory-grid {
 }
 
 /* =========================================================
-   AUDITORIA FINAL DE TEMA
-   Esta camada fica por ultimo para neutralizar sobras do layout antigo
-   em verde, azul, laranja, roxo e slate. O sistema oficial agora usa
-   preto, vermelho e branco em todas as paginas.
+   AUDITORIA FINAL DE TEMA — Luxury Black & Gold (minimal)
+   Reforça tokens DS; acento dourado; borda #27272a em cards/sidebar.
    ========================================================= */
 :root {
-  --bg-main: #070707;
-  --bg-panel: rgba(255, 255, 255, 0.055);
-  --bg-card-dark: rgba(0, 0, 0, 0.30);
-  --border-soft: rgba(255, 255, 255, 0.10);
-  --text-main: #f4f4f5;
-  --text-muted: #a1a1aa;
+  --bg-main: var(--color-bg-primary);
+  --bg-panel: color-mix(in srgb, var(--color-surface-primary) 82%, transparent);
+  --bg-card-dark: rgba(0, 0, 0, 0.35);
+  --border-soft: var(--ds-border-subtle);
+  --text-main: var(--color-text-primary);
+  --text-muted: var(--color-text-secondary);
   --red-main: #dc2626;
   --red-dark: #7f1d1d;
   --red-soft: rgba(239, 68, 68, 0.15);
-  --green-soft: rgba(220, 38, 38, 0.12);
-  --bg: #070707;
-  --bg-soft: #101010;
-  --panel: rgba(255, 255, 255, 0.055);
-  --card: rgba(255, 255, 255, 0.055);
-  --line: rgba(255, 255, 255, 0.10);
-  --border: rgba(255, 255, 255, 0.10);
-  --text: #f4f4f5;
-  --muted: #a1a1aa;
-  --brand: #dc2626;
-  --brand-soft: #ef4444;
-  --primary: #dc2626;
-  --primary-soft: rgba(220, 38, 38, 0.14);
-  --accent: #dc2626;
-  --success: #f4f4f5;
-  --warning: #f87171;
+  --green-soft: rgba(16, 185, 129, 0.12);
+  --bg: var(--color-bg-primary);
+  --bg-soft: var(--color-bg-secondary);
+  --panel: var(--bg-panel);
+  --card: var(--bg-panel);
+  --line: var(--ds-border-subtle);
+  --border: var(--color-border);
+  --text: var(--color-text-primary);
+  --muted: var(--color-text-secondary);
+  --brand: var(--color-accent);
+  --brand-soft: var(--color-accent-hover);
+  --primary: var(--color-accent);
+  --primary-dark: color-mix(in srgb, var(--color-accent) 72%, #000);
+  --primary-soft: rgba(201, 169, 94, 0.14);
+  --accent: var(--color-accent);
+  --success: #34d399;
+  --warning: #fbbf24;
   --danger: #ef4444;
 }
 
@@ -8553,10 +8619,10 @@ body.premium-global-body,
 body.login-premium-body,
 body.dashboard-saas-page {
   background:
-    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.22), transparent 32%),
-    radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.07), transparent 24%),
-    linear-gradient(135deg, #070707 0%, #0d0d0f 58%, #140909 100%) !important;
-  color: #f4f4f5 !important;
+    radial-gradient(circle at 0% 0%, rgba(201, 169, 94, 0.08), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.04), transparent 26%),
+    var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
 }
 
 body .premium-global-sidebar,
@@ -8609,10 +8675,12 @@ body .drawer-premium,
 body .premium-alert-drawer,
 body .dashboard-mobile-drawer,
 body .premium-confirm-dialog {
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  background: linear-gradient(180deg, rgba(19, 19, 22, 0.98), rgba(9, 9, 11, 0.98)) !important;
-  color: #f4f4f5 !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.40) !important;
+  border: 1px solid #27272a !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-primary) 92%, transparent), color-mix(in srgb, var(--color-bg-primary) 94%, transparent)) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
 }
 
 body .premium-global-sidebar::before,
@@ -8633,7 +8701,7 @@ body .product-card::before,
 body .inventory-card::before,
 body .inventory-product-card::before,
 body .stock-kpi-card::before {
-  background: radial-gradient(circle at top left, rgba(220, 38, 38, 0.16), transparent 42%) !important;
+  background: radial-gradient(circle at top left, rgba(201, 169, 94, 0.12), transparent 44%) !important;
   opacity: 1 !important;
 }
 
@@ -8642,10 +8710,10 @@ body .brand-card,
 body .dashboard-mobile-brand span,
 body .login-logo-mark,
 body .premium-brand-mark {
-  border-color: rgba(220, 38, 38, 0.44) !important;
-  background: linear-gradient(135deg, #dc2626, #7f1d1d) !important;
-  color: #ffffff !important;
-  box-shadow: 0 18px 42px rgba(127, 29, 29, 0.34) !important;
+  border-color: rgba(201, 169, 94, 0.45) !important;
+  background: linear-gradient(135deg, #c9a95e, #7d6a38) !important;
+  color: #0a0a0a !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35) !important;
 }
 
 body .premium-nav a.active,
@@ -8654,8 +8722,8 @@ body .nav-item.active,
 body .dashboard-mobile-bottom-nav a.active,
 body .premium-mobile-dock a.active,
 body .mobile-bottom-nav a.active {
-  border-color: rgba(220, 38, 38, 0.42) !important;
-  background: rgba(220, 38, 38, 0.18) !important;
+  border-color: rgba(201, 169, 94, 0.45) !important;
+  background: rgba(201, 169, 94, 0.14) !important;
   color: #ffffff !important;
   box-shadow: none !important;
 }
@@ -8668,9 +8736,9 @@ body .dashboard-mobile-bottom-nav span,
 body .dashboard-mobile-drawer-grid span,
 body .premium-mobile-dock span,
 body .mobile-bottom-nav span {
-  border-color: rgba(220, 38, 38, 0.22) !important;
-  background: rgba(220, 38, 38, 0.14) !important;
-  color: #fecaca !important;
+  border-color: rgba(201, 169, 94, 0.28) !important;
+  background: rgba(201, 169, 94, 0.1) !important;
+  color: #f5e6c8 !important;
 }
 
 body h1,
@@ -8695,7 +8763,7 @@ body .premium-action-card span,
 body .prototype-kpi-card span,
 body .stock-kpi-card span,
 body label {
-  color: #a1a1aa !important;
+  color: #b3b3b3 !important;
 }
 
 body .eyebrow,
@@ -8705,7 +8773,7 @@ body .premium-page-chip,
 body .premium-panel-header a,
 body .login-card-head .eyebrow,
 body .login-hero-copy .eyebrow {
-  color: #f87171 !important;
+  color: #c9a95e !important;
 }
 
 body button,
@@ -8715,10 +8783,10 @@ body .premium-primary-action,
 body .login-submit-button,
 body .create-product-button,
 body input[type="submit"] {
-  border: 1px solid rgba(220, 38, 38, 0.44) !important;
-  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
-  color: #ffffff !important;
-  box-shadow: 0 14px 34px rgba(127, 29, 29, 0.24) !important;
+  border: 1px solid rgba(201, 169, 94, 0.45) !important;
+  background: linear-gradient(135deg, #c9a95e, #8a7340) !important;
+  color: #0a0a0a !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35) !important;
 }
 
 body button.secondary,
@@ -8728,8 +8796,8 @@ body .premium-icon-button,
 body .login-lang-button,
 body .password-toggle,
 body select {
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid #27272a !important;
+  background: rgba(255, 255, 255, 0.04) !important;
   color: #f4f4f5 !important;
   box-shadow: none !important;
 }
@@ -8737,16 +8805,16 @@ body select {
 body input,
 body textarea,
 body select {
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  background: #0b0b0d !important;
+  border: 1px solid #27272a !important;
+  background: var(--color-bg-primary) !important;
   color: #ffffff !important;
 }
 
 body input:focus,
 body textarea:focus,
 body select:focus {
-  border-color: rgba(220, 38, 38, 0.76) !important;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16) !important;
+  border-color: rgba(201, 169, 94, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(201, 169, 94, 0.12) !important;
 }
 
 body .premium-kpi-card.green,
@@ -8767,33 +8835,40 @@ body .purchase-highlight-card.warning,
 body .purchase-highlight-card.info,
 body .analytics-month-card-high,
 body .analytics-month-card-low {
-  border-color: rgba(220, 38, 38, 0.32) !important;
+  border-color: rgba(201, 169, 94, 0.28) !important;
   background:
-    radial-gradient(circle at top left, rgba(220, 38, 38, 0.16), transparent 42%),
-    linear-gradient(180deg, rgba(19, 19, 22, 0.98), rgba(9, 9, 11, 0.98)) !important;
+    radial-gradient(circle at top left, rgba(201, 169, 94, 0.1), transparent 44%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-primary) 92%, transparent), color-mix(in srgb, var(--color-bg-primary) 94%, transparent)) !important;
 }
 
 body .status.info,
 body .status.warning,
 body .status.success,
-body .status.error,
 body .stock-lookup-chip,
 body .stock-badge,
 body .stock-badge.ok,
 body .badge,
-body .pill-danger,
 body .pill-success,
 body .replenishment-status,
 body .supplier-chip,
 body .category-chip {
-  border: 1px solid rgba(220, 38, 38, 0.30) !important;
+  border: 1px solid #27272a !important;
+  background: rgba(201, 169, 94, 0.08) !important;
+  color: #f5f0e6 !important;
+}
+
+body .status.error,
+body .pill-danger,
+body .stock-badge.urgent,
+body .badge.danger {
+  border: 1px solid rgba(220, 38, 38, 0.45) !important;
   background: rgba(220, 38, 38, 0.12) !important;
   color: #fecaca !important;
 }
 
 body .premium-health-ring,
 body .premium-health-row > strong {
-  border-color: rgba(220, 38, 38, 0.86) !important;
+  border-color: rgba(201, 169, 94, 0.55) !important;
 }
 
 body .premium-movement-icon.green,
@@ -8820,9 +8895,9 @@ body .dashboard-mobile-action-grid .teal,
 body .operation-action-card span,
 body .training-step-card span,
 body .login-feature-grid article span {
-  border-color: rgba(220, 38, 38, 0.24) !important;
-  background: rgba(220, 38, 38, 0.14) !important;
-  color: #fecaca !important;
+  border-color: rgba(201, 169, 94, 0.22) !important;
+  background: rgba(201, 169, 94, 0.08) !important;
+  color: #f5e6c8 !important;
   box-shadow: none !important;
 }
 
@@ -8834,18 +8909,18 @@ body .month-bar-fill,
 body .replenishment-progress-green,
 body .replenishment-progress-amber,
 body .replenishment-progress-red {
-  stroke: #dc2626 !important;
-  fill: #dc2626 !important;
-  background: linear-gradient(90deg, #dc2626, #991b1b) !important;
+  stroke: #c9a95e !important;
+  fill: #c9a95e !important;
+  background: linear-gradient(90deg, #c9a95e, #8a7340) !important;
 }
 
 body th {
-  background: #111113 !important;
+  background: #1a1a1a !important;
   color: #ffffff !important;
 }
 
 body td {
-  background: #0d0d0f !important;
+  background: #0a0a0a !important;
   color: #d4d4d8 !important;
 }
 
@@ -8864,24 +8939,22 @@ body .thermal-label-preview {
 }
 
 /* =========================================================
-   LAYOUT OFICIAL CLEAN SAAS - APROVADO
-   Preto, branco e vermelho Carioca's. Esta camada fica no fim
-   para vencer estilos antigos e unificar todas as paginas reais.
+   LAYOUT OFICIAL CLEAN SAAS — alinhado ao DS Luxury Black & Gold
    ========================================================= */
 :root {
-  --clean-bg: #0b0c10;
-  --clean-bg-soft: #0f1015;
-  --clean-surface: #14151c;
-  --clean-surface-2: #1a1b24;
-  --clean-card: #181923;
-  --clean-border: rgba(255, 255, 255, 0.09);
-  --clean-border-hi: rgba(255, 255, 255, 0.16);
-  --clean-red: #e8442a;
-  --clean-red-dark: #991b1b;
-  --clean-red-soft: rgba(232, 68, 42, 0.14);
-  --clean-text: rgba(255, 255, 255, 0.88);
-  --clean-muted: rgba(255, 255, 255, 0.52);
-  --clean-faint: rgba(255, 255, 255, 0.30);
+  --clean-bg: var(--color-bg-primary);
+  --clean-bg-soft: var(--color-bg-secondary);
+  --clean-surface: var(--color-surface-primary);
+  --clean-surface-2: var(--color-surface-secondary);
+  --clean-card: #1e1e1e;
+  --clean-border: #27272a;
+  --clean-border-hi: var(--color-border-hover);
+  --clean-red: var(--color-accent);
+  --clean-red-dark: color-mix(in srgb, var(--color-accent) 65%, #000);
+  --clean-red-soft: rgba(201, 169, 94, 0.14);
+  --clean-text: var(--color-text-primary);
+  --clean-muted: var(--color-text-secondary);
+  --clean-faint: var(--color-text-tertiary);
   --clean-radius: 12px;
   --clean-radius-sm: 8px;
   --clean-sidebar: 210px;
@@ -8900,10 +8973,10 @@ body.premium-global-body:not(.dashboard-approved-real),
 body.dashboard-saas-page:not(.dashboard-approved-real) {
   min-height: 100vh;
   background:
-    linear-gradient(135deg, rgba(232, 68, 42, 0.07), transparent 30%),
+    radial-gradient(circle at 12% 0%, rgba(201, 169, 94, 0.06), transparent 36%),
     var(--clean-bg) !important;
   color: var(--clean-text) !important;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-family: var(--font-family-primary) !important;
 }
 
 body.premium-saas-shell-body {

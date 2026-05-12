@@ -1,7 +1,4 @@
-﻿/* Dashboard SaaS — tema e grids legados (só body.dashboard-saas-page). Em dashboard-saas.html: carregar após style.css; dashboard-approved-real.css vem por último no layout executivo. */
-body.dashboard-saas-page {
-  background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.12), transparent 32%), var(--bg-main);
-}
+﻿/* Dashboard SaaS — tema e grids legados (só body.dashboard-saas-page). Em dashboard-saas.html: carregar após style.css; dashboard-approved-real.css vem por último no layout executivo. Tokens de fundo: bloco "final shell" abaixo. */
 
 body.dashboard-saas-page .premium-app-shell.dashboard-shell {
   display: grid;
@@ -22,10 +19,12 @@ body.dashboard-saas-page .premium-sidebar {
   grid-template-columns: 1fr;
   gap: 18px;
   padding: 22px 18px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid #27272a;
   border-radius: 30px;
-  background: rgba(2, 6, 23, 0.88);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+  background: color-mix(in srgb, var(--color-surface-primary) 82%, transparent);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-saas-page .premium-sidebar .premium-brand {
@@ -71,7 +70,7 @@ body.dashboard-saas-page .premium-nav-logout {
 body.dashboard-saas-page .premium-nav a:hover,
 body.dashboard-saas-page .premium-nav-logout:hover {
   transform: translateX(2px);
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(201, 169, 94, 0.1);
   color: #fff;
 }
 
@@ -86,8 +85,8 @@ body.dashboard-saas-page .premium-nav span {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: rgba(34, 197, 94, 0.16);
-  color: #a7f3d0;
+  background: rgba(201, 169, 94, 0.12);
+  color: #f5e6c8;
 }
 
 body.dashboard-saas-page .premium-dashboard {
@@ -261,25 +260,25 @@ body.dashboard-saas-page .dashboard-mobile-quick-actions {
   }
 }
 
-/* Dashboard SaaS final shell: black/red/white premium system */
+/* Dashboard SaaS final shell — Luxury Black & Gold (tokens globais) */
 body.dashboard-saas-page {
-  --dashboard-bg: #070707;
-  --dashboard-panel: rgba(17, 17, 19, 0.94);
-  --dashboard-panel-soft: rgba(255, 255, 255, 0.055);
-  --dashboard-card: linear-gradient(180deg, rgba(22, 22, 25, 0.96), rgba(10, 10, 12, 0.98));
-  --dashboard-border: rgba(255, 255, 255, 0.10);
-  --dashboard-border-red: rgba(220, 38, 38, 0.42);
-  --dashboard-text: #f4f4f5;
-  --dashboard-muted: #a1a1aa;
-  --dashboard-red: #dc2626;
-  --dashboard-red-bright: #ef4444;
-  --dashboard-red-dark: #7f1d1d;
-  --dashboard-shadow: 0 28px 80px rgba(0, 0, 0, 0.48);
+  --dashboard-bg: var(--color-bg-primary);
+  --dashboard-panel: color-mix(in srgb, var(--color-surface-primary) 90%, transparent);
+  --dashboard-panel-soft: rgba(255, 255, 255, 0.04);
+  --dashboard-card: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-primary) 92%, transparent), color-mix(in srgb, var(--color-bg-primary) 96%, transparent));
+  --dashboard-border: #27272a;
+  --dashboard-border-red: rgba(201, 169, 94, 0.42);
+  --dashboard-text: var(--color-text-primary);
+  --dashboard-muted: var(--color-text-secondary);
+  --dashboard-red: var(--color-accent);
+  --dashboard-red-bright: var(--color-accent-hover);
+  --dashboard-red-dark: color-mix(in srgb, var(--color-accent) 55%, #000);
+  --dashboard-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
   min-height: 100vh;
   background:
-    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.22), transparent 34%),
-    radial-gradient(circle at 78% 8%, rgba(255, 255, 255, 0.07), transparent 24%),
-    linear-gradient(135deg, #070707 0%, #0d0d0f 56%, #140909 100%) !important;
+    radial-gradient(circle at 0% 0%, rgba(201, 169, 94, 0.08), transparent 36%),
+    radial-gradient(circle at 78% 8%, rgba(255, 255, 255, 0.04), transparent 26%),
+    var(--color-bg-primary) !important;
   color: var(--dashboard-text);
   overflow-x: hidden;
 }
@@ -297,11 +296,13 @@ body.dashboard-saas-page .premium-sidebar {
   top: 20px;
   max-height: calc(100vh - 40px);
   padding: 18px;
-  border: 1px solid var(--dashboard-border);
+  border: 1px solid #27272a;
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(18, 18, 20, 0.98), rgba(6, 6, 7, 0.98));
+  background: color-mix(in srgb, var(--color-surface-primary) 85%, transparent);
   box-shadow: var(--dashboard-shadow);
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-saas-page .premium-sidebar::before {
@@ -309,7 +310,7 @@ body.dashboard-saas-page .premium-sidebar::before {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at top left, rgba(220, 38, 38, 0.18), transparent 46%);
+  background: radial-gradient(circle at top left, rgba(201, 169, 94, 0.12), transparent 46%);
 }
 
 body.dashboard-saas-page .premium-sidebar > * {
@@ -321,32 +322,32 @@ body.dashboard-saas-page .premium-brand {
   min-height: 76px;
   display: grid;
   align-content: center;
-  border: 1px solid rgba(220, 38, 38, 0.36);
+  border: 1px solid rgba(201, 169, 94, 0.4);
   border-radius: 24px;
-  background: linear-gradient(135deg, #dc2626, #7f1d1d) !important;
-  box-shadow: 0 22px 50px rgba(127, 29, 29, 0.38);
+  background: linear-gradient(135deg, #c9a95e, #6e5c32) !important;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
   text-decoration: none;
 }
 
 body.dashboard-saas-page .premium-brand strong {
-  color: #ffffff;
+  color: #0a0a0a;
   font-size: 1.25rem;
   font-weight: 900;
 }
 
 body.dashboard-saas-page .dashboard-user-chip {
   border: 1px solid var(--dashboard-border);
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 body.dashboard-saas-page .premium-brand-mark {
-  background: rgba(220, 38, 38, 0.18) !important;
-  color: #ffffff !important;
+  background: rgba(10, 10, 10, 0.2) !important;
+  color: #0a0a0a !important;
 }
 
 body.dashboard-saas-page .premium-nav {
   scrollbar-width: thin;
-  scrollbar-color: rgba(220, 38, 38, 0.55) transparent;
+  scrollbar-color: rgba(201, 169, 94, 0.45) transparent;
 }
 
 body.dashboard-saas-page .premium-nav a,
@@ -359,22 +360,22 @@ body.dashboard-saas-page .premium-nav-logout {
 body.dashboard-saas-page .premium-nav a:hover,
 body.dashboard-saas-page .premium-nav-logout:hover {
   transform: translateX(2px);
-  border-color: rgba(220, 38, 38, 0.28);
-  background: rgba(220, 38, 38, 0.10) !important;
+  border-color: rgba(201, 169, 94, 0.35);
+  background: rgba(201, 169, 94, 0.08) !important;
   color: #ffffff;
 }
 
 body.dashboard-saas-page .premium-nav a.active {
-  border-color: rgba(220, 38, 38, 0.40);
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.90), rgba(127, 29, 29, 0.68)) !important;
-  color: #ffffff !important;
+  border-color: rgba(201, 169, 94, 0.45);
+  background: linear-gradient(135deg, rgba(201, 169, 94, 0.85), rgba(110, 92, 50, 0.65)) !important;
+  color: #0a0a0a !important;
 }
 
 body.dashboard-saas-page .premium-nav span,
 body.dashboard-saas-page .dashboard-mobile-bottom-nav span,
 body.dashboard-saas-page .dashboard-mobile-drawer-grid span {
-  background: rgba(220, 38, 38, 0.16) !important;
-  color: #fecaca !important;
+  background: rgba(201, 169, 94, 0.14) !important;
+  color: #f5e6c8 !important;
 }
 
 body.dashboard-saas-page .premium-svg-icon svg {
@@ -396,11 +397,11 @@ body.dashboard-saas-page .premium-panel,
 body.dashboard-saas-page .premium-phone-card,
 body.dashboard-saas-page .premium-alert-drawer,
 body.dashboard-saas-page .premium-confirm-dialog {
-  border: 1px solid var(--dashboard-border) !important;
+  border: 1px solid #27272a !important;
   background: var(--dashboard-card) !important;
   box-shadow: var(--dashboard-shadow) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-saas-page .premium-topbar {
@@ -420,7 +421,7 @@ body.dashboard-saas-page .premium-action-card::before {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at top left, rgba(220, 38, 38, 0.16), transparent 44%);
+  background: radial-gradient(circle at top left, rgba(201, 169, 94, 0.1), transparent 44%);
   opacity: 0.85;
 }
 
@@ -434,7 +435,7 @@ body.dashboard-saas-page .premium-action-card > * {
 
 body.dashboard-saas-page .mockup-unit-label,
 body.dashboard-saas-page .eyebrow {
-  color: #f87171 !important;
+  color: #c9a95e !important;
   letter-spacing: 0.28em;
   text-transform: uppercase;
 }
@@ -478,10 +479,12 @@ body.dashboard-saas-page .premium-action-card {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--dashboard-border) !important;
+  border: 1px solid #27272a !important;
   border-radius: 22px !important;
   background: var(--dashboard-card) !important;
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-saas-page .premium-kpi-card {

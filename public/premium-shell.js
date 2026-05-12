@@ -1,16 +1,144 @@
-const NAV_ITEMS = [
-  { href: "dashboard-saas.html", label: "Vis\u00e3o Geral", icon: "D", matches: ["dashboard-saas.html", "dashboard.html", "index.html"] },
-  { href: "estoque.html", label: "Central de Estoque", icon: "E", matches: ["estoque.html", "inventario.html"] },
-  { href: "alertas-reposicao.html", label: "Reposi\u00e7\u00e3o Inteligente", icon: "R", matches: ["alertas-reposicao.html", "reposicao-producao.html"] },
-  { href: "producao-etiquetas.html", label: "Produ\u00e7\u00e3o", icon: "P", matches: ["producao-etiquetas.html", "producao.html"] },
-  { href: "compras.html", label: "Intelig\u00eancia de Compras", icon: "C", matches: ["compras.html", "dashboard-compras.html", "analise-compras.html"] },
-  { href: "fornecedores.html", label: "Fornecedores", icon: "F", matches: ["fornecedores.html"] },
-  { href: "desperdicio.html", label: "Desperd\u00edcio", icon: "!", matches: ["desperdicio.html"] },
-  { href: "etiquetas.html", label: "Etiquetas", icon: "T", matches: ["etiquetas.html", "impressora.html"] },
-  { href: "funcionarios.html", label: "Funcion\u00e1rios", icon: "U", matches: ["funcionarios.html", "funcionarias.html"] },
-  { href: "whatsapp-ia.html", label: "WhatsApp e IA", icon: "W", matches: ["whatsapp-ia.html"] },
-  { href: "configuracoes.html", label: "Configura\u00e7\u00f5es", icon: "S", matches: ["configuracoes.html", "saas.html"] }
+/**
+ * Navegação aprovada — fonte única (Etapa 3: base visual / menu SaaS).
+ * Grupos alinhados à lógica operacional + comercial; rotas preservadas.
+ */
+const APPROVED_NAV_BLOCKS = [
+  {
+    items: [
+      {
+        href: "dashboard-saas.html",
+        label: "Vis\u00e3o Geral",
+        tone: "red",
+        matches: ["dashboard-saas.html", "dashboard.html", "index.html"]
+      }
+    ]
+  },
+  { divider: true },
+  {
+    section: "Opera\u00e7\u00e3o",
+    items: [
+      { href: "estoque.html", label: "Estoque", tone: "orange", matches: ["estoque.html", "inventario.html"] },
+      { href: "compras.html", label: "Compras", tone: "purple", matches: ["compras.html", "dashboard-compras.html", "analise-compras.html"] },
+      { href: "alertas-reposicao.html", label: "Alertas de reposi\u00e7\u00e3o", tone: "teal", matches: ["alertas-reposicao.html", "reposicao-producao.html"] },
+      { href: "desperdicio.html", label: "Desperd\u00edcio", tone: "yellow", matches: ["desperdicio.html"] },
+      { href: "etiquetas.html", label: "Etiquetas", tone: "gray", matches: ["etiquetas.html", "impressora.html"] },
+      { href: "producao-etiquetas.html", label: "Produ\u00e7\u00e3o de etiquetas", tone: "blue", matches: ["producao-etiquetas.html", "producao.html"] }
+    ]
+  },
+  { divider: true },
+  {
+    section: "Relacionamentos",
+    items: [
+      { href: "fornecedores.html", label: "Fornecedores", tone: "green", matches: ["fornecedores.html"] },
+      { href: "funcionarios.html", label: "Funcion\u00e1rios", tone: "gray", matches: ["funcionarios.html", "funcionarias.html"] },
+      { href: "treinamento.html", label: "Treinamento", tone: "gray", matches: ["treinamento.html"] }
+    ]
+  },
+  { divider: true },
+  {
+    section: "Automa\u00e7\u00e3o",
+    items: [{ href: "whatsapp-ia.html", label: "WhatsApp IA", tone: "gray", matches: ["whatsapp-ia.html"] }]
+  },
+  { divider: true },
+  {
+    section: "Sistema",
+    items: [{ href: "configuracoes.html", label: "Configura\u00e7\u00f5es", tone: "gray", matches: ["configuracoes.html", "saas.html"] }]
+  }
 ];
+
+/** Dock mobile: primeiros módulos da opera\u00e7\u00e3o (atalhos). */
+const APPROVED_DOCK_HREFS = ["dashboard-saas.html", "estoque.html", "compras.html", "alertas-reposicao.html"];
+
+function flattenApprovedNavItems() {
+  return APPROVED_NAV_BLOCKS.flatMap((block) => block.items || []);
+}
+
+const NAV_ITEMS = flattenApprovedNavItems().map((item) => ({
+  href: item.href,
+  label: item.label,
+  icon: String(item.label).trim().charAt(0).toUpperCase(),
+  matches: item.matches
+}));
+
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function buildApprovedSidebarNavInnerHtml() {
+  const parts = [];
+  for (const block of APPROVED_NAV_BLOCKS) {
+    if (block.divider) {
+      parts.push('<div class="nav-divider" aria-hidden="true"></div>');
+      continue;
+    }
+    if (!block.items?.length) {
+      continue;
+    }
+    parts.push('<div class="nav-group">');
+    if (block.section) {
+      parts.push(`<div class="nav-group-label">${escapeAttr(block.section)}</div>`);
+    }
+    for (const item of block.items) {
+      parts.push(
+        `<a class="nav-link" href="${escapeAttr(item.href)}"><span class="nav-ic ${escapeAttr(item.tone)}">${escapeAttr(String(item.label).charAt(0))}</span>${escapeAttr(item.label)}</a>`
+      );
+    }
+    parts.push("</div>");
+  }
+  parts.push(
+    '<div class="nav-group">',
+    '<button class="nav-link approved-logout" type="button" data-logout-button><span class="nav-ic red">X</span>Sair</button>',
+    "</div>"
+  );
+  return parts.join("");
+}
+
+function buildApprovedMobileDrawerGridHtml() {
+  const links = flattenApprovedNavItems();
+  const parts = links.map(
+    (item) =>
+      `<a href="${escapeAttr(item.href)}"><span>${escapeAttr(String(item.label).charAt(0))}</span><strong>${escapeAttr(item.label)}</strong></a>`
+  );
+  parts.push('<button type="button" data-logout-button><span>X</span><strong>Sair</strong></button>');
+  return parts.join("");
+}
+
+function buildApprovedMobileDockHtml(current) {
+  const dockItems = APPROVED_DOCK_HREFS.map((href) => flattenApprovedNavItems().find((i) => i.href === href)).filter(Boolean);
+  return dockItems
+    .map((item) => {
+      const active = item.matches.includes(current) ? " class=\"active\"" : "";
+      const short = String(item.label).split(/\s+/)[0];
+      return `<a${active} href="${escapeAttr(item.href)}"><span>${escapeAttr(String(item.label).charAt(0))}</span><strong>${escapeAttr(short)}</strong></a>`;
+    })
+    .join("");
+}
+
+function hydrateApprovedShellNav() {
+  const nav = document.querySelector("aside.approved-sidebar nav.premium-nav, aside.sidebar.approved-sidebar nav.premium-nav");
+  if (!nav || nav.dataset.shellNavHydrated === "1") {
+    return;
+  }
+  const current = getCurrentPage();
+  nav.dataset.shellNavHydrated = "1";
+  nav.setAttribute("aria-label", "Menu principal");
+  nav.innerHTML = buildApprovedSidebarNavInnerHtml();
+
+  const drawerGrid = document.querySelector("#dashboard-mobile-drawer .dashboard-mobile-drawer-grid");
+  if (drawerGrid) {
+    drawerGrid.innerHTML = buildApprovedMobileDrawerGridHtml();
+  }
+
+  const dock = document.querySelector("nav.dashboard-mobile-bottom-nav.approved-mobile-bottom-nav, nav.approved-mobile-bottom-nav.dashboard-mobile-bottom-nav");
+  if (dock) {
+    const moreBtn = dock.querySelector("#dashboard-mobile-more");
+    const moreHtml = moreBtn ? moreBtn.outerHTML : "";
+    dock.innerHTML = buildApprovedMobileDockHtml(current) + moreHtml;
+  }
+}
 
 function getCurrentPage() {
   const pathname = window.location.pathname || "";
@@ -288,7 +416,7 @@ const APPROVED_NAV_ICONS = {
 };
 
 function renderApprovedNavIcons() {
-  document.querySelectorAll(".premium-nav a, .dashboard-mobile-bottom-nav a, .dashboard-mobile-drawer-grid a").forEach((link) => {
+  document.querySelectorAll(".premium-nav a, .dashboard-mobile-bottom-nav a, .approved-mobile-bottom-nav a, .dashboard-mobile-drawer-grid a").forEach((link) => {
     const href = link.getAttribute("href") || "";
     const key = Object.keys(APPROVED_NAV_ICONS).find((candidate) => href.includes(candidate));
     const iconSlot = link.querySelector("span");
@@ -532,15 +660,16 @@ function initPremiumShell() {
     return;
   }
 
-  if (document.body.classList.contains("dashboard-saas-page")) {
-    return;
-  }
-
   if (document.body.classList.contains("dashboard-approved-real")) {
+    hydrateApprovedShellNav();
     setApprovedNavActive();
     renderApprovedNavIcons();
     bindApprovedChrome();
     watchUserInfo();
+    return;
+  }
+
+  if (document.body.classList.contains("dashboard-saas-page")) {
     return;
   }
 

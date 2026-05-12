@@ -1,20 +1,19 @@
 /*
  * Layout "approved" do dashboard executivo.
- * Migrado do <style> inline de dashboard-saas.html.
- * Usar em conjunto: body.dashboard-saas-page.dashboard-approved-real
+ * DS Luxury Black & Gold — tokens globais em style.css (:root).
  */
 body.dashboard-approved-real {
-  --bg: #0b0c10;
-  --bg2: #0f1015;
-  --surface: #14151c;
-  --surface2: #1a1b24;
-  --card: #1e1f2a;
-  --card2: #22232f;
-  --border: rgba(255,255,255,0.07);
-  --border-hi: rgba(255,255,255,0.13);
-  --brand: #e8442a;
-  --brand-dim: rgba(232,68,42,0.15);
-  --brand-glow: rgba(232,68,42,0.08);
+  --bg: var(--color-bg-primary);
+  --bg2: var(--color-bg-secondary);
+  --surface: var(--color-surface-primary);
+  --surface2: var(--color-surface-secondary);
+  --card: var(--color-surface-primary);
+  --card2: var(--color-surface-secondary);
+  --border: #27272a;
+  --border-hi: var(--color-border-hover);
+  --brand: var(--color-accent);
+  --brand-dim: rgba(201, 169, 94, 0.15);
+  --brand-glow: rgba(201, 169, 94, 0.08);
   --orange: #f07b2a;
   --orange-dim: rgba(240,123,42,0.15);
   --teal: #2ab8a0;
@@ -27,21 +26,21 @@ body.dashboard-approved-real {
   --yellow-dim: rgba(245,200,66,0.13);
   --purple: #9b6ef6;
   --purple-dim: rgba(155,110,246,0.13);
-  --silver: rgba(255,255,255,0.82);
-  --silver2: rgba(255,255,255,0.50);
-  --silver3: rgba(255,255,255,0.28);
-  --silver4: rgba(255,255,255,0.14);
+  --silver: var(--color-text-primary);
+  --silver2: var(--color-text-secondary);
+  --silver3: rgba(255,255,255,0.35);
+  --silver4: rgba(255,255,255,0.18);
   --r: 12px;
   --r-sm: 8px;
   --r-xs: 5px;
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(232, 68, 42, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(232, 68, 42, 0.10), transparent 28%),
+    radial-gradient(circle at top left, rgba(201, 169, 94, 0.08), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(201, 169, 94, 0.05), transparent 32%),
     var(--bg) !important;
   color: var(--silver);
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 13px;
 }
 
@@ -70,9 +69,10 @@ body.dashboard-approved-real .topbar {
   align-items: center;
   gap: 14px;
   padding: 0 20px 0 16px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(20, 21, 28, 0.94);
-  backdrop-filter: blur(18px);
+  border-bottom: 1px solid #27272a;
+  background: color-mix(in srgb, var(--color-bg-secondary) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-approved-real .top-menu {
@@ -107,10 +107,10 @@ body.dashboard-approved-real .logo-avatar {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid rgba(232,68,42,0.4);
+  border: 2px solid rgba(201, 169, 94, 0.45);
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), #c0321a);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 55%, #000));
+  color: #0a0a0a;
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -265,8 +265,10 @@ body.dashboard-approved-real .sidebar {
   flex-shrink: 0;
   overflow-y: auto;
   padding: 14px 10px;
-  border-right: 1px solid var(--border);
-  background: var(--surface);
+  border-right: 1px solid #27272a;
+  background: color-mix(in srgb, var(--color-surface-primary) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-approved-real .sidebar::-webkit-scrollbar { width: 0; }
@@ -316,7 +318,7 @@ body.dashboard-approved-real .premium-nav a.nav-link.active {
   background: var(--brand-glow) !important;
   color: #fff !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 0 1px rgba(232, 68, 42, 0.35) inset, 0 8px 28px rgba(232, 68, 42, 0.10);
+  box-shadow: 0 0 0 1px rgba(201, 169, 94, 0.35) inset, 0 8px 28px rgba(201, 169, 94, 0.12);
 }
 
 body.dashboard-approved-real .nav-ic,
@@ -332,7 +334,7 @@ body.dashboard-approved-real .premium-nav span.nav-ic {
 }
 
 body.dashboard-approved-real .nav-ic svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
-body.dashboard-approved-real .nav-ic.red { background: rgba(232,68,42,0.18); color: var(--brand); }
+body.dashboard-approved-real .nav-ic.red { background: rgba(201,169,94,0.18); color: var(--brand); }
 body.dashboard-approved-real .nav-ic.orange { background: rgba(240,123,42,0.18); color: var(--orange); }
 body.dashboard-approved-real .nav-ic.teal { background: rgba(42,184,160,0.18); color: var(--teal); }
 body.dashboard-approved-real .nav-ic.blue { background: rgba(58,142,246,0.18); color: var(--blue); }
@@ -394,8 +396,8 @@ body.dashboard-approved-real select.btn {
 
 body.dashboard-approved-real .btn-ghost { border: 1px solid var(--border); background: var(--card); color: var(--silver2); }
 body.dashboard-approved-real .btn-ghost:hover { border-color: var(--border-hi); color: var(--silver); }
-body.dashboard-approved-real .btn-primary { border: 0; background: var(--brand); color: #fff; }
-body.dashboard-approved-real .btn-primary:hover { transform: translateY(-1px); background: #d63820; box-shadow: 0 4px 16px rgba(232,68,42,0.3); }
+body.dashboard-approved-real .btn-primary { border: 0; background: var(--brand); color: #0a0a0a; }
+body.dashboard-approved-real .btn-primary:hover { transform: translateY(-1px); background: var(--color-accent-hover); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
 
 body.dashboard-approved-real .stats-grid {
   display: grid !important;
@@ -410,10 +412,12 @@ body.dashboard-approved-real .alerts-card,
 body.dashboard-approved-real .mini-stat,
 body.dashboard-approved-real .chart-card,
 body.dashboard-approved-real .quick-actions {
-  border: 1px solid var(--border) !important;
+  border: 1px solid #27272a !important;
   border-radius: var(--r) !important;
-  background: var(--card) !important;
+  background: color-mix(in srgb, var(--card) 88%, transparent) !important;
   box-shadow: none !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 body.dashboard-approved-real .stat-card {

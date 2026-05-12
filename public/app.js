@@ -167,6 +167,98 @@ export function normalizeText(value) {
     .replace(/\s+/g, " ");
 }
 
+/**
+ * Converte texto livre de ingredientes / ficha técnica em objetos estruturados.
+ * Aceita várias linhas ou itens separados por vírgula/ponto e vírgula.
+ * Tenta extrair quantidade numérica e unidade (kg, g, l, ml, un, cx, maço, etc.).
+ *
+ * @param {string} ingredientes Texto colado ou digitado pelo utilizador
+ * @returns {{ id: string, nome: string, qtd: number, unidade: string }[]}
+ */
+export function formatFichaTecnica(ingredientes) {
+  const raw = String(ingredientes ?? "").trim();
+
+  if (!raw) {
+    return [];
+  }
+
+  const chunks = raw
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(/[;,]/))
+    .map((chunk) => chunk.replace(/^[\s\-–—•]+|[\s\-–—•]+$/g, "").trim())
+    .filter(Boolean);
+
+  const qtyUnit = /(\d+(?:[.,]\d+)?)\s*(kg|kgs|g|gr|gramas?|l|lt|litros?|ml|m[lL]|un|uni|unid(?:ades?)?|pct|pacotes?|cx|caixas?|ma[cç]os?|fardos?)\b/i;
+
+  function nextId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+
+    return `ft_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizeUnit(u) {
+    const x = String(u || "un").toLowerCase();
+    if (/^(kg|kgs)$/.test(x)) {
+      return "kg";
+    }
+    if (/^(g|gr|grama|gramas)$/.test(x)) {
+      return "g";
+    }
+    if (/^(l|lt|litro|litros)$/.test(x)) {
+      return "l";
+    }
+    if (/^ml$/.test(x)) {
+      return "ml";
+    }
+    if (/^(un|uni|unidade|unidades)$/.test(x)) {
+      return "un";
+    }
+    if (/^(pct|pacote|pacotes)$/.test(x)) {
+      return "pct";
+    }
+    if (/^(cx|caixa|caixas)$/.test(x)) {
+      return "cx";
+    }
+    if (/^ma[cç]os?$/.test(x)) {
+      return "maço";
+    }
+    if (/^fardos?$/.test(x)) {
+      return "fardo";
+    }
+    return x.slice(0, 24) || "un";
+  }
+
+  return chunks.map((line) => {
+    const match = line.match(qtyUnit);
+    let qtd = 1;
+    let unidade = "un";
+    let nome = line;
+
+    if (match) {
+      qtd = toNumber(String(match[1]).replace(",", "."), 1);
+      unidade = normalizeUnit(match[2]);
+      nome = line
+        .replace(match[0], " ")
+        .replace(/[-–—]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    if (!nome) {
+      nome = line.trim() || "Ingrediente";
+    }
+
+    return {
+      id: nextId(),
+      nome: nome.slice(0, 240),
+      qtd: Math.max(0, qtd),
+      unidade
+    };
+  });
+}
+
 export function normalizeDocumentNumber(value) {
   return String(value ?? "").replace(/\D/g, "");
 }
