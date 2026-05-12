@@ -1,5 +1,5 @@
-const CACHE_NAME = "hamburgueria-app-v20";
-const APP_SHELL = [
+const CACHE_NAME = "hamburgueria-app-v21";
+const APP_SHELL = [...new Set([
   "/",
   "/login.html",
   "/index.html",
@@ -31,12 +31,41 @@ const APP_SHELL = [
   "/apple-touch-icon.png",
   "/icon-192.png",
   "/icon-512.png"
-];
+])];
+
+function isCacheableRequest(request) {
+  const url = new URL(request.url);
+  return request.method === "GET" && url.origin === self.location.origin && /^https?:$/.test(url.protocol);
+}
+
+function isValidCacheResponse(response) {
+  return response && response.ok && response.type === "basic";
+}
+
+async function warmAppShell() {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.allSettled(APP_SHELL.map(async (path) => {
+    const response = await fetch(new Request(path, { cache: "reload" }));
+
+    if (isValidCacheResponse(response)) {
+      await cache.put(path, response.clone());
+    }
+  }));
+}
+
+async function fetchAndCache(request) {
+  const response = await fetch(request);
+
+  if (isCacheableRequest(request) && isValidCacheResponse(response)) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+
+  return response;
+}
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
-  );
+  event.waitUntil(warmAppShell());
   self.skipWaiting();
 });
 
@@ -52,17 +81,18 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") {
+  if (!isCacheableRequest(event.request)) {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetchAndCache(event.request).catch(() => caches.match(event.request) || caches.match("/dashboard-saas.html"))
+    );
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then((cached) => cached || fetchAndCache(event.request))
   );
 });

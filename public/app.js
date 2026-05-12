@@ -309,6 +309,79 @@ export function linkFichaIngredientesToInsumoIds(ingredientes, produtos = []) {
   });
 }
 
+const FICHA_PROCESS_MAX_DURATION_MS = 3000;
+const marginReportReferenceCache = typeof WeakMap === "function" ? new WeakMap() : null;
+const marginReportKeyCache = new Map();
+let fichaMigrationPromise = null;
+
+function getProcessingNow() {
+  if (typeof performance !== "undefined" && typeof performance.now === "function") {
+    return performance.now();
+  }
+
+  return Date.now();
+}
+
+function getProcessingBudget(value) {
+  const parsed = toNumber(value, FICHA_PROCESS_MAX_DURATION_MS);
+  return parsed > 0 ? parsed : FICHA_PROCESS_MAX_DURATION_MS;
+}
+
+function hasProcessingTimedOut(startedAt, maxDurationMs) {
+  return getProcessingNow() - startedAt >= maxDurationMs;
+}
+
+function getMarginCacheKey(cacheKey, minMarginPct) {
+  if (!cacheKey) {
+    return "";
+  }
+
+  return `margin:${cacheKey}:min:${minMarginPct}`;
+}
+
+function readMarginCache(list, minMarginPct, cacheKey) {
+  const explicitKey = getMarginCacheKey(cacheKey, minMarginPct);
+
+  if (explicitKey && marginReportKeyCache.has(explicitKey)) {
+    return marginReportKeyCache.get(explicitKey);
+  }
+
+  if (!explicitKey && marginReportReferenceCache && Array.isArray(list)) {
+    const cached = marginReportReferenceCache.get(list);
+
+    if (cached?.minMarginPct === minMarginPct) {
+      return cached.report;
+    }
+  }
+
+  return null;
+}
+
+function writeMarginCache(list, minMarginPct, cacheKey, report) {
+  const explicitKey = getMarginCacheKey(cacheKey, minMarginPct);
+
+  if (explicitKey) {
+    marginReportKeyCache.set(explicitKey, report);
+
+    if (marginReportKeyCache.size > 12) {
+      const oldestKey = marginReportKeyCache.keys().next().value;
+
+      if (oldestKey) {
+        marginReportKeyCache.delete(oldestKey);
+      }
+    }
+
+    return;
+  }
+
+  if (marginReportReferenceCache && Array.isArray(list)) {
+    marginReportReferenceCache.set(list, {
+      minMarginPct,
+      report
+    });
+  }
+}
+
 /**
  * Converte fichas ainda só em texto (`fichaTecnicaObservacoes`) para `fichaTecnicaIngredientes`.
  * @param {{ dryRun?: boolean }} [options]
@@ -316,69 +389,105 @@ export function linkFichaIngredientesToInsumoIds(ingredientes, produtos = []) {
  */
 export async function migrateFichaTecnicaFirestore(options = {}) {
   const dryRun = Boolean(options.dryRun);
-  const snapshot = await getDocs(collection(db, "estoque"));
-  const catalog = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-  const result = { examined: 0, updated: 0, skipped: 0, wouldUpdate: 0, errors: [] };
-  let batch = writeBatch(db);
-  let pending = 0;
+  const maxDurationMs = getProcessingBudget(options.maxDurationMs);
+  const allowConcurrent = Boolean(options.allowConcurrent);
 
-  async function flush() {
-    if (!pending) {
-      return;
+  const runMigration = async () => {
+    const startedAt = getProcessingNow();
+    const snapshot = await getDocs(collection(db, "estoque"));
+    const catalog = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    const result = {
+      examined: 0,
+      updated: 0,
+      skipped: 0,
+      wouldUpdate: 0,
+      errors: [],
+      timedOut: false,
+      durationMs: 0,
+      processedDocs: 0,
+      timeBudgetMs: maxDurationMs
+    };
+    let batch = writeBatch(db);
+    let pending = 0;
+
+    async function flush() {
+      if (!pending) {
+        return;
+      }
+      await batch.commit();
+      batch = writeBatch(db);
+      pending = 0;
     }
-    await batch.commit();
-    batch = writeBatch(db);
-    pending = 0;
-  }
 
-  for (const docSnap of snapshot.docs) {
-    result.examined += 1;
-    try {
-      const data = docSnap.data();
-      const existing = data.fichaTecnicaIngredientes;
-      if (
-        Array.isArray(existing) &&
-        existing.length > 0 &&
-        existing.every(
-          (row) =>
-            row &&
-            typeof row === "object" &&
-            (String(row.nome || "").trim() || String(row.insumoId || row.insumo_id || "").trim())
-        )
-      ) {
-        result.skipped += 1;
-        continue;
+    for (const docSnap of snapshot.docs) {
+      if (hasProcessingTimedOut(startedAt, maxDurationMs)) {
+        result.timedOut = true;
+        break;
       }
-      const obs = String(data.fichaTecnicaObservacoes || "").trim();
-      if (!obs) {
-        result.skipped += 1;
-        continue;
+
+      result.examined += 1;
+      result.processedDocs += 1;
+
+      try {
+        const data = docSnap.data();
+        const existing = data.fichaTecnicaIngredientes;
+        if (
+          Array.isArray(existing) &&
+          existing.length > 0 &&
+          existing.every(
+            (row) =>
+              row &&
+              typeof row === "object" &&
+              (String(row.nome || "").trim() || String(row.insumoId || row.insumo_id || "").trim())
+          )
+        ) {
+          result.skipped += 1;
+          continue;
+        }
+        const obs = String(data.fichaTecnicaObservacoes || "").trim();
+        if (!obs) {
+          result.skipped += 1;
+          continue;
+        }
+        const parsed = linkFichaIngredientesToInsumoIds(formatFichaTecnica(obs), catalog);
+        if (!parsed.length) {
+          result.skipped += 1;
+          continue;
+        }
+        if (dryRun) {
+          result.wouldUpdate += 1;
+          continue;
+        }
+        batch.update(docSnap.ref, {
+          fichaTecnicaIngredientes: parsed,
+          fichaTecnicaMigradaEm: serverTimestamp()
+        });
+        pending += 1;
+        result.updated += 1;
+        if (pending >= 450) {
+          await flush();
+        }
+      } catch (error) {
+        result.errors.push({ id: docSnap.id, message: error?.message || String(error) });
       }
-      const parsed = linkFichaIngredientesToInsumoIds(formatFichaTecnica(obs), catalog);
-      if (!parsed.length) {
-        result.skipped += 1;
-        continue;
-      }
-      if (dryRun) {
-        result.wouldUpdate += 1;
-        continue;
-      }
-      batch.update(docSnap.ref, {
-        fichaTecnicaIngredientes: parsed,
-        fichaTecnicaMigradaEm: serverTimestamp()
+    }
+
+    await flush();
+    result.durationMs = Math.round(getProcessingNow() - startedAt);
+    return result;
+  };
+
+  if (!dryRun && !allowConcurrent) {
+    if (!fichaMigrationPromise) {
+      fichaMigrationPromise = runMigration().finally(() => {
+        fichaMigrationPromise = null;
       });
-      pending += 1;
-      result.updated += 1;
-      if (pending >= 450) {
-        await flush();
-      }
-    } catch (error) {
-      result.errors.push({ id: docSnap.id, message: error?.message || String(error) });
     }
+
+    return fichaMigrationPromise;
   }
 
-  await flush();
-  return result;
+  return runMigration();
 }
 
 /**
@@ -466,13 +575,30 @@ export function getProductGrossMarginSnapshot(product, indexes) {
  */
 export function calculateProductMargins(produtos = [], options = {}) {
   const minMarginPct = toNumber(options.minMarginPct, 30);
+  const maxDurationMs = getProcessingBudget(options.maxDurationMs);
   const list = Array.isArray(produtos) ? produtos : [];
+  const cached = !options.force ? readMarginCache(list, minMarginPct, options.cacheKey) : null;
+
+  if (cached) {
+    return cached;
+  }
+
+  const startedAt = getProcessingNow();
   const indexes = buildStockCatalogIndexes(list);
   const results = [];
   const belowThreshold = [];
+  let processedProducts = 0;
+  let timedOut = false;
 
   for (const product of list) {
+    if (hasProcessingTimedOut(startedAt, maxDurationMs)) {
+      timedOut = true;
+      break;
+    }
+
     const snap = getProductGrossMarginSnapshot(product, indexes);
+    processedProducts += 1;
+
     if (snap.status === "no_price" || snap.status === "no_recipe") {
       continue;
     }
@@ -492,11 +618,19 @@ export function calculateProductMargins(produtos = [], options = {}) {
     }
   }
 
-  return {
+  const report = {
     results,
     belowThreshold,
-    alertCount: belowThreshold.length
+    alertCount: belowThreshold.length,
+    processedProducts,
+    timedOut,
+    timeBudgetMs: maxDurationMs,
+    durationMs: Math.round(getProcessingNow() - startedAt),
+    remainingProducts: Math.max(0, list.length - processedProducts)
   };
+
+  writeMarginCache(list, minMarginPct, options.cacheKey, report);
+  return report;
 }
 
 export function normalizeDocumentNumber(value) {

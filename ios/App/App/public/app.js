@@ -3,7 +3,15 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 function resolveApiBaseUrl() {
   if (window.location.protocol === "file:") {
@@ -72,7 +80,7 @@ async function loadRuntimeConfig() {
 
         return await response.json();
       } catch (error) {
-        console.warn("Nao foi possivel carregar runtime-config.json.", error);
+        console.warn("Não foi possível carregar runtime-config.json.", error);
         return {};
       }
     })();
@@ -161,6 +169,470 @@ export function normalizeText(value) {
     .replace(/\s+/g, " ");
 }
 
+/**
+ * Converte texto livre de ingredientes / ficha técnica em objetos estruturados.
+ * Aceita várias linhas ou itens separados por vírgula/ponto e vírgula.
+ * Tenta extrair quantidade numérica e unidade (kg, g, l, ml, un, cx, maço, etc.).
+ *
+ * @param {string} ingredientes Texto colado ou digitado pelo utilizador
+ * @returns {{ id: string, nome: string, qtd: number, unidade: string }[]}
+ */
+export function formatFichaTecnica(ingredientes) {
+  const raw = String(ingredientes ?? "").trim();
+
+  if (!raw) {
+    return [];
+  }
+
+  const chunks = raw
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(/[;,]/))
+    .map((chunk) => chunk.replace(/^[\s\-–—•]+|[\s\-–—•]+$/g, "").trim())
+    .filter(Boolean);
+
+  const qtyUnit = /(\d+(?:[.,]\d+)?)\s*(kg|kgs|g|gr|gramas?|l|lt|litros?|ml|m[lL]|un|uni|unid(?:ades?)?|pct|pacotes?|cx|caixas?|ma[cç]os?|fardos?)\b/i;
+
+  function nextId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+
+    return `ft_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizeUnit(u) {
+    const x = String(u || "un").toLowerCase();
+    if (/^(kg|kgs)$/.test(x)) {
+      return "kg";
+    }
+    if (/^(g|gr|grama|gramas)$/.test(x)) {
+      return "g";
+    }
+    if (/^(l|lt|litro|litros)$/.test(x)) {
+      return "l";
+    }
+    if (/^ml$/.test(x)) {
+      return "ml";
+    }
+    if (/^(un|uni|unidade|unidades)$/.test(x)) {
+      return "un";
+    }
+    if (/^(pct|pacote|pacotes)$/.test(x)) {
+      return "pct";
+    }
+    if (/^(cx|caixa|caixas)$/.test(x)) {
+      return "cx";
+    }
+    if (/^ma[cç]os?$/.test(x)) {
+      return "maço";
+    }
+    if (/^fardos?$/.test(x)) {
+      return "fardo";
+    }
+    return x.slice(0, 24) || "un";
+  }
+
+  return chunks.map((line) => {
+    const match = line.match(qtyUnit);
+    let qtd = 1;
+    let unidade = "un";
+    let nome = line;
+
+    if (match) {
+      qtd = toNumber(String(match[1]).replace(",", "."), 1);
+      unidade = normalizeUnit(match[2]);
+      nome = line
+        .replace(match[0], " ")
+        .replace(/[-–—]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    if (!nome) {
+      nome = line.trim() || "Ingrediente";
+    }
+
+    return {
+      id: nextId(),
+      nome: nome.slice(0, 240),
+      qtd: Math.max(0, qtd),
+      unidade
+    };
+  });
+}
+
+/**
+ * Ingredientes estruturados no documento ou fallback do texto em `fichaTecnicaObservacoes`.
+ * @param {Record<string, unknown>} product
+ * @returns {{ id: string, nome: string, qtd: number, unidade: string }[]}
+ */
+export function getFichaTecnicaIngredientesArray(product) {
+  const raw = product?.fichaTecnicaIngredientes;
+  if (Array.isArray(raw) && raw.length) {
+    const cleaned = raw
+      .filter((row) => row && typeof row === "object")
+      .map((row) => ({
+        id: String(row.id || ""),
+        nome: String(row.nome || "").trim(),
+        qtd: Math.max(0, toNumber(row.qtd, 0)),
+        unidade: String(row.unidade || "un").trim() || "un",
+        insumoId: String(row.insumoId || row.insumo_id || "").trim()
+      }))
+      .filter((row) => row.nome || row.insumoId);
+    if (cleaned.length) {
+      return cleaned;
+    }
+  }
+  return formatFichaTecnica(product?.fichaTecnicaObservacoes || "");
+}
+
+/**
+ * Preenche `insumoId` em cada linha da ficha quando o nome coincide com um item do catálogo.
+ * @param {Array<Record<string, unknown>>} ingredientes
+ * @param {Array<Record<string, unknown>>} produtos
+ */
+export function linkFichaIngredientesToInsumoIds(ingredientes, produtos = []) {
+  const list = Array.isArray(ingredientes) ? ingredientes.map((row) => ({ ...row })) : [];
+  const byName = new Map();
+  for (const p of produtos) {
+    const key = normalizeText(p?.nome || "");
+    if (key && !byName.has(key)) {
+      byName.set(key, String(p.id || ""));
+    }
+  }
+  return list.map((row) => {
+    const nome = String(row?.nome || "").trim();
+    const existing = String(row?.insumoId || row?.insumo_id || "").trim();
+    const fromNome = nome ? byName.get(normalizeText(nome)) : "";
+    const insumoId = existing || fromNome || "";
+    return { ...row, nome, insumoId };
+  });
+}
+
+const FICHA_PROCESS_MAX_DURATION_MS = 3000;
+const marginReportReferenceCache = typeof WeakMap === "function" ? new WeakMap() : null;
+const marginReportKeyCache = new Map();
+let fichaMigrationPromise = null;
+
+function getProcessingNow() {
+  if (typeof performance !== "undefined" && typeof performance.now === "function") {
+    return performance.now();
+  }
+
+  return Date.now();
+}
+
+function getProcessingBudget(value) {
+  const parsed = toNumber(value, FICHA_PROCESS_MAX_DURATION_MS);
+  return parsed > 0 ? parsed : FICHA_PROCESS_MAX_DURATION_MS;
+}
+
+function hasProcessingTimedOut(startedAt, maxDurationMs) {
+  return getProcessingNow() - startedAt >= maxDurationMs;
+}
+
+function getMarginCacheKey(cacheKey, minMarginPct) {
+  if (!cacheKey) {
+    return "";
+  }
+
+  return `margin:${cacheKey}:min:${minMarginPct}`;
+}
+
+function readMarginCache(list, minMarginPct, cacheKey) {
+  const explicitKey = getMarginCacheKey(cacheKey, minMarginPct);
+
+  if (explicitKey && marginReportKeyCache.has(explicitKey)) {
+    return marginReportKeyCache.get(explicitKey);
+  }
+
+  if (!explicitKey && marginReportReferenceCache && Array.isArray(list)) {
+    const cached = marginReportReferenceCache.get(list);
+
+    if (cached?.minMarginPct === minMarginPct) {
+      return cached.report;
+    }
+  }
+
+  return null;
+}
+
+function writeMarginCache(list, minMarginPct, cacheKey, report) {
+  const explicitKey = getMarginCacheKey(cacheKey, minMarginPct);
+
+  if (explicitKey) {
+    marginReportKeyCache.set(explicitKey, report);
+
+    if (marginReportKeyCache.size > 12) {
+      const oldestKey = marginReportKeyCache.keys().next().value;
+
+      if (oldestKey) {
+        marginReportKeyCache.delete(oldestKey);
+      }
+    }
+
+    return;
+  }
+
+  if (marginReportReferenceCache && Array.isArray(list)) {
+    marginReportReferenceCache.set(list, {
+      minMarginPct,
+      report
+    });
+  }
+}
+
+/**
+ * Converte fichas ainda só em texto (`fichaTecnicaObservacoes`) para `fichaTecnicaIngredientes`.
+ * @param {{ dryRun?: boolean }} [options]
+ * @returns {Promise<{ examined: number, updated: number, skipped: number, errors: { id: string, message: string }[] }>}
+ */
+export async function migrateFichaTecnicaFirestore(options = {}) {
+  const dryRun = Boolean(options.dryRun);
+  const maxDurationMs = getProcessingBudget(options.maxDurationMs);
+  const allowConcurrent = Boolean(options.allowConcurrent);
+
+  const runMigration = async () => {
+    const startedAt = getProcessingNow();
+    const snapshot = await getDocs(collection(db, "estoque"));
+    const catalog = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    const result = {
+      examined: 0,
+      updated: 0,
+      skipped: 0,
+      wouldUpdate: 0,
+      errors: [],
+      timedOut: false,
+      durationMs: 0,
+      processedDocs: 0,
+      timeBudgetMs: maxDurationMs
+    };
+    let batch = writeBatch(db);
+    let pending = 0;
+
+    async function flush() {
+      if (!pending) {
+        return;
+      }
+      await batch.commit();
+      batch = writeBatch(db);
+      pending = 0;
+    }
+
+    for (const docSnap of snapshot.docs) {
+      if (hasProcessingTimedOut(startedAt, maxDurationMs)) {
+        result.timedOut = true;
+        break;
+      }
+
+      result.examined += 1;
+      result.processedDocs += 1;
+
+      try {
+        const data = docSnap.data();
+        const existing = data.fichaTecnicaIngredientes;
+        if (
+          Array.isArray(existing) &&
+          existing.length > 0 &&
+          existing.every(
+            (row) =>
+              row &&
+              typeof row === "object" &&
+              (String(row.nome || "").trim() || String(row.insumoId || row.insumo_id || "").trim())
+          )
+        ) {
+          result.skipped += 1;
+          continue;
+        }
+        const obs = String(data.fichaTecnicaObservacoes || "").trim();
+        if (!obs) {
+          result.skipped += 1;
+          continue;
+        }
+        const parsed = linkFichaIngredientesToInsumoIds(formatFichaTecnica(obs), catalog);
+        if (!parsed.length) {
+          result.skipped += 1;
+          continue;
+        }
+        if (dryRun) {
+          result.wouldUpdate += 1;
+          continue;
+        }
+        batch.update(docSnap.ref, {
+          fichaTecnicaIngredientes: parsed,
+          fichaTecnicaMigradaEm: serverTimestamp()
+        });
+        pending += 1;
+        result.updated += 1;
+        if (pending >= 450) {
+          await flush();
+        }
+      } catch (error) {
+        result.errors.push({ id: docSnap.id, message: error?.message || String(error) });
+      }
+    }
+
+    await flush();
+    result.durationMs = Math.round(getProcessingNow() - startedAt);
+    return result;
+  };
+
+  if (!dryRun && !allowConcurrent) {
+    if (!fichaMigrationPromise) {
+      fichaMigrationPromise = runMigration().finally(() => {
+        fichaMigrationPromise = null;
+      });
+    }
+
+    return fichaMigrationPromise;
+  }
+
+  return runMigration();
+}
+
+/**
+ * Índices para cruzar linhas da ficha com itens do estoque (nome normalizado e id do documento).
+ * @param {Array<Record<string, unknown>>} produtos
+ * @returns {{ byName: Map<string, Record<string, unknown>>, byId: Map<string, Record<string, unknown>> }}
+ */
+export function buildStockCatalogIndexes(produtos = []) {
+  const list = Array.isArray(produtos) ? produtos : [];
+  const byName = new Map();
+  const byId = new Map();
+  for (const p of list) {
+    const key = normalizeText(p?.nome || "");
+    if (key && !byName.has(key)) {
+      byName.set(key, p);
+    }
+    if (p?.id) {
+      byId.set(String(p.id), p);
+    }
+  }
+  return { byName, byId };
+}
+
+/**
+ * CMV da receita (Σ qtd × custo unitário) e margem bruta vs `precoVenda`.
+ * @param {Record<string, unknown>} product
+ * @param {{ byName: Map<string, unknown>, byId: Map<string, unknown> }} indexes
+ * @returns {{ status: "no_price"|"no_recipe"|"partial"|"ok", precoVenda: number, custoReceita: number, marginPct: number|null, missingIngredients: string[] }}
+ */
+export function getProductGrossMarginSnapshot(product, indexes) {
+  const { byName, byId } = indexes;
+  const precoVenda = toNumber(
+    product?.precoVenda ?? product?.preco_venda ?? product?.precoCardapio ?? product?.preco_cardapio,
+    0
+  );
+  if (precoVenda <= 0) {
+    return {
+      status: "no_price",
+      precoVenda: 0,
+      custoReceita: 0,
+      marginPct: null,
+      missingIngredients: []
+    };
+  }
+
+  const ingredientes = getFichaTecnicaIngredientesArray(product);
+  if (!ingredientes.length) {
+    return {
+      status: "no_recipe",
+      precoVenda,
+      custoReceita: 0,
+      marginPct: null,
+      missingIngredients: []
+    };
+  }
+
+  let custoReceita = 0;
+  const missingIngredients = [];
+  for (const ing of ingredientes) {
+    const idKey = String(ing.insumoId || ing.insumo_id || "").trim();
+    let match = null;
+    if (idKey && byId.has(idKey)) {
+      match = byId.get(idKey);
+    } else if (ing.nome) {
+      match = byName.get(normalizeText(ing.nome));
+    }
+    if (!match) {
+      missingIngredients.push(String(ing.nome || "").trim() || idKey || "?");
+      continue;
+    }
+    custoReceita += toNumber(getUnitCost(match), 0) * Math.max(0, toNumber(ing.qtd, 0));
+  }
+
+  const marginPct = precoVenda > 0 ? ((precoVenda - custoReceita) / precoVenda) * 100 : null;
+  const status = missingIngredients.length ? "partial" : "ok";
+  return { status, precoVenda, custoReceita, marginPct, missingIngredients };
+}
+
+/**
+ * Custo da receita (soma qtd × custo unitário do insumo) e margem vs `precoVenda`.
+ * MVP: cruza insumos por `insumoId` (se existir) ou por `normalizeText(nome)`.
+ *
+ * @param {Array<Record<string, unknown>>} produtos
+ * @param {{ minMarginPct?: number }} [options]
+ */
+export function calculateProductMargins(produtos = [], options = {}) {
+  const minMarginPct = toNumber(options.minMarginPct, 30);
+  const maxDurationMs = getProcessingBudget(options.maxDurationMs);
+  const list = Array.isArray(produtos) ? produtos : [];
+  const cached = !options.force ? readMarginCache(list, minMarginPct, options.cacheKey) : null;
+
+  if (cached) {
+    return cached;
+  }
+
+  const startedAt = getProcessingNow();
+  const indexes = buildStockCatalogIndexes(list);
+  const results = [];
+  const belowThreshold = [];
+  let processedProducts = 0;
+  let timedOut = false;
+
+  for (const product of list) {
+    if (hasProcessingTimedOut(startedAt, maxDurationMs)) {
+      timedOut = true;
+      break;
+    }
+
+    const snap = getProductGrossMarginSnapshot(product, indexes);
+    processedProducts += 1;
+
+    if (snap.status === "no_price" || snap.status === "no_recipe") {
+      continue;
+    }
+
+    const row = {
+      productId: product.id || "",
+      nome: String(product.nome || "Produto"),
+      precoVenda: snap.precoVenda,
+      custoReceita: snap.custoReceita,
+      marginPct: snap.marginPct,
+      missingIngredients: snap.missingIngredients,
+      alert: snap.marginPct != null && snap.marginPct < minMarginPct
+    };
+    results.push(row);
+    if (row.alert) {
+      belowThreshold.push(row);
+    }
+  }
+
+  const report = {
+    results,
+    belowThreshold,
+    alertCount: belowThreshold.length,
+    processedProducts,
+    timedOut,
+    timeBudgetMs: maxDurationMs,
+    durationMs: Math.round(getProcessingNow() - startedAt),
+    remainingProducts: Math.max(0, list.length - processedProducts)
+  };
+
+  writeMarginCache(list, minMarginPct, options.cacheKey, report);
+  return report;
+}
+
 export function normalizeDocumentNumber(value) {
   return String(value ?? "").replace(/\D/g, "");
 }
@@ -245,7 +717,7 @@ export function formatWeekdayList(values = [], format = "short") {
   const selectedDays = normalizeWeekdayList(values);
 
   if (!selectedDays.length) {
-    return "Nao definido";
+    return "Não definido";
   }
 
   return selectedDays
@@ -611,7 +1083,161 @@ export function describeProfile(profile) {
   }
 
   const identity = profile.nome ? `${profile.nome} | ${profile.email}` : profile.email;
-  return `${identity} | ${profile.tipo}`;
+  return `${identity} | ${formatProfileRole(profile.perfilPrincipal || profile.tipo)}`;
+}
+
+const ROLE_PERMISSION_DEFAULTS = Object.freeze({
+  admin: ["*"],
+  gerente: [
+    "estoque.ver", "estoque.entrada", "estoque.saida", "estoque.historico",
+    "compras.verLista", "compras.sugerir", "compras.registrarCompra", "compras.verPrecos", "compras.aprovar",
+    "producao.ver", "producao.criar", "producao.finalizar", "producao.baixarInsumos", "producao.verValidade",
+    "etiquetas.gerar", "etiquetas.reimprimir",
+    "relatorios.operacionais", "relatorios.financeiros",
+    "fornecedores.ver", "fornecedores.editar",
+    "treinamento.ver"
+  ],
+  compras: ["compras.verLista", "compras.sugerir", "compras.registrarCompra", "compras.verPrecos", "fornecedores.ver", "estoque.ver"],
+  producao: ["producao.ver", "producao.criar", "producao.finalizar", "producao.baixarInsumos", "producao.verValidade", "etiquetas.gerar", "estoque.ver"],
+  estoque: [
+    "estoque.ver", "estoque.cadastrarInsumo", "estoque.editarInsumo", "estoque.entrada", "estoque.saida", "estoque.historico",
+    "compras.verLista", "compras.sugerir",
+    "producao.ver", "producao.criar"
+  ],
+  funcionario: ["estoque.ver", "estoque.entrada", "estoque.saida", "producao.ver", "etiquetas.gerar", "treinamento.ver"],
+  visualizacao: ["estoque.ver", "compras.verLista", "producao.ver", "relatorios.operacionais", "treinamento.ver"],
+  caixa: ["estoque.ver", "estoque.saida", "treinamento.ver"]
+});
+
+const FUNCTION_PERMISSION_DEFAULTS = Object.freeze({
+  estoque: ROLE_PERMISSION_DEFAULTS.estoque,
+  compras: ROLE_PERMISSION_DEFAULTS.compras,
+  producao: ROLE_PERMISSION_DEFAULTS.producao,
+  etiquetas: ["etiquetas.gerar", "etiquetas.reimprimir"],
+  cmv: ["cmv.verFicha", "cmv.criarFicha", "cmv.editarFicha", "cmv.ver"],
+  relatorios: ["relatorios.operacionais", "relatorios.financeiros", "relatorios.exportar"],
+  treinamento: ["treinamento.ver", "treinamento.concluir"],
+  fornecedores: ["fornecedores.ver", "fornecedores.cadastrar", "fornecedores.editar"],
+  funcionarios: ["funcionarios.ver", "funcionarios.cadastrar", "funcionarios.editar"],
+  configuracoes: ["configuracoes.ver", "configuracoes.editar", "configuracoes.gerenciarPlano"]
+});
+
+const ROLE_LABELS = Object.freeze({
+  admin: "Admin",
+  gerente: "Gerente",
+  compras: "Compras",
+  producao: "Produção",
+  estoque: "Estoque",
+  funcionario: "Funcionário",
+  visualizacao: "Visualização",
+  caixa: "Caixa"
+});
+
+export const PERMISSION_DENIED_MESSAGE = "Seu perfil não possui permissão para esta ação. Solicite liberação ao administrador.";
+
+export function normalizePermissionRole(value) {
+  const normalized = normalizeText(value).replace(/\s+/g, "_") || "funcionario";
+  const aliases = {
+    administrador: "admin",
+    dono: "admin",
+    proprietario: "admin",
+    proprietaria: "admin",
+    visualização: "visualizacao",
+    visualizacao: "visualizacao",
+    funcionário: "funcionario",
+    funcionario: "funcionario",
+    ficha_tecnica: "cmv",
+    ficha_tecnica_cmv: "cmv",
+    ficha_técnica_cmv: "cmv"
+  };
+
+  return aliases[normalized] || normalized;
+}
+
+function getManualPermission(profile = {}, permission = "") {
+  const parts = String(permission).split(".").filter(Boolean);
+  const [moduleKey, ...actionParts] = parts;
+  const actionKey = actionParts.join(".");
+
+  if (!moduleKey || !actionKey) {
+    return null;
+  }
+
+  const modulePermissions = profile.permissoes?.[moduleKey];
+
+  if (!modulePermissions || typeof modulePermissions !== "object") {
+    return null;
+  }
+
+  const directValue = modulePermissions[actionKey];
+
+  if (typeof directValue === "boolean") {
+    return directValue;
+  }
+
+  let nestedValue = modulePermissions;
+
+  for (const key of actionParts) {
+    if (!nestedValue || typeof nestedValue !== "object" || !(key in nestedValue)) {
+      return null;
+    }
+
+    nestedValue = nestedValue[key];
+  }
+
+  return typeof nestedValue === "boolean" ? nestedValue : null;
+}
+
+function permissionListHas(permissionList = [], permission = "") {
+  return permissionList.includes("*") || permissionList.includes(permission);
+}
+
+export function formatProfileRole(value) {
+  const role = normalizePermissionRole(value);
+  return ROLE_LABELS[role] || String(value || "Funcionário");
+}
+
+export function can(permission, profile = globalThis.window?.__burgerOpsProfile || null) {
+  if (!profile || !permission) {
+    return false;
+  }
+
+  const principalRole = normalizePermissionRole(profile.perfilPrincipal || profile.tipo);
+  const principalPermissions = ROLE_PERMISSION_DEFAULTS[principalRole] || [];
+
+  if (principalPermissions.includes("*")) {
+    return true;
+  }
+
+  const manualValue = getManualPermission(profile, permission);
+
+  if (manualValue === false) {
+    return false;
+  }
+
+  if (manualValue === true) {
+    return true;
+  }
+
+  if (permissionListHas(principalPermissions, permission)) {
+    return true;
+  }
+
+  const additionalFunctions = Array.isArray(profile.funcoesAdicionais) ? profile.funcoesAdicionais : [];
+
+  return additionalFunctions.some((functionKey) => {
+    const normalizedKey = normalizePermissionRole(functionKey);
+    return permissionListHas(FUNCTION_PERMISSION_DEFAULTS[normalizedKey] || [], permission);
+  });
+}
+
+export function ensurePermission(permission, profile = globalThis.window?.__burgerOpsProfile || null) {
+  if (can(permission, profile)) {
+    return true;
+  }
+
+  window.alert(PERMISSION_DENIED_MESSAGE);
+  return false;
 }
 
 export async function getUserContext(options = {}) {
@@ -623,25 +1249,29 @@ export async function getUserContext(options = {}) {
 }
 
 export async function requireAuth(options = {}) {
-  const { adminOnly = false } = options;
+  const { adminOnly = false, permission = "" } = options;
   const context = await getUserContext();
 
   if (!context?.user) {
     window.location.href = "login.html";
-    throw new Error("Usuario nao autenticado.");
+    throw new Error("Usuário não autenticado.");
   }
 
   if (!context.profile) {
     await signOut(auth);
-    window.alert("Usuario nao autorizado.");
+    window.alert("Usuário não autorizado.");
     window.location.href = "login.html";
-    throw new Error("Usuario sem perfil.");
+    throw new Error("Usuário sem perfil.");
   }
 
-  if (adminOnly && context.profile.tipo !== "admin") {
-    window.alert("Acesso restrito.");
+  window.__burgerOpsProfile = context.profile;
+
+  const hasAdminAccess = can("funcionarios.alterarPermissoes", context.profile);
+
+  if ((adminOnly && !hasAdminAccess) || (permission && !can(permission, context.profile))) {
+    window.alert(PERMISSION_DENIED_MESSAGE);
     window.location.href = "index.html";
-    throw new Error("Permissao insuficiente.");
+    throw new Error("Permissão insuficiente.");
   }
 
   return context;
@@ -653,19 +1283,41 @@ export async function logout() {
 }
 
 export function bindLogoutButton(buttonId = "logout-button") {
-  const button = document.getElementById(buttonId);
+  const targets = [document.getElementById(buttonId)].filter(Boolean);
 
-  if (!button) {
-    return;
-  }
-
-  button.addEventListener("click", async () => {
+  const runLogout = async () => {
     try {
       await logout();
     } catch (error) {
       console.error(error);
-      window.alert("Nao foi possivel encerrar a sessao.");
+      window.alert("Não foi possível encerrar a sessão.");
     }
+  };
+
+  targets.forEach((button) => {
+    if (button.dataset.logoutBound === "true") {
+      return;
+    }
+
+    button.dataset.logoutBound = "true";
+    button.addEventListener("click", runLogout);
+  });
+
+  if (document.documentElement.dataset.logoutDelegated === "true") {
+    return;
+  }
+
+  document.documentElement.dataset.logoutDelegated = "true";
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest("[data-logout-button]");
+
+    if (!button) {
+      return;
+    }
+
+    event.preventDefault();
+    runLogout();
   });
 }
 
@@ -681,11 +1333,334 @@ export function setStatus(targetId, message, type = "info") {
   target.hidden = !message;
 }
 
+const AUTOMATION_CONFIG_REF = doc(db, "configuracoes", "whatsappAutomation");
+const AUTOMATION_LOG_COLLECTION = "automacaoLogs";
+
+function formatAutomationDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  return new Intl.DateTimeFormat("pt-BR").format(safeDate);
+}
+
+function formatAutomationQuantity(value) {
+  return toNumber(value, 0).toLocaleString("pt-BR", {
+    maximumFractionDigits: 3
+  });
+}
+
+function getAutomationAlertKey(type = "") {
+  const map = {
+    entrada: "stockIn",
+    saida: "stockOut",
+    stockIn: "stockIn",
+    stockOut: "stockOut",
+    lowStock: "lowStock",
+    minStock: "lowStock",
+    productionExit: "productionExit",
+    productionPending: "productionExit",
+    stockAdjustment: "stockAdjustment",
+    manualAdjustment: "stockAdjustment",
+    quantityCorrection: "quantityCorrection",
+    productZeroed: "productZeroed",
+    expiring: "expiring",
+    expired: "expired",
+    purchaseSuggestion: "purchaseSuggestion"
+  };
+
+  return map[type] || type;
+}
+
+function getAutomationLogStatusLabel(status = "") {
+  const labels = {
+    simulado: "Simulado",
+    pendente_api: "Pendente API",
+    pendente: "Pendente",
+    enviado: "Enviado",
+    falhou: "Falhou",
+    enviado_futuro: "Enviado futuramente",
+    erro_futuro: "Erro futuramente"
+  };
+
+  return labels[status] || status || "Pendente API";
+}
+
+export async function loadAutomationConfig() {
+  const defaultConfig = {
+    enabled: false,
+    provider: "",
+    webhookUrl: "",
+    adminPhone: "",
+    secondaryPhone: "",
+    sendMode: "immediate",
+    alertTypes: {
+      stockIn: true,
+      stockOut: true,
+      productionExit: true,
+      stockAdjustment: true,
+      quantityCorrection: true,
+      productZeroed: true,
+      lowStock: true,
+      expiring: true,
+      expired: true,
+      purchaseSuggestion: true,
+      productionPending: true,
+      labelPrinted: true
+    }
+  };
+
+  try {
+    const snapshot = await getDoc(AUTOMATION_CONFIG_REF);
+
+    if (!snapshot.exists()) {
+      return defaultConfig;
+    }
+
+    const data = snapshot.data() || {};
+    return {
+      ...defaultConfig,
+      ...data,
+      alertTypes: {
+        ...defaultConfig.alertTypes,
+        ...(data.alertTypes || {})
+      }
+    };
+  } catch (error) {
+    console.warn("Não foi possível carregar configuração da automação WhatsApp.", error);
+    return defaultConfig;
+  }
+}
+
+export function buildStockWhatsAppMessage(event = {}) {
+  const dateLabel = formatAutomationDate(event.date || new Date());
+
+  if (event.type === "stockIn") {
+    return [
+      "📦 Entrada de Estoque",
+      "",
+      `Produto: ${event.productName || "-"}`,
+      `Quantidade adicionada: ${formatAutomationQuantity(event.quantity)} ${event.unit || "unidade"}(s)`,
+      `Estoque anterior: ${formatAutomationQuantity(event.previousStock)}`,
+      `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+      `Fornecedor: ${event.supplier || "-"}`,
+      `Responsável: ${event.responsibleUser || "-"}`,
+      `Data: ${dateLabel}`
+    ].join("\n");
+  }
+
+  if (event.type === "stockOut") {
+    return [
+      "📤 Saída de Estoque",
+      "",
+      `Produto: ${event.productName || "-"}`,
+      `Quantidade retirada: ${formatAutomationQuantity(event.quantity)} ${event.unit || "unidade"}(s)`,
+      `Estoque anterior: ${formatAutomationQuantity(event.previousStock)}`,
+      `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+      `Motivo: ${event.reason || "Movimentação de estoque"}`,
+      `Responsável: ${event.responsibleUser || "-"}`,
+      `Data: ${dateLabel}`
+    ].join("\n");
+  }
+
+  const eventLabels = {
+    productionExit: "📤 Carioquinha | Saída para Produção",
+    stockAdjustment: "🛠️ Carioquinha | Ajuste Manual",
+    quantityCorrection: "🧾 Carioquinha | Correção de Quantidade",
+    productZeroed: "🚨 Carioquinha | Produto Zerado",
+    expiring: "⏳ Carioquinha | Produto Vencendo",
+    expired: "🚫 Carioquinha | Produto Vencido",
+    purchaseSuggestion: "🛒 Carioquinha | Compra Sugerida"
+  };
+
+  if (eventLabels[event.type]) {
+    return [
+      eventLabels[event.type],
+      "",
+      `Produto: ${event.productName || "-"}`,
+      `Quantidade: ${formatAutomationQuantity(event.quantity ?? event.currentStock)} ${event.unit || "unidade"}(s)`,
+      `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+      `Fornecedor: ${event.supplier || "-"}`,
+      `Responsável: ${event.responsibleUser || "-"}`,
+      `Ação recomendada: ${event.recommendation || event.recommendedAction || "Conferir operação"}`,
+      `Data: ${dateLabel}`
+    ].join("\n");
+  }
+
+  return [
+    "⚠️ Alerta de Reposição",
+    "",
+    `Produto: ${event.productName || "-"}`,
+    `Estoque atual: ${formatAutomationQuantity(event.currentStock)}`,
+    `Estoque mínimo: ${formatAutomationQuantity(event.minStock)}`,
+    `Fornecedor: ${event.supplier || "-"}`,
+    `Ação recomendada: ${event.recommendation || "Comprar hoje"}`
+  ].join("\n");
+}
+
+export async function registerAutomationLog({
+  type,
+  productName,
+  message,
+  status = "pendente_api",
+  createdAt = new Date(),
+  userId = "",
+  empresaId = "",
+  recipient = "",
+  providerMessageId = ""
+} = {}) {
+  const profile = globalThis.window?.__burgerOpsProfile || {};
+  const payload = {
+    type,
+    tipo: type,
+    productName,
+    produto: productName,
+    message,
+    mensagem: message,
+    status,
+    statusLabel: getAutomationLogStatusLabel(status),
+    providerMessageId,
+    destinatario: recipient,
+    userId: userId || profile.userId || profile.id || "",
+    empresaId: empresaId || profile.empresaId || "",
+    createdAt: createdAt instanceof Date ? createdAt.toISOString() : String(createdAt || new Date().toISOString()),
+    criadoEm: serverTimestamp()
+  };
+
+  await addDoc(collection(db, AUTOMATION_LOG_COLLECTION), payload);
+  return payload;
+}
+
+export async function sendWhatsAppPlaceholder(message, config = {}, event = {}) {
+  // O envio real acontece no backend seguro.
+  // O token da Evolution API deve ficar apenas no servidor.
+  console.log("[WhatsApp pendente API]", message);
+  let status = "pendente_api";
+  let providerMessageId = "";
+  let backendRegisteredLog = false;
+
+  try {
+    const endpointByType = {
+      stockIn: "/whatsapp/stock-entry",
+      stockOut: "/whatsapp/stock-exit",
+      lowStock: "/whatsapp/low-stock",
+      purchaseSuggestion: "/whatsapp/supplier-order-suggestion",
+      productionExit: "/whatsapp/admin-stock-alert",
+      stockAdjustment: "/whatsapp/admin-stock-alert",
+      quantityCorrection: "/whatsapp/admin-stock-alert",
+      productZeroed: "/whatsapp/admin-stock-alert",
+      expiring: "/whatsapp/admin-stock-alert",
+      expired: "/whatsapp/admin-stock-alert"
+    };
+    const endpoint = endpointByType[event.type] || "/api/whatsapp/send";
+    const body = endpoint === "/api/whatsapp/send"
+      ? {
+        empresaId: event.empresaId || "",
+        phone: config.adminPhone || "",
+        secondaryPhone: config.secondaryPhone || "",
+        message,
+        alertType: event.type,
+        metadata: {
+          productName: event.productName || "",
+          provider: config.provider || "",
+          sendMode: config.sendMode || "immediate",
+          webhookUrl: config.webhookUrl || ""
+        }
+      }
+      : {
+        ...event,
+        message,
+        adminPhone: config.adminPhone || "",
+        secondaryPhone: config.secondaryPhone || "",
+        provider: config.provider || "",
+        sendMode: config.sendMode || "immediate",
+        webhookUrl: config.webhookUrl || ""
+      };
+    const response = await apiFetch(endpoint, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+
+    status = response.status === "sent" ? "enviado" : "pendente_api";
+    providerMessageId = response.providerMessageId || "";
+    backendRegisteredLog = true;
+  } catch (error) {
+    status = "falhou";
+    console.warn("Envio real não concluído. O estoque segue funcionando e o log local será salvo.", error);
+  }
+
+  if (!backendRegisteredLog) {
+    await registerAutomationLog({
+      type: event.type,
+      productName: event.productName,
+      message,
+      status,
+      createdAt: event.date || new Date(),
+      userId: event.userId || "",
+      empresaId: event.empresaId || "",
+      recipient: config.adminPhone || "",
+      providerMessageId
+    });
+  }
+
+  return {
+    status,
+    message,
+    providerMessageId
+  };
+}
+
+export async function handleStockAutomationEvent(event = {}) {
+  const alertKey = getAutomationAlertKey(event.type);
+  const config = await loadAutomationConfig();
+  const mandatoryAdminEvent = [
+    "stockIn",
+    "stockOut",
+    "productionExit",
+    "stockAdjustment",
+    "quantityCorrection",
+    "productZeroed",
+    "lowStock",
+    "expiring",
+    "expired",
+    "purchaseSuggestion"
+  ].includes(alertKey);
+
+  if (!config.enabled && !mandatoryAdminEvent) {
+    return {
+      skipped: true,
+      reason: "automation_disabled"
+    };
+  }
+
+  if (config.alertTypes?.[alertKey] === false && !mandatoryAdminEvent) {
+    return {
+      skipped: true,
+      reason: "alert_type_disabled"
+    };
+  }
+
+  const normalizedEvent = {
+    ...event,
+    type: alertKey,
+    date: event.date || new Date()
+  };
+  const message = buildStockWhatsAppMessage(normalizedEvent);
+
+  return sendWhatsAppPlaceholder(message, config, normalizedEvent);
+}
+
 export function registerServiceWorker() {
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.warn("Falha ao registrar service worker.", error);
-    });
+    navigator.serviceWorker.register("/sw.js")
+      .then(async (registration) => {
+        try {
+          await registration.update();
+        } catch (error) {
+          console.warn("Falha ao atualizar o service worker.", error);
+        }
+      })
+      .catch((error) => {
+        console.warn("Falha ao registrar service worker.", error);
+      });
   }
 }
 
@@ -693,7 +1668,7 @@ export async function getAuthToken() {
   const user = auth.currentUser ?? (await waitForAuthUser());
 
   if (!user) {
-    throw new Error("Sessao expirada.");
+    throw new Error("Sessão expirada.");
   }
 
   return user.getIdToken();
@@ -732,12 +1707,12 @@ async function performApiRequest(path, options = {}, settings = {}) {
         : null;
 
       if (isProbablyWrongOrigin(path, response, contentType)) {
-        lastError = new Error(`Base ${baseUrl} nao expoe a API esperada.`);
+        lastError = new Error(`Base ${baseUrl} não expõe a API esperada.`);
         continue;
       }
 
       if (!response.ok) {
-        const error = new Error(payload?.erro || "Nao foi possivel completar a requisicao.");
+        const error = new Error(payload?.erro || "Não foi possível completar a requisição.");
         error.status = response.status;
         throw error;
       }
@@ -754,7 +1729,7 @@ async function performApiRequest(path, options = {}, settings = {}) {
   }
 
   throw new Error(
-    "Nao foi possivel conectar ao backend. Verifique se o servidor desta instalacao esta online ou, em ambiente local, rode npm start."
+    "Não foi possível conectar ao backend. Verifique se o servidor desta instalação está online ou, em ambiente local, rode npm start."
   );
 }
 
@@ -776,39 +1751,13 @@ export async function triggerReplenishmentEvaluation(reason = "app_event", optio
       })
     });
   } catch (error) {
-    console.warn("Nao foi possivel reavaliar os alertas de reposicao.", error);
+    console.warn("Não foi possível reavaliar os alertas de reposição.", error);
     return null;
   }
 }
 
 export async function getRuntimeConfig() {
   return loadRuntimeConfig();
-}
-
-export function parseRecipeIngredients(recipe) {
-  if (Array.isArray(recipe?.ingredientes)) {
-    return recipe.ingredientes.map((item) => ({
-      nome: item.nome,
-      qtd: toNumber(item.qtd, 0)
-    }));
-  }
-
-  if (typeof recipe?.itens !== "string") {
-    return [];
-  }
-
-  return recipe.itens
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [nome, qtd] = line.split(":");
-      return {
-        nome: nome?.trim() || "",
-        qtd: toNumber(qtd, 0)
-      };
-    })
-    .filter((item) => item.nome);
 }
 
 export function getMonthKey(value) {
@@ -822,7 +1771,7 @@ export function getMonthDate(monthKey) {
 
 export function formatMonthLabel(monthKey) {
   if (!monthKey) {
-    return "Mes nao informado";
+    return "Mês não informado";
   }
 
   const parsed = getMonthDate(monthKey);

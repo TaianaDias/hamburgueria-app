@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#070707">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,15 +11,72 @@
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<title>Login | Hamburgueria</title>
+<link rel="stylesheet" href="assets/app-login.min.css">
+<title>Login | Carioca's Operação de Controle</title>
 </head>
-<body>
-<main class="page page-login">
-  <section class="panel login-card">
-    <p class="eyebrow">Operacao de controle</p>
-    <h1>Painel Carioca's</h1>
-    <p class="muted">Entre no sistema ou crie a primeira conta administrativa para inicializar o app.</p>
+<body class="login-premium-body dashboard-approved-real">
+<main class="page page-login login-premium-shell">
+  <section class="login-marketing-panel">
+    <a class="login-brand" href="login.html" aria-label="Carioca's Operação de Controle">
+      <span class="login-brand-mark"><img src="cariocas-logo.jpeg" alt="" aria-hidden="true"></span>
+      <span>
+        <strong>Carioca's</strong>
+        <small>Operação de Controle</small>
+      </span>
+    </a>
+
+    <div class="login-hero-copy">
+      <p class="eyebrow">SaaS operacional food service</p>
+      <h1>Gestão inteligente <span>para operações que performam.</span></h1>
+      <p>Controle estoque, produção, compras, custos e muito mais em um só lugar.</p>
+    </div>
+
+    <div class="login-feature-grid" aria-label="Destaques do sistema">
+      <article>
+        <span>E</span>
+        <strong>Estoque Inteligente</strong>
+        <small>Controle em tempo real e alertas automáticos.</small>
+      </article>
+      <article>
+        <span>P</span>
+        <strong>Produção e Etiquetas</strong>
+        <small>Pré-preparo, validade e etiquetas térmicas.</small>
+      </article>
+      <article>
+        <span>C</span>
+        <strong>Compras e Fornecedores</strong>
+        <small>Pedidos inteligentes e comparação de preços.</small>
+      </article>
+      <article>
+        <span>D</span>
+        <strong>Dashboard e Relatórios</strong>
+        <small>Indicadores completos para melhores decisões.</small>
+      </article>
+    </div>
+
+    <blockquote class="login-testimonial">
+      <p>"O sistema que simplifica, organiza e impulsiona o seu negócio."</p>
+      <strong>+250 operações confiam na gente</strong>
+    </blockquote>
+
+    <div class="login-trust-row">
+      <span>Seguro e Confiável</span>
+      <span>Acesso de Qualquer Lugar</span>
+      <span>Decisões Baseadas em Dados</span>
+    </div>
+  </section>
+
+  <section class="panel login-card login-premium-card">
+    <div class="login-lang-row">
+      <button class="login-lang-button" type="button" aria-label="Idioma atual">PT-BR</button>
+    </div>
+
+    <div class="login-card-head">
+      <span class="login-burger-icon" aria-hidden="true"><img src="cariocas-logo.jpeg" alt=""></span>
+      <p class="eyebrow">Acesso administrativo</p>
+      <h2>Bem-vindo de volta!</h2>
+      <p class="muted">Faça login para acessar sua conta administrativa.</p>
+    </div>
 
     <div class="auth-switcher" role="tablist" aria-label="Acesso ao sistema">
       <button id="login-tab" class="auth-tab active" type="button" role="tab" aria-selected="true">Entrar</button>
@@ -29,54 +86,78 @@
     <section id="login-panel" class="auth-panel active" role="tabpanel">
       <form id="login-form" class="form-grid">
         <div class="field-group" style="grid-column: 1 / -1;">
-          <label for="login-email">Email</label>
+          <label for="login-email">E-mail</label>
           <input id="login-email" type="email" placeholder="voce@empresa.com">
         </div>
 
-        <div class="field-group" style="grid-column: 1 / -1;">
+        <div class="field-group password-field" style="grid-column: 1 / -1;">
           <label for="login-senha">Senha</label>
           <input id="login-senha" type="password" placeholder="Sua senha">
+          <button class="password-toggle" type="button" data-target="login-senha" aria-label="Mostrar senha">Ver</button>
         </div>
 
-        <button id="submit-button" type="submit" style="grid-column: 1 / -1;">Entrar</button>
+        <div class="login-form-options">
+          <label class="inline-choice login-remember">
+            <input id="remember-me" type="checkbox">
+            <span>Lembrar-me</span>
+          </label>
+          <a href="mailto:suporte@cariocasoperacao.com?subject=Recuperar%20senha">Esqueci minha senha</a>
+        </div>
+
+        <button id="submit-button" class="btn btn-primary" type="submit" style="grid-column: 1 / -1;">Entrar <span aria-hidden="true">→</span></button>
       </form>
+
+      <div class="login-demo-callout" role="note">
+        <strong>Conta demo para análise externa</strong>
+        <span>Dados fictícios, navegação segura e sem alteração no banco real.</span>
+        <code>demo@cariocas.com / Demo@123456</code>
+        <button id="demo-login-button" class="secondary" type="button">Acessar demo pública</button>
+      </div>
+
+      <div class="login-social-block">
+        <span>ou continue com</span>
+        <div class="login-social-actions">
+          <button class="secondary" type="button" data-social-provider="Google">Google</button>
+          <button class="secondary" type="button" data-social-provider="Microsoft">Microsoft</button>
+        </div>
+      </div>
     </section>
 
     <section id="register-panel" class="auth-panel" role="tabpanel" hidden>
       <form id="register-form" class="form-grid">
         <div class="field-group" style="grid-column: 1 / -1;">
-          <label for="register-nome">Nome do responsavel</label>
+          <label for="register-nome">Nome do responsável</label>
           <input id="register-nome" type="text" placeholder="Seu nome">
         </div>
 
         <div class="field-group" style="grid-column: 1 / -1;">
-          <label for="register-email">Email</label>
+          <label for="register-email">E-mail</label>
           <input id="register-email" type="email" placeholder="admin@empresa.com">
         </div>
 
-        <div class="field-group">
+        <div class="field-group password-field">
           <label for="register-senha">Senha</label>
-          <input id="register-senha" type="password" placeholder="Minimo de 6 caracteres">
+          <input id="register-senha" type="password" placeholder="Mínimo de 6 caracteres">
+          <button class="password-toggle" type="button" data-target="register-senha" aria-label="Mostrar senha">Ver</button>
         </div>
 
-        <div class="field-group">
+        <div class="field-group password-field">
           <label for="register-confirmar-senha">Confirmar senha</label>
           <input id="register-confirmar-senha" type="password" placeholder="Repita a senha">
+          <button class="password-toggle" type="button" data-target="register-confirmar-senha" aria-label="Mostrar senha">Ver</button>
         </div>
 
-        <button id="register-button" type="submit" style="grid-column: 1 / -1;">Criar conta inicial</button>
+        <button id="register-button" class="btn btn-primary" type="submit" style="grid-column: 1 / -1;">Criar conta inicial</button>
       </form>
 
       <p id="register-note" class="auth-note"></p>
     </section>
 
     <div id="status" class="status info" hidden></div>
+
+    <p class="login-security-note">Ambiente 100% seguro e criptografado</p>
   </section>
 </main>
-
-<footer class="footer">
-  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
-</footer>
 
 <script type="module">
 import { auth } from "./firebase.js";
@@ -97,6 +178,7 @@ async function init() {
   const loginPanel = document.getElementById("login-panel");
   const registerPanel = document.getElementById("register-panel");
   const loginForm = document.getElementById("login-form");
+  const demoLoginButton = document.getElementById("demo-login-button");
   const registerForm = document.getElementById("register-form");
   const loginButton = document.getElementById("submit-button");
   const registerButton = document.getElementById("register-button");
@@ -133,13 +215,13 @@ async function init() {
     document.getElementById("register-confirmar-senha").disabled = !canCreate;
 
     if (bootstrapStatus.unknown) {
-      registerNote.textContent = "Nao foi possivel verificar automaticamente o status inicial. Voce ainda pode tentar criar a primeira conta e o backend vai validar isso.";
+      registerNote.textContent = "Não foi possível verificar automaticamente o status inicial. Você ainda pode tentar criar a primeira conta e o backend vai validar isso.";
       return;
     }
 
     registerNote.textContent = bootstrapStatus.canCreateFirstAccount
-      ? "A primeira conta criada aqui vira admin automaticamente e libera o cadastro dos demais funcionarios."
-      : "O sistema ja foi inicializado. Depois do primeiro acesso, novas contas devem ser criadas por um administrador na tela de Funcionarios.";
+      ? "A primeira conta criada aqui vira admin automaticamente e libera o cadastro dos demais funcionários."
+      : "O sistema já foi inicializado. Depois do primeiro acesso, novas contas devem ser criadas por um administrador na tela de Funcionários.";
   }
 
   async function loadBootstrapStatus() {
@@ -154,11 +236,11 @@ async function init() {
     } catch (error) {
       console.error(error);
       bootstrapStatus = {
-        initialized: false,
+        initialized: true,
         canCreateFirstAccount: false,
         unknown: true
       };
-      setStatus("status", error.message || "Nao foi possivel verificar se o sistema ja tem conta inicial.", "info");
+      setStatus("status", error.message || "Não foi possível verificar se o sistema já tem conta inicial.", "info");
     }
 
     updateRegisterState();
@@ -173,12 +255,33 @@ async function init() {
     }
 
     if (context?.profile) {
-      window.location.href = "index.html";
+      window.location.href = "dashboard-saas.html";
     }
   }
 
   loginTab.addEventListener("click", () => setActiveTab("login"));
   registerTab.addEventListener("click", () => setActiveTab("register"));
+
+  document.querySelectorAll(".password-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.target);
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "Ver" : "Ocultar";
+      button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
+    });
+  });
+
+  document.querySelectorAll("[data-social-provider]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const provider = button.dataset.socialProvider || "provedor externo";
+      setStatus("status", `Login com ${provider} está preparado visualmente e será ativado quando a autenticação social for configurada.`, "info");
+    });
+  });
+
+  document.querySelector(".login-lang-button")?.addEventListener("click", () => {
+    setStatus("status", "Idioma atual: Português do Brasil.", "info");
+  });
 
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -188,7 +291,14 @@ async function init() {
     const senha = document.getElementById("login-senha").value;
 
     if (!email || !senha) {
-      setStatus("status", "Preencha email e senha para continuar.", "error");
+      setStatus("status", "Preencha e-mail e senha para continuar.", "error");
+      return;
+    }
+
+    if (email === "demo@cariocas.com" && senha === "Demo@123456") {
+      window.sessionStorage.setItem("cariocasDemoSession", "active");
+      setStatus("status", "Abrindo ambiente demo seguro...", "success");
+      window.location.href = "demo.html";
       return;
     }
 
@@ -198,13 +308,20 @@ async function init() {
     try {
       await signInWithEmailAndPassword(auth, email, senha);
       setStatus("status", "Login realizado. Redirecionando...", "success");
-      window.location.href = "index.html";
+      window.location.href = "dashboard-saas.html";
     } catch (error) {
       console.error(error);
-      setStatus("status", "Login invalido. Confira email e senha.", "error");
+      setStatus("status", "Login inválido. Confira e-mail e senha.", "error");
     } finally {
       loginButton.disabled = false;
     }
+  });
+
+  demoLoginButton?.addEventListener("click", () => {
+    document.getElementById("login-email").value = "demo@cariocas.com";
+    document.getElementById("login-senha").value = "Demo@123456";
+    window.sessionStorage.setItem("cariocasDemoSession", "active");
+    window.location.href = "demo.html";
   });
 
   registerForm.addEventListener("submit", async (event) => {
@@ -212,7 +329,7 @@ async function init() {
     setStatus("status", "", "info");
 
     if (bootstrapStatus.initialized && !bootstrapStatus.canCreateFirstAccount && !bootstrapStatus.unknown) {
-      setStatus("status", "A conta inicial ja existe. Entre no sistema e use a tela de Funcionarios para novos acessos.", "error");
+      setStatus("status", "A conta inicial já existe. Entre no sistema e use a tela de Funcionários para novos acessos.", "error");
       return;
     }
 
@@ -232,7 +349,7 @@ async function init() {
     }
 
     if (senha !== confirmarSenha) {
-      setStatus("status", "As senhas nao conferem.", "error");
+      setStatus("status", "As senhas não conferem.", "error");
       return;
     }
 
@@ -250,10 +367,10 @@ async function init() {
 
       await signInWithEmailAndPassword(auth, email, senha);
       setStatus("status", "Conta criada com sucesso. Redirecionando...", "success");
-      window.location.href = "index.html";
+      window.location.href = "dashboard-saas.html";
     } catch (error) {
       console.error(error);
-      setStatus("status", error.message || "Nao foi possivel criar a conta inicial.", "error");
+      setStatus("status", error.message || "Não foi possível criar a conta inicial.", "error");
     } finally {
       registerButton.disabled = false;
       await loadBootstrapStatus();
@@ -266,7 +383,7 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  setStatus("status", "Nao foi possivel inicializar a tela de acesso.", "error");
+  setStatus("status", "Não foi possível inicializar a tela de acesso.", "error");
 });
 </script>
 </body>

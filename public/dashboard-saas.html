@@ -556,6 +556,10 @@ const state = {
   comandos: []
 };
 
+let dashboardDataVersion = 0;
+let dashboardRenderTimer = 0;
+let lastDashboardRenderKey = "";
+
 const weekdayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
 function getDateValue(value) {
@@ -619,6 +623,24 @@ function getFilteredData() {
     etiquetas: filterByPeriod(state.etiquetas.filter((item) => matchesStore(item, store)), period, ["criadoEm", "dataImpressao", "data"]),
     comandos: filterByPeriod(state.comandos.filter((item) => matchesStore(item, store)), period, ["criadoEm", "data"])
   };
+}
+
+function getDashboardRenderKey() {
+  const store = document.getElementById("store-filter").value;
+  const period = document.getElementById("period-filter").value;
+  return `${dashboardDataVersion}:${store}:${period}`;
+}
+
+function scheduleDashboardRender(options = {}) {
+  if (dashboardRenderTimer) {
+    window.clearTimeout(dashboardRenderTimer);
+  }
+
+  const delay = options.immediate ? 0 : 120;
+  dashboardRenderTimer = window.setTimeout(() => {
+    dashboardRenderTimer = 0;
+    renderDashboard(options);
+  }, delay);
 }
 
 function getAttentionItems(estoque) {
@@ -936,7 +958,14 @@ function renderPriorityActions({ estoque, desperdicios, producoes, etiquetas }) 
   document.getElementById("action-waste").textContent = formatCurrency(wasteValue);
 }
 
-function renderDashboard() {
+function renderDashboard(options = {}) {
+  const renderKey = getDashboardRenderKey();
+
+  if (!options.force && renderKey === lastDashboardRenderKey) {
+    return;
+  }
+
+  lastDashboardRenderKey = renderKey;
   const filtered = getFilteredData();
   const critical = getCriticalItems(filtered.estoque);
   const attention = getAttentionItems(filtered.estoque);
@@ -962,16 +991,22 @@ function renderDashboard() {
   document.getElementById("module-labels").textContent = `${labelCount} emitidas`;
   document.getElementById("module-whatsapp").textContent = `${filtered.comandos.length} comandos`;
   document.getElementById("ai-insight").textContent = buildInsight(filtered);
-  const marginReport = calculateProductMargins(filtered.estoque, { minMarginPct: 30 });
+  const marginReport = calculateProductMargins(filtered.estoque, {
+    minMarginPct: 30,
+    maxDurationMs: 3000,
+    cacheKey: `${renderKey}:margins:${filtered.estoque.length}`
+  });
   const kpiFinCount = document.getElementById("kpi-financial-margin-count");
   const kpiFinNote = document.getElementById("kpi-financial-margin-note");
   if (kpiFinCount) {
     kpiFinCount.textContent = String(marginReport.alertCount);
   }
   if (kpiFinNote) {
-    kpiFinNote.textContent = marginReport.alertCount
-      ? `${marginReport.alertCount} produto(s) com margem estimada abaixo de 30%`
-      : "Margens dentro do mínimo esperado (com dados de CMV)";
+    kpiFinNote.textContent = marginReport.timedOut
+      ? `Análise parcial por segurança (${marginReport.durationMs} ms). Refine os filtros para concluir o CMV.`
+      : marginReport.alertCount
+        ? `${marginReport.alertCount} produto(s) com margem estimada abaixo de 30%`
+        : "Margens dentro do mínimo esperado (com dados de CMV)";
   }
   renderChart(filtered.compras, filtered.desperdicios, filtered.producoes);
   renderCriticalList(filtered.estoque);
@@ -1006,7 +1041,9 @@ async function loadDashboard() {
   state.producoes = producoes;
   state.etiquetas = etiquetas;
   state.comandos = comandos;
-  renderDashboard();
+  dashboardDataVersion += 1;
+  lastDashboardRenderKey = "";
+  scheduleDashboardRender({ immediate: true, force: true });
 }
 
 document.getElementById("generate-report").addEventListener("click", () => {
@@ -1021,8 +1058,8 @@ document.getElementById("prepare-whatsapp").addEventListener("click", () => {
     : "Mensagem pronta para o responsável: Estoque sem ruptura imediata. Recomendo apenas manter acompanhamento no fechamento.";
 });
 
-document.getElementById("store-filter").addEventListener("change", renderDashboard);
-document.getElementById("period-filter").addEventListener("change", renderDashboard);
+document.getElementById("store-filter").addEventListener("change", () => scheduleDashboardRender({ force: true }));
+document.getElementById("period-filter").addEventListener("change", () => scheduleDashboardRender({ force: true }));
 document.getElementById("kpi-stock-value-toggle").addEventListener("click", (event) => {
   event.stopPropagation();
 

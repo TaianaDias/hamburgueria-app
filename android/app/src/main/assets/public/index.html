@@ -1,112 +1,30 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#070707">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BurgerOps">
+<meta http-equiv="refresh" content="0; url=dashboard-saas.html">
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<title>Inicio | Hamburgueria</title>
+<link rel="stylesheet" href="assets/app-core.min.css">
+<title>Carioca's Operação de Controle</title>
 </head>
-<body>
-<main class="page">
-  <header class="page-header">
-    <div>
-      <p class="eyebrow">Painel principal</p>
-      <h1>Sistema Carioca's</h1>
-      <p id="user-info" class="muted"></p>
-    </div>
-
-    <div class="actions">
-      <a class="button secondary" href="dashboard.html">Dashboard</a>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
-    </div>
-  </header>
-
-  <section class="menu-grid">
-    <a class="card" href="estoque.html">
-      <h3>Estoque</h3>
-      <p class="muted">Cadastre produtos, limites, custos e fornecedores.</p>
-    </a>
-
-    <a class="card" href="receitas.html">
-      <h3>Receitas</h3>
-      <p class="muted">Monte fichas tecnicas e acompanhe custo estimado.</p>
-    </a>
-
-    <a class="card" href="compras.html">
-      <h3>Compras</h3>
-      <p class="muted">Veja reposicoes necessarias e envie pedidos rapido.</p>
-    </a>
-
-    <a class="card" href="analise-compras.html">
-      <h3>Analise de compras</h3>
-      <p class="muted">Compare meses, gastos totais e descontos acumulados.</p>
-    </a>
-
-    <a class="card" href="dashboard-compras.html">
-      <h3>Dashboard de compras</h3>
-      <p class="muted">Veja a evolucao mensal em grafico e os itens que mais pesam em cada mes.</p>
-    </a>
-
-    <a id="alerts-link" class="card" href="alertas-reposicao.html" hidden>
-      <h3>Alertas de reposicao</h3>
-      <p class="muted">Painel inteligente com criticidade, historico e WhatsApp do admin.</p>
-    </a>
-
-    <a class="card" href="fornecedores.html">
-      <h3>Fornecedores</h3>
-      <p class="muted">Organize contatos e referencia de cada item.</p>
-    </a>
-
-    <a class="card" href="dashboard.html">
-      <h3>Dashboard</h3>
-      <p class="muted">Resumo da operacao com alertas de estoque.</p>
-    </a>
-
-    <a id="employees-link" class="card" href="funcionarios.html" hidden>
-      <h3>Funcionarios</h3>
-      <p class="muted">Crie acessos e acompanhe o quadro da equipe.</p>
-    </a>
-  </section>
+<body class="redirect-clean-body">
+<main class="redirect-clean-card">
+  <span class="redirect-clean-mark">C</span>
+  <p class="eyebrow">Carioca's Pro</p>
+  <h1>Abrindo Visão Geral</h1>
+  <p>Você está sendo levado para o dashboard executivo no novo layout premium.</p>
+  <a class="button" href="dashboard-saas.html">Abrir agora</a>
 </main>
-
-<footer class="footer">
-  Desenvolvido por <strong>Taiana Dias</strong> | Sistema Interno
-</footer>
-
-<script type="module">
-import {
-  bindLogoutButton,
-  describeProfile,
-  registerServiceWorker,
-  requireAuth
-} from "./app.js";
-
-async function init() {
-  const userInfo = document.getElementById("user-info");
-  const employeesLink = document.getElementById("employees-link");
-  const alertsLink = document.getElementById("alerts-link");
-
-  registerServiceWorker();
-  bindLogoutButton();
-
-  const { profile } = await requireAuth();
-  userInfo.textContent = describeProfile(profile);
-  employeesLink.hidden = profile.tipo !== "admin";
-  alertsLink.hidden = profile.tipo !== "admin";
-}
-
-init().catch((error) => {
-  console.error(error);
-});
+<script>
+window.location.replace("dashboard-saas.html");
 </script>
 </body>
 </html>
-

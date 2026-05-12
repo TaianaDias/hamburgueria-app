@@ -1,43 +1,87 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#070707">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BurgerOps">
+<meta name="apple-mobile-web-app-title" content="Sistema Carioca's">
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="assets/app-dashboard.min.css">
+<script src="premium-shell.js" defer></script>
 <title>Compras | Hamburgueria</title>
 </head>
-<body>
-<main class="page">
+<body class="premium-app-body dashboard-mobile-fix dashboard-saas-page dashboard-approved-real">
+<header class="topbar" aria-label="Topo principal">
+  <button id="dashboard-mobile-menu" class="top-menu" type="button" aria-label="Abrir menu">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+
+  <a class="top-logo" href="dashboard-saas.html" aria-label="Carioca's Pro">
+    <span class="logo-avatar">C</span>
+    <span class="logo-info">
+      <span class="logo-name">Carioca's <span class="logo-badge">PRO</span></span>
+      <span class="logo-sub">Operação de Controle</span>
+    </span>
+  </a>
+
+  <button id="dashboard-search-button" class="top-search" type="button" aria-label="Buscar no sistema">
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9 9l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    <span>Buscar no sistema...</span>
+    <kbd>Ctrl+K</kbd>
+  </button>
+
+  <div class="top-spacer"></div>
+
+  <div class="top-actions">
+    <button id="dashboard-alert-button" class="notif-btn" type="button" aria-label="Abrir alertas" aria-expanded="false" aria-controls="dashboard-alert-drawer-backdrop">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a5.5 5.5 0 0 1 5.5 5.5v2.5l1 2H1.5l1-2V7A5.5 5.5 0 0 1 8 1.5ZM6 13.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span class="notif-count">8</span>
+    </button>
+    <button class="help-btn" type="button" aria-label="Ajuda">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5a2 2 0 1 1 2.8 1.8C8.3 8.6 8 9 8 9.5M8 11.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <button class="user-pill" type="button" aria-label="Usuário logado">
+      <span id="dashboard-user-initials" class="user-av">--</span>
+      <span>
+        <span id="dashboard-user-name" class="user-name-top">Carregando...</span>
+        <span id="dashboard-user-role" class="user-role-top">Perfil</span>
+      </span>
+    </button>
+  </div>
+</header>
+
+<div class="body-wrap approved-body-wrap">
+  <aside class="sidebar approved-sidebar premium-global-sidebar" aria-label="Menu principal">
+    <nav class="premium-nav" aria-label="Menu principal"></nav>
+    <span id="user-info" hidden></span>
+  </aside>
+
+<main class="main approved-main">
+<section class="page page-module-compras">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Reposicao</p>
+      <p class="eyebrow">Reposição</p>
       <h1>Compras</h1>
-      <p id="user-info" class="muted"></p>
-    </div>
+</div>
 
     <div class="actions">
       <a class="button secondary" href="index.html">Voltar</a>
       <a id="alerts-link" class="button secondary" href="alertas-reposicao.html" hidden>Alertas</a>
-      <a class="button secondary" href="dashboard-compras.html">Dashboard</a>
-      <a class="button secondary" href="analise-compras.html">Analise</a>
-      <button id="send-button" type="button">Enviar pedidos</button>
-      <button id="logout-button" class="secondary" type="button">Sair</button>
+      <a id="dashboard-link" class="button secondary" href="dashboard-compras.html">Dashboard</a>
+      <button id="send-button" class="btn btn-primary" type="button">Enviar pedidos</button>
     </div>
   </header>
 
-  <section class="panel">
+  <section id="purchase-register-section" class="panel">
     <div class="page-header" style="margin-bottom: 16px;">
       <div>
         <h3>Registro mensal de compras</h3>
-        <p class="muted">Lance compras manuais, acompanhe o gasto do mes e, se quiser, ja atualize o estoque no mesmo registro.</p>
+        <p class="muted">Lance compras manuais, acompanhe o gasto do mês e, se quiser, já atualize o estoque no mesmo registro.</p>
       </div>
     </div>
 
@@ -63,6 +107,20 @@
       </div>
 
       <div class="field-group">
+        <label for="purchase-unit">Unidade de compra</label>
+        <select id="purchase-unit">
+          <option value="Caixa">Caixa</option>
+          <option value="Unidade">Unidade</option>
+          <option value="Fardo">Fardo</option>
+          <option value="Pacote">Pacote</option>
+          <option value="Kg">Kg</option>
+          <option value="Litro">Litro</option>
+          <option value="Galão">Galão</option>
+          <option value="Grade">Grade</option>
+        </select>
+      </div>
+
+      <div class="field-group">
         <label for="purchase-price">Valor por embalagem</label>
         <input id="purchase-price" type="number" min="0" step="0.01" value="0">
       </div>
@@ -73,29 +131,39 @@
       </div>
 
       <div class="field-group" style="grid-column: 1 / -1;">
-        <label for="purchase-note">Observacao</label>
-        <textarea id="purchase-note" placeholder="Ex.: promocao do mes, compra emergencial, pedido dividido..."></textarea>
+        <label for="purchase-note">Observação</label>
+        <textarea id="purchase-note" placeholder="Ex.: promoção do mês, compra emergencial, pedido dividido..."></textarea>
       </div>
 
       <div class="field-group" style="grid-column: 1 / -1;">
-        <span>Atualizacao de estoque</span>
+        <span>Atualização de estoque</span>
         <label class="inline-choice">
           <input id="purchase-update-stock" type="checkbox" checked>
           <span>Dar entrada no estoque ao registrar esta compra</span>
         </label>
       </div>
 
-      <button id="purchase-save-button" type="submit">Registrar compra</button>
+      <button id="purchase-save-button" class="btn btn-primary" type="submit">Registrar compra</button>
     </form>
 
     <div id="purchase-status" class="status info" hidden></div>
   </section>
 
   <section class="panel">
-    <div class="page-header" style="margin-bottom: 16px;">
+    <div class="page-header compact-header">
       <div>
-        <h3>Lembrete do admin</h3>
-        <p class="muted">Configure o WhatsApp do admin e gere um resumo com os itens acionados por estoque minimo ou por dia programado de pedido.</p>
+        <h3>Histórico mensal de compras</h3>
+        <p class="muted">Últimos lançamentos com produto, quantidade, unidade, fornecedor e valor total.</p>
+      </div>
+    </div>
+    <div id="purchase-history-list" class="list purchase-history-list"></div>
+  </section>
+
+  <section class="panel">
+    <div class="page-header compact-header">
+      <div>
+        <h3>Sugestão ao admin</h3>
+        <p id="admin-reminder-description" class="muted">Gere uma sugestão rastreável com os itens acionados por estoque mínimo ou dia programado de pedido.</p>
       </div>
     </div>
 
@@ -106,13 +174,22 @@
       </div>
 
       <div class="field-group">
-        <label for="admin-reminder-preview">Resumo atual</label>
+        <label for="admin-reminder-reason">Motivo da sugestão</label>
+        <select id="admin-reminder-reason">
+          <option value="Reposição urgente">Reposição urgente</option>
+          <option value="Compra preventiva">Compra preventiva</option>
+          <option value="Pedido programado">Pedido programado</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="admin-reminder-preview">Resumo da sugestão</label>
         <input id="admin-reminder-preview" type="text" readonly value="Nenhum item pendente">
       </div>
     </div>
 
-    <div class="actions" style="margin-top: 16px;">
-      <button id="send-admin-reminder" class="secondary" type="button">Enviar lembrete ao admin</button>
+    <div class="actions compact-actions">
+      <button id="send-admin-reminder" class="secondary" type="button">Sugerir ao admin</button>
     </div>
 
     <div id="admin-reminder-status" class="status info" hidden></div>
@@ -120,11 +197,88 @@
 
   <section class="panel">
     <h3>Pedidos sugeridos</h3>
-    <p class="muted">Cada grupo abaixo e gerado a partir do nivel minimo e do maximo configurado no estoque.</p>
+    <p class="muted">Cada grupo abaixo é gerado a partir do nível mínimo e do máximo configurado no estoque.</p>
     <div id="status" class="status info" hidden></div>
     <div id="lista" class="list" style="margin-top: 16px;"></div>
   </section>
-</main>
+</section>
+  </main>
+</div>
+
+<div id="dashboard-alert-drawer-backdrop" class="premium-alert-drawer-backdrop approved-alert-drawer-backdrop" hidden>
+  <aside id="dashboard-alert-drawer" class="premium-alert-drawer approved-alert-drawer" role="dialog" aria-modal="true" aria-label="Alertas inteligentes">
+    <header>
+      <div>
+        <strong>Alertas inteligentes</strong>
+        <small>Prioridades geradas pelo Carioquinha.</small>
+      </div>
+      <button id="dashboard-alert-drawer-close" type="button" aria-label="Fechar alertas">×</button>
+    </header>
+    <div id="dashboard-alert-drawer-list" class="premium-alert-drawer-list"></div>
+  </aside>
+</div>
+
+<dialog id="dashboard-action-dialog" class="premium-confirm-dialog premium-action-dialog approved-dialog">
+  <form method="dialog">
+    <div>
+      <p class="eyebrow">Operação rápida</p>
+      <h3>Ação rápida</h3>
+      <p class="muted">Escolha o fluxo operacional sem sair do padrão premium do sistema.</p>
+    </div>
+    <div class="premium-action-dialog-grid">
+      <a href="estoque.html">Entrada de estoque</a>
+      <a href="reposicao-producao.html">Saída para produção</a>
+      <a href="producao-etiquetas.html">Produção e etiquetas</a>
+      <a href="compras.html">Gerar compra</a>
+      <a href="desperdicio.html">Registrar desperdício</a>
+      <a href="whatsapp-ia.html">Automação WhatsApp</a>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dashboard-search-dialog" class="premium-confirm-dialog premium-search-dialog approved-dialog">
+  <form method="dialog">
+    <div>
+      <p class="eyebrow">Busca global inteligente</p>
+      <h3>Buscar no sistema</h3>
+      <p class="muted">Atalho visual preparado para conectar busca global de insumos, fornecedores, compras, etiquetas e treinamentos.</p>
+    </div>
+    <div class="field-group">
+      <label for="dashboard-global-search">O que você procura?</label>
+      <input id="dashboard-global-search" placeholder="Ex.: pão brioche, fornecedor, etiqueta, CMV">
+    </div>
+    <div id="dashboard-search-results" class="premium-search-results">
+      <a href="estoque.html">Central de Estoque</a>
+      <a href="compras.html">Inteligência de Compras</a>
+      <a href="whatsapp-ia.html">IA do Carioquinha</a>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="submit">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<nav class="dashboard-mobile-bottom-nav approved-mobile-bottom-nav" aria-label="Navegação mobile">
+  <button id="dashboard-mobile-more" type="button" aria-expanded="false" aria-controls="dashboard-mobile-drawer">
+    <span>+</span><strong>Mais</strong>
+  </button>
+</nav>
+
+<div id="dashboard-mobile-drawer-backdrop" class="dashboard-mobile-drawer-backdrop approved-mobile-drawer-backdrop" hidden>
+  <section id="dashboard-mobile-drawer" class="dashboard-mobile-drawer" role="dialog" aria-modal="true" aria-label="Mais opções">
+    <header>
+      <div>
+        <strong>Mais opções</strong>
+        <small>Acesse todos os módulos da operação.</small>
+      </div>
+      <button id="dashboard-mobile-drawer-close" type="button" aria-label="Fechar menu">×</button>
+    </header>
+    <div class="dashboard-mobile-drawer-grid"></div>
+  </section>
+</div>
 
 <script type="module">
 import { db } from "./firebase.js";
@@ -144,11 +298,13 @@ import {
   escapeHtml,
   formatCurrency,
   formatWeekdayList,
+  apiFetch,
   getCheapestProductSupplier,
   getCurrentWeekdayKey,
   getEffectiveSupplierPurchaseCost,
   getEffectiveSupplierUnitCost,
   getPackageQuantity,
+  handleStockAutomationEvent,
   isSupplierOrderDueToday,
   isSupplierOrderFrequencyEnabled,
   isSupplierPromotionActive,
@@ -168,22 +324,36 @@ const purchaseProductSelect = document.getElementById("purchase-product");
 const purchaseSupplierSelect = document.getElementById("purchase-supplier");
 const purchaseDateInput = document.getElementById("purchase-date");
 const purchasePackagesInput = document.getElementById("purchase-packages");
+const purchaseUnitSelect = document.getElementById("purchase-unit");
 const purchasePriceInput = document.getElementById("purchase-price");
 const purchaseTotalInput = document.getElementById("purchase-total");
 const purchaseNoteInput = document.getElementById("purchase-note");
 const purchaseUpdateStockCheckbox = document.getElementById("purchase-update-stock");
 const purchaseStatus = document.getElementById("purchase-status");
 const adminWhatsappInput = document.getElementById("admin-whatsapp");
+const adminReminderReasonSelect = document.getElementById("admin-reminder-reason");
 const adminReminderPreviewInput = document.getElementById("admin-reminder-preview");
 const sendAdminReminderButton = document.getElementById("send-admin-reminder");
 const adminReminderStatus = document.getElementById("admin-reminder-status");
 const alertsLink = document.getElementById("alerts-link");
+const purchaseRegisterSection = document.getElementById("purchase-register-section");
+const purchaseHistoryList = document.getElementById("purchase-history-list");
+const dashboardLink = document.getElementById("dashboard-link");
+const adminReminderDescription = document.getElementById("admin-reminder-description");
 
 bindLogoutButton();
 
-const { profile } = await requireAuth();
+const { profile } = await requireAuth({ permission: "compras.verLista" });
 userInfo.textContent = describeProfile(profile);
 alertsLink.hidden = profile.tipo !== "admin";
+
+if (profile.tipo === "estoque") {
+  purchaseRegisterSection.hidden = true;
+  dashboardLink.hidden = true;
+  alertsLink.hidden = true;
+  adminReminderDescription.textContent = "Use esta area para sugerir compra ao admin antes do estoque chegar no mínimo ou quando houver necessidade antecipada.";
+  sendAdminReminderButton.textContent = "Sugerir compra ao admin";
+}
 
 let pedidos = [];
 let sugestoes = [];
@@ -194,7 +364,7 @@ const SYSTEM_SETTINGS_REF = doc(db, "configuracoes", "sistema");
 
 function buildMessage(pedido) {
   const lines = pedido.itens.map((item) => `- ${item.nome}: ${item.qtdCompra} embalagem(ns) | ${getTriggerLabel(item.gatilhos)}`);
-  return encodeURIComponent(["Pedido de reposicao:", "", ...lines].join("\n"));
+  return encodeURIComponent(["Pedido de reposição:", "", ...lines].join("\n"));
 }
 
 function getTodayDateValue(referenceDate = new Date()) {
@@ -209,11 +379,48 @@ function getMonthKey(value) {
   return raw.length >= 7 ? raw.slice(0, 7) : "";
 }
 
+function normalizePurchaseUnit(value) {
+  const normalized = String(value || "Caixa").trim().toLowerCase();
+  const units = {
+    caixa: "Caixa",
+    unidade: "Unidade",
+    un: "Unidade",
+    fardo: "Fardo",
+    pacote: "Pacote",
+    kg: "Kg",
+    quilo: "Kg",
+    litro: "Litro",
+    l: "Litro",
+    galao: "Galão",
+    "galão": "Galão",
+    grade: "Grade"
+  };
+
+  return units[normalized] || "Caixa";
+}
+
+function pluralizePurchaseUnit(unit, quantity) {
+  const label = normalizePurchaseUnit(unit);
+  const singular = Math.abs(toNumber(quantity, 0)) <= 1;
+  const plurals = {
+    Caixa: "caixas",
+    Unidade: "unidades",
+    Fardo: "fardos",
+    Pacote: "pacotes",
+    Kg: "kg",
+    Litro: "litros",
+    "Galão": "galões",
+    Grade: "grades"
+  };
+
+  return singular ? label.toLowerCase() : (plurals[label] || `${label.toLowerCase()}s`);
+}
+
 function getStoredAdminWhatsapp() {
   try {
     return window.localStorage.getItem(ADMIN_REMINDER_PHONE_KEY) || "";
   } catch (error) {
-    console.warn("Nao foi possivel ler o WhatsApp do admin salvo.", error);
+    console.warn("Não foi possível ler o WhatsApp do admin salvo.", error);
     return "";
   }
 }
@@ -222,7 +429,7 @@ function storeAdminWhatsapp(value) {
   try {
     window.localStorage.setItem(ADMIN_REMINDER_PHONE_KEY, value);
   } catch (error) {
-    console.warn("Nao foi possivel salvar o WhatsApp do admin.", error);
+    console.warn("Não foi possível salvar o WhatsApp do admin.", error);
   }
 }
 
@@ -239,7 +446,7 @@ async function loadSharedAdminWhatsapp() {
       };
     }
   } catch (error) {
-    console.warn("Nao foi possivel carregar o WhatsApp compartilhado do admin.", error);
+    console.warn("Não foi possível carregar o WhatsApp compartilhado do admin.", error);
   }
 
   const localValue = normalizePhone(getStoredAdminWhatsapp());
@@ -265,7 +472,7 @@ async function persistAdminWhatsapp(value) {
       source: "sistema"
     };
   } catch (error) {
-    console.warn("Nao foi possivel salvar o WhatsApp do admin no sistema. Mantendo fallback local.", error);
+    console.warn("Não foi possível salvar o WhatsApp do admin no sistema. Mantendo fallback local.", error);
     return {
       value: normalized,
       source: normalized ? "navegador" : ""
@@ -281,13 +488,15 @@ function getTriggerLabel(triggers = []) {
   return triggers.join(" + ");
 }
 
-function buildAdminReminderMessage(groups) {
+function buildAdminReminderMessageText(groups) {
+  const reminderReason = String(adminReminderReasonSelect.value || "").trim() || "Reposição urgente";
   const todayLabel = new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "full"
   }).format(new Date());
   const lines = [
     "Lembrete de compras e pedidos",
     todayLabel,
+    `Motivo: ${reminderReason}`,
     ""
   ];
 
@@ -301,7 +510,7 @@ function buildAdminReminderMessage(groups) {
     lines.push("");
   });
 
-  return encodeURIComponent(lines.join("\n").trim());
+  return lines.join("\n").trim();
 }
 
 function updateAdminReminderPreview() {
@@ -313,7 +522,7 @@ function updateAdminReminderPreview() {
 
   const supplierCount = pedidos.length;
   const itemCount = pedidos.reduce((sum, group) => sum + group.itens.length, 0);
-  adminReminderPreviewInput.value = `${itemCount} item(ns) em ${supplierCount} fornecedor(es)`;
+  adminReminderPreviewInput.value = `${adminReminderReasonSelect.value} | ${itemCount} item(ns) em ${supplierCount} fornecedor(es)`;
   sendAdminReminderButton.disabled = false;
 }
 
@@ -353,9 +562,16 @@ function updatePurchaseTotalPreview() {
 
 function applySelectedSupplierPrice() {
   const selectedSupplier = getSelectedPurchaseSupplier();
+  const selectedProduct = getProductById(purchaseProductSelect.value);
   purchasePriceInput.value = selectedSupplier
     ? String(getEffectiveSupplierPurchaseCost(selectedSupplier).toFixed(2))
     : "0";
+  purchaseUnitSelect.value = normalizePurchaseUnit(
+    selectedSupplier?.unidadeCompra
+      || selectedProduct?.unidadeCompra
+      || selectedProduct?.purchase_unit
+      || "Caixa"
+  );
   updatePurchaseTotalPreview();
 }
 
@@ -417,7 +633,7 @@ function renderOrders(items) {
   updateAdminReminderPreview();
 
   if (!items.length) {
-    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposicao ou pedido programado neste momento.</div>';
+    list.innerHTML = '<div class="empty-state">Nenhum item precisa de reposição ou pedido programado neste momento.</div>';
     return;
   }
 
@@ -427,7 +643,7 @@ function renderOrders(items) {
     const supplierColumns = item.fornecedores.length
       ? item.fornecedores.map((supplier) => `
         <div class="supplier-price-card${supplier.recomendado ? " best" : ""}">
-          <strong>${escapeHtml(supplier.nome || "Fornecedor nao definido")}</strong>
+          <strong>${escapeHtml(supplier.nome || "Fornecedor não definido")}</strong>
           <span class="supplier-price">${formatCurrency(getEffectiveSupplierUnitCost(supplier))}</span>
           <p class="muted">${escapeHtml(`Embalagem ${formatCurrency(getEffectiveSupplierPurchaseCost(supplier))} | ${supplier.conversao} ${supplier.unidadeUso} | ${supplier.qtdCompra} embalagem(ns)`)} </p>
           <p class="muted">${escapeHtml(
@@ -446,7 +662,7 @@ function renderOrders(items) {
 
     article.innerHTML = `
       <h3>${escapeHtml(item.nome)}</h3>
-      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Minimo ${item.minimo} | Maximo ${item.maximo} | Pedido sugerido ${item.qtdCompra} embalagem(ns) | Motivo ${getTriggerLabel(item.gatilhos)}`)}</p>
+      <p class="muted">${escapeHtml(`Estoque atual ${item.quantidade} | Mínimo ${item.minimo} | Máximo ${item.maximo} | Pedido sugerido ${item.qtdCompra} embalagem(ns) | Motivo ${getTriggerLabel(item.gatilhos)}`)}</p>
       <div class="supplier-price-grid">${supplierColumns}</div>
     `;
 
@@ -496,7 +712,7 @@ function buildOrderSuggestions() {
     }
 
     if (estoqueMinimoAtingido) {
-      gatilhos.push("estoque minimo");
+      gatilhos.push("estoque mínimo");
     }
 
     const sortedSuppliers = productSuppliers.map((supplier, index) => {
@@ -523,7 +739,7 @@ function buildOrderSuggestions() {
 
     if (!grouped.has(key)) {
       grouped.set(key, {
-        fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor nao informado",
+        fornecedor: supplierChoice?.nome || item.fornecedorNome || item.fornecedor || "Fornecedor não informado",
         telefone: supplierChoice?.telefone || "",
         telefoneNormalizado: supplierChoice?.telefoneNormalizado || normalizePhone(supplierChoice?.telefone || ""),
         itens: []
@@ -531,6 +747,7 @@ function buildOrderSuggestions() {
     }
 
     grouped.get(key).itens.push({
+      productId: item.id,
       nome: item.nome,
       qtdCompra,
       gatilhos
@@ -558,6 +775,43 @@ function buildOrderSuggestions() {
   renderOrders(sugestoes);
 }
 
+function renderMonthlyPurchaseHistory(purchases = []) {
+  purchaseHistoryList.innerHTML = "";
+
+  if (!purchases.length) {
+    purchaseHistoryList.innerHTML = '<div class="empty-state">Nenhuma compra mensal registrada ainda.</div>';
+    return;
+  }
+
+  purchases.slice(0, 12).forEach((purchase) => {
+    const quantity = Math.max(0, toNumber(purchase.quantidadeEmbalagens, 0));
+    const unit = purchase.unidadeCompra || "Caixa";
+    const article = document.createElement("article");
+    article.className = "card purchase-history-item";
+    article.innerHTML = `
+      <div class="summary-line">
+        <strong>${escapeHtml(purchase.produtoNome || "Produto")}</strong>
+        <span>${formatCurrency(toNumber(purchase.valorTotal, 0))}</span>
+      </div>
+      <p class="muted">${escapeHtml(`${quantity.toLocaleString("pt-BR")} ${pluralizePurchaseUnit(unit, quantity)} | ${purchase.fornecedorNome || "Fornecedor não informado"} | ${purchase.dataCompra || "-"}`)}</p>
+    `;
+    purchaseHistoryList.appendChild(article);
+  });
+}
+
+async function loadMonthlyPurchaseHistory() {
+  const snapshot = await getDocs(collection(db, "comprasMensais"));
+  const purchases = snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .sort((left, right) => {
+      const leftDate = String(left.criadoEm?.seconds || left.dataCompra || "");
+      const rightDate = String(right.criadoEm?.seconds || right.dataCompra || "");
+      return rightDate.localeCompare(leftDate);
+    });
+
+  renderMonthlyPurchaseHistory(purchases);
+}
+
 async function loadPageData(options = {}) {
   const { preserveProduct = true, preserveSupplier = true } = options;
   const previousProductId = preserveProduct ? purchaseProductSelect.value : "";
@@ -583,11 +837,12 @@ async function loadPageData(options = {}) {
   populatePurchaseProductOptions(previousProductId);
   syncPurchaseSupplierOptions(previousSupplierId);
   buildOrderSuggestions();
+  await loadMonthlyPurchaseHistory();
 }
 
 sendButton.addEventListener("click", () => {
   if (!pedidos.length) {
-    setStatus("status", "Nao ha pedidos pendentes para enviar.", "info");
+    setStatus("status", "Não há pedidos pendentes para enviar.", "info");
     return;
   }
 
@@ -617,7 +872,7 @@ sendButton.addEventListener("click", () => {
     return;
   }
 
-  setStatus("status", "Nenhum pedido foi enviado porque faltam telefones validos.", "error");
+  setStatus("status", "Nenhum pedido foi enviado porque faltam telefones válidos.", "error");
 });
 
 adminWhatsappInput.addEventListener("change", () => {
@@ -625,24 +880,47 @@ adminWhatsappInput.addEventListener("change", () => {
   adminWhatsappInput.value = normalized;
 });
 
-sendAdminReminderButton.addEventListener("click", () => {
+sendAdminReminderButton.addEventListener("click", async () => {
   if (!pedidos.length) {
-    setStatus("admin-reminder-status", "Nao ha lembretes pendentes para enviar ao admin.", "info");
+    setStatus("admin-reminder-status", "Não há sugestões pendentes para enviar ao admin.", "info");
     return;
   }
 
   const phone = normalizePhone(adminWhatsappInput.value);
 
   if (!phone) {
-    setStatus("admin-reminder-status", "Informe o WhatsApp do admin para enviar o lembrete.", "error");
+    setStatus("admin-reminder-status", "Informe o WhatsApp do admin para enviar a sugestão.", "error");
     return;
   }
 
-  persistAdminWhatsapp(phone).catch(() => null);
-  const url = `https://wa.me/${phone}?text=${buildAdminReminderMessage(pedidos)}`;
+  sendAdminReminderButton.disabled = true;
+  const reason = String(adminReminderReasonSelect.value || "").trim() || "Reposição urgente";
+  const message = buildAdminReminderMessageText(pedidos);
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   window.open(url, "_blank", "noopener,noreferrer");
-  setStatus("admin-reminder-status", "Lembrete do admin aberto no WhatsApp.", "success");
+
+  try {
+    await persistAdminWhatsapp(phone);
+    await apiFetch("/api/admin-alerts/manual-suggestion", {
+      method: "POST",
+      body: JSON.stringify({
+        recipient: phone,
+        reason,
+        message,
+        groups: pedidos
+      })
+    });
+    setStatus("admin-reminder-status", "WhatsApp aberto e sugestão registrada no histórico.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus("admin-reminder-status", "WhatsApp aberto, mas não foi possível registrar a sugestão no sistema.", "error");
+  } finally {
+    sendAdminReminderButton.disabled = false;
+    updateAdminReminderPreview();
+  }
 });
+
+adminReminderReasonSelect.addEventListener("change", updateAdminReminderPreview);
 
 purchaseProductSelect.addEventListener("change", () => syncPurchaseSupplierOptions());
 purchaseSupplierSelect.addEventListener("change", applySelectedSupplierPrice);
@@ -657,6 +935,7 @@ purchaseForm.addEventListener("submit", async (event) => {
   const supplier = getSelectedPurchaseSupplier();
   const dataCompra = purchaseDateInput.value || getTodayDateValue();
   const quantidadeEmbalagens = Math.max(1, toNumber(purchasePackagesInput.value, 1));
+  const unidadeCompra = normalizePurchaseUnit(purchaseUnitSelect.value);
   const valorEmbalagem = Math.max(0, toNumber(purchasePriceInput.value, 0));
   const observacao = purchaseNoteInput.value.trim();
 
@@ -686,6 +965,7 @@ purchaseForm.addEventListener("submit", async (event) => {
       dataCompra,
       mesReferencia: getMonthKey(dataCompra),
       quantidadeEmbalagens,
+      unidadeCompra,
       quantidadeUnidades,
       conversao: supplier.conversao,
       unidadeUso: supplier.unidadeUso,
@@ -705,10 +985,45 @@ purchaseForm.addEventListener("submit", async (event) => {
     });
 
     if (atualizarEstoque) {
+      const previousStock = toNumber(product.quantidade, 0);
+      const currentStock = Math.max(0, previousStock + quantidadeUnidades);
       await updateDoc(doc(db, "estoque", product.id), {
-        quantidade: Math.max(0, toNumber(product.quantidade, 0) + quantidadeUnidades),
+        quantidade: currentStock,
         atualizadoEm: serverTimestamp()
       });
+
+      const automationEvents = [
+        handleStockAutomationEvent({
+          type: "stockIn",
+          productName: product.nome,
+          quantity: quantidadeEmbalagens,
+          unit: unidadeCompra,
+          previousStock,
+          currentStock,
+          supplier: supplier.nome,
+          responsibleUser: profile.nome || profile.email || "Usuário",
+          userId: profile.id || profile.userId || "",
+          empresaId: profile.empresaId || "",
+          date: new Date(`${dataCompra}T12:00:00`)
+        })
+      ];
+
+      if (currentStock <= Math.max(0, toNumber(product.minimo, 0))) {
+        automationEvents.push(handleStockAutomationEvent({
+          type: "lowStock",
+          productName: product.nome,
+          currentStock,
+          minStock: product.minimo,
+          supplier: supplier.nome,
+          recommendation: "Comprar hoje",
+          responsibleUser: profile.nome || profile.email || "Usuário",
+          userId: profile.id || profile.userId || "",
+          empresaId: profile.empresaId || "",
+          date: new Date(`${dataCompra}T12:00:00`)
+        }));
+      }
+
+      await Promise.allSettled(automationEvents);
     }
 
     await addDoc(collection(db, "historico"), {
@@ -717,6 +1032,7 @@ purchaseForm.addEventListener("submit", async (event) => {
       itemNome: product.nome,
       fornecedorNome: supplier.nome,
       totalCompra: valorTotal,
+      unidadeCompra,
       responsavel: profile.email,
       data: serverTimestamp()
     });
@@ -738,7 +1054,7 @@ purchaseForm.addEventListener("submit", async (event) => {
     await loadPageData({ preserveProduct: true, preserveSupplier: true });
   } catch (error) {
     console.error(error);
-    setStatus("purchase-status", error.message || "Nao foi possivel registrar a compra.", "error");
+    setStatus("purchase-status", error.message || "Não foi possível registrar a compra.", "error");
   }
 });
 
@@ -783,4 +1099,3 @@ await loadPageData({ preserveProduct: false, preserveSupplier: false });
 </footer>
 </body>
 </html>
-
