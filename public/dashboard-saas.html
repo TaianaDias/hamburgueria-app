@@ -426,9 +426,6 @@ document.getElementById("user-info").textContent = profile.nome || profile.email
 const dashboardUserName = document.getElementById("dashboard-user-name");
 const dashboardUserRole = document.getElementById("dashboard-user-role");
 const dashboardUserInitials = document.getElementById("dashboard-user-initials");
-const dashboardAlertButton = document.getElementById("dashboard-alert-button");
-const dashboardAlertDrawerBackdrop = document.getElementById("dashboard-alert-drawer-backdrop");
-const dashboardAlertDrawerClose = document.getElementById("dashboard-alert-drawer-close");
 const dashboardAlertDrawerList = document.getElementById("dashboard-alert-drawer-list");
 const dashboardActionDialog = document.getElementById("dashboard-action-dialog");
 const dashboardSearchDialog = document.getElementById("dashboard-search-dialog");
@@ -547,99 +544,8 @@ if (mobileProfileButton) {
   mobileProfileButton.textContent = initials || "U";
 }
 
-const mobileMoreButton = document.getElementById("dashboard-mobile-more");
-const mobileMenuButton = document.getElementById("dashboard-mobile-menu");
-const mobileDrawerBackdrop = document.getElementById("dashboard-mobile-drawer-backdrop");
-const mobileDrawerClose = document.getElementById("dashboard-mobile-drawer-close");
-
-function toggleMobileDrawer(open) {
-  if (!mobileDrawerBackdrop || !mobileMoreButton) {
-    return;
-  }
-
-  mobileDrawerBackdrop.hidden = !open;
-  document.body.classList.toggle("dashboard-mobile-drawer-open", open);
-  mobileMoreButton.setAttribute("aria-expanded", String(open));
-}
-
-try {
-  if (window.matchMedia("(min-width: 1025px)").matches && localStorage.getItem("dashboard-sidebar-collapsed") === "1") {
-    document.body.classList.add("dashboard-sidebar-collapsed");
-  }
-} catch (_) {
-  /* ignore */
-}
-
-mobileMoreButton?.addEventListener("click", () => {
-  toggleMobileDrawer(mobileDrawerBackdrop?.hidden !== false);
-});
-mobileMenuButton?.addEventListener("click", () => {
-  if (window.matchMedia("(min-width: 1025px)").matches) {
-    document.body.classList.toggle("dashboard-sidebar-collapsed");
-    try {
-      localStorage.setItem(
-        "dashboard-sidebar-collapsed",
-        document.body.classList.contains("dashboard-sidebar-collapsed") ? "1" : "0"
-      );
-    } catch (_) {
-      /* ignore */
-    }
-    return;
-  }
-  toggleMobileDrawer(mobileDrawerBackdrop?.hidden !== false);
-});
-mobileDrawerClose?.addEventListener("click", () => toggleMobileDrawer(false));
-mobileDrawerBackdrop?.addEventListener("click", (event) => {
-  if (event.target === mobileDrawerBackdrop) {
-    toggleMobileDrawer(false);
-  }
-});
-document.querySelectorAll("#dashboard-mobile-drawer .dashboard-mobile-drawer-grid a[href]").forEach((link) => {
-  link.addEventListener("click", () => toggleMobileDrawer(false));
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && mobileDrawerBackdrop?.hidden === false) {
-    toggleMobileDrawer(false);
-  }
-  if (event.key === "Escape" && dashboardAlertDrawerBackdrop?.hidden === false) {
-    toggleAlertDrawer(false);
-  }
-});
-
-function toggleAlertDrawer(open) {
-  if (!dashboardAlertDrawerBackdrop || !dashboardAlertButton) {
-    return;
-  }
-
-  dashboardAlertDrawerBackdrop.hidden = !open;
-  document.body.classList.toggle("premium-alert-drawer-open", open);
-  dashboardAlertButton.setAttribute("aria-expanded", String(open));
-}
-
-dashboardAlertButton?.addEventListener("click", () => {
-  toggleAlertDrawer(dashboardAlertDrawerBackdrop?.hidden !== false);
-});
-dashboardAlertDrawerClose?.addEventListener("click", () => toggleAlertDrawer(false));
-dashboardAlertDrawerBackdrop?.addEventListener("click", (event) => {
-  if (event.target === dashboardAlertDrawerBackdrop) {
-    toggleAlertDrawer(false);
-  }
-});
-document.getElementById("dashboard-quick-action-button")?.addEventListener("click", () => {
-  if (typeof dashboardActionDialog?.showModal === "function") {
-    dashboardActionDialog.showModal();
-  } else {
-    dashboardActionDialog?.setAttribute("open", "");
-  }
-});
-document.getElementById("dashboard-search-button")?.addEventListener("click", () => {
-  if (typeof dashboardSearchDialog?.showModal === "function") {
-    dashboardSearchDialog.showModal();
-  } else {
-    dashboardSearchDialog?.setAttribute("open", "");
-  }
-  setTimeout(() => document.getElementById("dashboard-global-search")?.focus(), 80);
-});
+/* Menu mobile, gaveta de alertas, Ctrl+K e sidebar: premium-shell.js (bindApprovedChrome).
+   Evitar duplicar listeners aqui — dois toggles seguidos fechavam o drawer na hora e anulavam o menu. */
 
 const state = {
   estoque: [],
