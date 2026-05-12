@@ -8,7 +8,9 @@ import {
   collection,
   doc,
   getDoc,
-  serverTimestamp
+  getDocs,
+  serverTimestamp,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 function resolveApiBaseUrl() {
@@ -257,6 +259,244 @@ export function formatFichaTecnica(ingredientes) {
       unidade
     };
   });
+}
+
+/**
+ * Ingredientes estruturados no documento ou fallback do texto em `fichaTecnicaObservacoes`.
+ * @param {Record<string, unknown>} product
+ * @returns {{ id: string, nome: string, qtd: number, unidade: string }[]}
+ */
+export function getFichaTecnicaIngredientesArray(product) {
+  const raw = product?.fichaTecnicaIngredientes;
+  if (Array.isArray(raw) && raw.length) {
+    const cleaned = raw
+      .filter((row) => row && typeof row === "object")
+      .map((row) => ({
+        id: String(row.id || ""),
+        nome: String(row.nome || "").trim(),
+        qtd: Math.max(0, toNumber(row.qtd, 0)),
+        unidade: String(row.unidade || "un").trim() || "un",
+        insumoId: String(row.insumoId || row.insumo_id || "").trim()
+      }))
+      .filter((row) => row.nome || row.insumoId);
+    if (cleaned.length) {
+      return cleaned;
+    }
+  }
+  return formatFichaTecnica(product?.fichaTecnicaObservacoes || "");
+}
+
+/**
+ * Preenche `insumoId` em cada linha da ficha quando o nome coincide com um item do catálogo.
+ * @param {Array<Record<string, unknown>>} ingredientes
+ * @param {Array<Record<string, unknown>>} produtos
+ */
+export function linkFichaIngredientesToInsumoIds(ingredientes, produtos = []) {
+  const list = Array.isArray(ingredientes) ? ingredientes.map((row) => ({ ...row })) : [];
+  const byName = new Map();
+  for (const p of produtos) {
+    const key = normalizeText(p?.nome || "");
+    if (key && !byName.has(key)) {
+      byName.set(key, String(p.id || ""));
+    }
+  }
+  return list.map((row) => {
+    const nome = String(row?.nome || "").trim();
+    const existing = String(row?.insumoId || row?.insumo_id || "").trim();
+    const fromNome = nome ? byName.get(normalizeText(nome)) : "";
+    const insumoId = existing || fromNome || "";
+    return { ...row, nome, insumoId };
+  });
+}
+
+/**
+ * Converte fichas ainda só em texto (`fichaTecnicaObservacoes`) para `fichaTecnicaIngredientes`.
+ * @param {{ dryRun?: boolean }} [options]
+ * @returns {Promise<{ examined: number, updated: number, skipped: number, errors: { id: string, message: string }[] }>}
+ */
+export async function migrateFichaTecnicaFirestore(options = {}) {
+  const dryRun = Boolean(options.dryRun);
+  const snapshot = await getDocs(collection(db, "estoque"));
+  const catalog = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  const result = { examined: 0, updated: 0, skipped: 0, wouldUpdate: 0, errors: [] };
+  let batch = writeBatch(db);
+  let pending = 0;
+
+  async function flush() {
+    if (!pending) {
+      return;
+    }
+    await batch.commit();
+    batch = writeBatch(db);
+    pending = 0;
+  }
+
+  for (const docSnap of snapshot.docs) {
+    result.examined += 1;
+    try {
+      const data = docSnap.data();
+      const existing = data.fichaTecnicaIngredientes;
+      if (
+        Array.isArray(existing) &&
+        existing.length > 0 &&
+        existing.every(
+          (row) =>
+            row &&
+            typeof row === "object" &&
+            (String(row.nome || "").trim() || String(row.insumoId || row.insumo_id || "").trim())
+        )
+      ) {
+        result.skipped += 1;
+        continue;
+      }
+      const obs = String(data.fichaTecnicaObservacoes || "").trim();
+      if (!obs) {
+        result.skipped += 1;
+        continue;
+      }
+      const parsed = linkFichaIngredientesToInsumoIds(formatFichaTecnica(obs), catalog);
+      if (!parsed.length) {
+        result.skipped += 1;
+        continue;
+      }
+      if (dryRun) {
+        result.wouldUpdate += 1;
+        continue;
+      }
+      batch.update(docSnap.ref, {
+        fichaTecnicaIngredientes: parsed,
+        fichaTecnicaMigradaEm: serverTimestamp()
+      });
+      pending += 1;
+      result.updated += 1;
+      if (pending >= 450) {
+        await flush();
+      }
+    } catch (error) {
+      result.errors.push({ id: docSnap.id, message: error?.message || String(error) });
+    }
+  }
+
+  await flush();
+  return result;
+}
+
+/**
+ * Índices para cruzar linhas da ficha com itens do estoque (nome normalizado e id do documento).
+ * @param {Array<Record<string, unknown>>} produtos
+ * @returns {{ byName: Map<string, Record<string, unknown>>, byId: Map<string, Record<string, unknown>> }}
+ */
+export function buildStockCatalogIndexes(produtos = []) {
+  const list = Array.isArray(produtos) ? produtos : [];
+  const byName = new Map();
+  const byId = new Map();
+  for (const p of list) {
+    const key = normalizeText(p?.nome || "");
+    if (key && !byName.has(key)) {
+      byName.set(key, p);
+    }
+    if (p?.id) {
+      byId.set(String(p.id), p);
+    }
+  }
+  return { byName, byId };
+}
+
+/**
+ * CMV da receita (Σ qtd × custo unitário) e margem bruta vs `precoVenda`.
+ * @param {Record<string, unknown>} product
+ * @param {{ byName: Map<string, unknown>, byId: Map<string, unknown> }} indexes
+ * @returns {{ status: "no_price"|"no_recipe"|"partial"|"ok", precoVenda: number, custoReceita: number, marginPct: number|null, missingIngredients: string[] }}
+ */
+export function getProductGrossMarginSnapshot(product, indexes) {
+  const { byName, byId } = indexes;
+  const precoVenda = toNumber(
+    product?.precoVenda ?? product?.preco_venda ?? product?.precoCardapio ?? product?.preco_cardapio,
+    0
+  );
+  if (precoVenda <= 0) {
+    return {
+      status: "no_price",
+      precoVenda: 0,
+      custoReceita: 0,
+      marginPct: null,
+      missingIngredients: []
+    };
+  }
+
+  const ingredientes = getFichaTecnicaIngredientesArray(product);
+  if (!ingredientes.length) {
+    return {
+      status: "no_recipe",
+      precoVenda,
+      custoReceita: 0,
+      marginPct: null,
+      missingIngredients: []
+    };
+  }
+
+  let custoReceita = 0;
+  const missingIngredients = [];
+  for (const ing of ingredientes) {
+    const idKey = String(ing.insumoId || ing.insumo_id || "").trim();
+    let match = null;
+    if (idKey && byId.has(idKey)) {
+      match = byId.get(idKey);
+    } else if (ing.nome) {
+      match = byName.get(normalizeText(ing.nome));
+    }
+    if (!match) {
+      missingIngredients.push(String(ing.nome || "").trim() || idKey || "?");
+      continue;
+    }
+    custoReceita += toNumber(getUnitCost(match), 0) * Math.max(0, toNumber(ing.qtd, 0));
+  }
+
+  const marginPct = precoVenda > 0 ? ((precoVenda - custoReceita) / precoVenda) * 100 : null;
+  const status = missingIngredients.length ? "partial" : "ok";
+  return { status, precoVenda, custoReceita, marginPct, missingIngredients };
+}
+
+/**
+ * Custo da receita (soma qtd × custo unitário do insumo) e margem vs `precoVenda`.
+ * MVP: cruza insumos por `insumoId` (se existir) ou por `normalizeText(nome)`.
+ *
+ * @param {Array<Record<string, unknown>>} produtos
+ * @param {{ minMarginPct?: number }} [options]
+ */
+export function calculateProductMargins(produtos = [], options = {}) {
+  const minMarginPct = toNumber(options.minMarginPct, 30);
+  const list = Array.isArray(produtos) ? produtos : [];
+  const indexes = buildStockCatalogIndexes(list);
+  const results = [];
+  const belowThreshold = [];
+
+  for (const product of list) {
+    const snap = getProductGrossMarginSnapshot(product, indexes);
+    if (snap.status === "no_price" || snap.status === "no_recipe") {
+      continue;
+    }
+
+    const row = {
+      productId: product.id || "",
+      nome: String(product.nome || "Produto"),
+      precoVenda: snap.precoVenda,
+      custoReceita: snap.custoReceita,
+      marginPct: snap.marginPct,
+      missingIngredients: snap.missingIngredients,
+      alert: snap.marginPct != null && snap.marginPct < minMarginPct
+    };
+    results.push(row);
+    if (row.alert) {
+      belowThreshold.push(row);
+    }
+  }
+
+  return {
+    results,
+    belowThreshold,
+    alertCount: belowThreshold.length
+  };
 }
 
 export function normalizeDocumentNumber(value) {

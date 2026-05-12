@@ -1,18 +1,34 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#070707">
-<link rel="icon" href="favicon-32.png" type="image/png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="assets/app-dashboard.min.css">
-<script src="premium-shell.js" defer></script>
-<title>Inventario | Hamburgueria</title>
-</head>
-<body class="premium-app-body dashboard-mobile-fix dashboard-approved-real">
-<header class="topbar" aria-label="Topo principal">
+/**
+ * Aplica o layout aprovado (topbar + sidebar + main + drawers) às páginas operacionais.
+ * Uso: node scripts/apply-approved-shell.mjs
+ */
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const publicDir = join(__dirname, "..", "public");
+
+const TARGETS = [
+  "estoque.html",
+  "compras.html",
+  "fornecedores.html",
+  "desperdicio.html",
+  "alertas-reposicao.html",
+  "reposicao-producao.html",
+  "dashboard-compras.html",
+  "funcionarios.html",
+  "inventario.html",
+  "operacao.html",
+  "producao-etiquetas.html",
+  "relatorio-diario.html",
+  "impressora.html",
+  "saas.html",
+  "whatsapp-ia.html",
+  "treinamento.html"
+];
+
+const SHELL_HEADER_AND_SIDEBAR = `<header class="topbar" aria-label="Topo principal">
   <button id="dashboard-mobile-menu" class="top-menu" type="button" aria-label="Abrir menu">
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
   </button>
@@ -80,43 +96,9 @@
     <span id="user-info" hidden></span>
   </aside>
 
-<main class="main approved-main">
-<section class="page">
-  <header class="page-header">
-    <div>
-      <p class="eyebrow">Conferencia fisica</p>
-      <h1>Inventario</h1>
-</div>
-    <div class="actions">
-      <a class="button secondary" href="index.html">Voltar</a>
-    </div>
-  </header>
+`;
 
-  <section class="panel">
-    <h3>Nova contagem</h3>
-    <form id="inventory-form" class="form-grid" style="margin-top: 16px;">
-      <div class="field-group">
-        <label for="product">Produto</label>
-        <select id="product"></select>
-      </div>
-      <div class="field-group">
-        <label for="physical">Quantidade fisica</label>
-        <input id="physical" type="number" min="0" step="0.01" value="0">
-      </div>
-      <div class="field-group">
-        <label for="reason">Justificativa</label>
-        <input id="reason" placeholder="Contagem mensal, ajuste, quebra...">
-      </div>
-      <button type="submit">Registrar divergencia</button>
-    </form>
-    <div id="status" class="status info" hidden></div>
-  </section>
-
-  <section class="panel" style="margin-top: 20px;">
-    <h3>Histórico de inventario</h3>
-    <div id="inventory-list" class="list" style="margin-top: 16px;"></div>
-  </section>
-</section>
+const SHELL_FOOTER_CHROME = `</section>
   </main>
 </div>
 
@@ -207,71 +189,104 @@
     </div>
   </section>
 </div>
+`;
 
-<script type="module">
-import { db } from "./firebase.js";
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus, toNumber } from "./app.js";
-import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+function patchHead(html) {
+  let out = html;
+  const hasDashboardBundle = out.includes("app-dashboard.min.css");
+  const hasLegacyApprovedStack =
+    out.includes("dashboard-approved-real.css") && out.includes("dashboard-saas-page.css");
 
-bindLogoutButton();
-const { profile } = await requireAuth({ permission: "estoque.historico" });
-document.getElementById("user-info").textContent = describeProfile(profile);
-
-const productSelect = document.getElementById("product");
-let estoque = [];
-
-async function loadProducts() {
-  const snapshot = await getDocs(collection(db, "estoque"));
-  estoque = snapshot.docs.map((document) => ({ id: document.id, ...document.data() }))
-    .sort((left, right) => String(left.nome || "").localeCompare(String(right.nome || ""), "pt-BR"));
-  productSelect.innerHTML = estoque.map((item) => `<option value="${item.id}">${escapeHtml(item.nome)} | sistema: ${toNumber(item.quantidade, 0)}</option>`).join("");
-}
-
-async function loadInventory() {
-  const snapshot = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.inventarios), orderBy("criadoEm", "desc")));
-  const list = document.getElementById("inventory-list");
-  const items = snapshot.docs.slice(0, 10).map((document) => ({ id: document.id, ...document.data() }));
-  list.innerHTML = items.length ? "" : '<div class="empty-state">Nenhuma contagem registrada.</div>';
-  items.forEach((item) => {
-    const article = document.createElement("article");
-    article.className = "card";
-    article.innerHTML = `
-      <div class="summary-line">
-        <strong>${escapeHtml(item.produtoNome || "Produto")}</strong>
-        <span>Divergencia: ${toNumber(item.divergencia, 0)}</span>
-      </div>
-      <p class="muted">Sistema: ${toNumber(item.quantidadeSistema, 0)} | Fisico: ${toNumber(item.quantidadeFisica, 0)} | ${escapeHtml(item.justificativa || "Sem justificativa")}</p>
-    `;
-    list.appendChild(article);
-  });
-}
-
-document.getElementById("inventory-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const product = estoque.find((item) => item.id === productSelect.value);
-  if (!product) {
-    setStatus("status", "Selecione um produto.", "error");
-    return;
+  if (!hasDashboardBundle && !hasLegacyApprovedStack) {
+    if (out.includes("assets/app-core.min.css")) {
+      out = out.replace(
+        '<link rel="stylesheet" href="assets/app-core.min.css">',
+        '<link rel="stylesheet" href="assets/app-dashboard.min.css">'
+      );
+    } else {
+      out = out.replace(
+        /<link rel="stylesheet" href="style\.css">\s*\n<link rel="stylesheet" href="style-legacy\.css">/,
+        '<link rel="stylesheet" href="assets/app-dashboard.min.css">'
+      );
+      if (!out.includes("app-dashboard.min.css") && out.includes('<link rel="stylesheet" href="style.css">')) {
+        out = out.replace(
+          /<link rel="stylesheet" href="style\.css">/,
+          '<link rel="stylesheet" href="assets/app-dashboard.min.css">'
+        );
+      }
+    }
   }
-  const physical = Math.max(0, toNumber(document.getElementById("physical").value, 0));
-  const systemQty = toNumber(product.quantidade, 0);
-  await addDoc(collection(db, OPERATIONAL_COLLECTIONS.inventarios), {
-    produtoId: product.id,
-    produtoNome: product.nome,
-    quantidadeSistema: systemQty,
-    quantidadeFisica: physical,
-    divergencia: physical - systemQty,
-    justificativa: document.getElementById("reason").value.trim(),
-    responsavel: profile.email,
-    criadoEm: serverTimestamp()
-  });
-  setStatus("status", "Contagem registrada. O ajuste de saldo deve ser aprovado pelo admin.", "success");
-  await loadInventory();
-});
+  out = out.replace(/<meta name="theme-color" content="#111827">/g, '<meta name="theme-color" content="#070707">');
+  out = out.replace(
+    /<meta name="apple-mobile-web-app-title" content="BurgerOps">/g,
+    '<meta name="apple-mobile-web-app-title" content="Sistema Carioca\'s">'
+  );
+  return out;
+}
 
-await loadProducts();
-await loadInventory();
-</script>
-</body>
-</html>
+function patchBodyOpen(html) {
+  if (/<body class="[^"]*\bdashboard-approved-real\b/.test(html)) {
+    return html;
+  }
+  if (/<body>\s*/.test(html)) {
+    return html.replace("<body>", '<body class="premium-app-body dashboard-mobile-fix dashboard-approved-real">');
+  }
+  return html.replace(/<body class="([^"]*)">/, (_, cls) => {
+    if (cls.includes("dashboard-approved-real")) {
+      return `<body class="${cls}">`;
+    }
+    return `<body class="premium-app-body dashboard-mobile-fix dashboard-approved-real ${cls}">`;
+  });
+}
+
+function applyToFile(name) {
+  const path = join(publicDir, name);
+  if (!existsSync(path)) {
+    console.warn("Skip missing:", name);
+    return false;
+  }
+  let html = readFileSync(path, "utf8");
+  if (html.includes("approved-body-wrap")) {
+    console.log("Already wrapped:", name);
+    return false;
+  }
+
+  html = patchHead(html);
+  html = patchBodyOpen(html);
+
+  html = html.replace(/\s*<p id="user-info" class="muted"><\/p>\s*/g, "\n");
+
+  const mainRe = /<main class="page([^"]*)">/;
+  const m = mainRe.exec(html);
+  if (!m) {
+    console.warn("No <main class=\"page\"> in", name);
+    return false;
+  }
+  html = html.replace(mainRe, `${SHELL_HEADER_AND_SIDEBAR}<main class="main approved-main">\n<section class="page${m[1]}">`);
+
+  const scriptNeedle = "<script type=\"module\">";
+  const scriptIdx = html.indexOf(scriptNeedle);
+  if (scriptIdx === -1) {
+    console.warn("No module script in", name);
+    return false;
+  }
+  const beforeScript = html.slice(0, scriptIdx);
+  const mainCloseIdx = beforeScript.lastIndexOf("</main>");
+  if (mainCloseIdx === -1) {
+    console.warn("No </main> before module script in", name);
+    return false;
+  }
+  html = `${html.slice(0, mainCloseIdx)}\n${SHELL_FOOTER_CHROME}\n${html.slice(mainCloseIdx + "</main>".length)}`;
+
+  writeFileSync(path, html, "utf8");
+  console.log("OK:", name);
+  return true;
+}
+
+let n = 0;
+for (const f of TARGETS) {
+  if (applyToFile(f)) {
+    n++;
+  }
+}
+console.log("Done. Updated", n, "file(s).");

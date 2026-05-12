@@ -7,9 +7,7 @@
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="dashboard-saas-page.css">
-<link rel="stylesheet" href="dashboard-approved-real.css">
+<link rel="stylesheet" href="assets/app-dashboard.min.css">
 <script src="premium-shell.js" defer></script>
 <title>Padronização e Etiquetagem | Hamburgueria</title>
 </head>
@@ -448,7 +446,7 @@ document.getElementById("print-label-button").addEventListener("click", () => {
     return;
   }
   const printWindow = window.open("", "_blank", "width=420,height=520");
-  printWindow.document.write(`<html><head><title>Etiqueta</title><link rel="stylesheet" href="style.css"></head><body>${lastLabelHtml}</body></html>`);
+  printWindow.document.write(`<html><head><title>Etiqueta</title><link rel="stylesheet" href="assets/app-core.min.css"></head><body>${lastLabelHtml}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();

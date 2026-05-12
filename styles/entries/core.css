@@ -1,0 +1,3 @@
+/* Entrada de build: cascata base → legado. Saída: public/assets/app-core.min.css */
+@import "../../public/style.css";
+@import "../../public/style-legacy.css";

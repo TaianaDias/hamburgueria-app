@@ -1,4 +1,4 @@
-const CACHE_NAME = "hamburgueria-app-v19";
+const CACHE_NAME = "hamburgueria-app-v20";
 const APP_SHELL = [
   "/",
   "/login.html",
@@ -18,7 +18,9 @@ const APP_SHELL = [
   "/funcionarias.html",
   "/configuracoes.html",
   "/funcionarios.html",
-  "/style.css",
+  "/assets/app-core.min.css",
+  "/assets/app-dashboard.min.css",
+  "/assets/app-login.min.css",
   "/firebase.js",
   "/app.js",
   "/barcode-cache.js",

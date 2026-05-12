@@ -7,9 +7,7 @@
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="dashboard-saas-page.css">
-<link rel="stylesheet" href="dashboard-approved-real.css">
+<link rel="stylesheet" href="assets/app-dashboard.min.css">
 <script src="premium-shell.js" defer></script>
 <title>Configurar Impressora | Hamburgueria</title>
 </head>
@@ -285,7 +283,7 @@ document.getElementById("printer-form").addEventListener("submit", async (event)
 document.getElementById("test-print-button").addEventListener("click", () => {
   const label = document.getElementById("test-label").innerHTML;
   const printWindow = window.open("", "_blank", "width=420,height=520");
-  printWindow.document.write(`<html><head><title>Etiqueta teste</title><link rel="stylesheet" href="style.css"></head><body>${label}</body></html>`);
+  printWindow.document.write(`<html><head><title>Etiqueta teste</title><link rel="stylesheet" href="assets/app-core.min.css"></head><body>${label}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();

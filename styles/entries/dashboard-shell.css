@@ -1,0 +1,5 @@
+/* Shell operacional completo. Saída: public/assets/app-dashboard.min.css */
+@import "../../public/style.css";
+@import "../../public/style-legacy.css";
+@import "../../public/dashboard-saas-page.css";
+@import "../../public/dashboard-approved-real.css";

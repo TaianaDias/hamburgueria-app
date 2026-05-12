@@ -11,9 +11,7 @@
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="dashboard-saas-page.css">
-<link rel="stylesheet" href="dashboard-approved-real.css">
+<link rel="stylesheet" href="assets/app-dashboard.min.css">
 <script src="premium-shell.js" defer></script>
 <title>Dashboard SaaS | Sistema Carioca's</title>
 </head>
@@ -159,6 +157,18 @@
           <div id="kpi-warning" class="sc-value">0</div>
           <div class="sc-delta"><span class="delta-down" id="kpi-warning-note">Produtos vencidos ou perto do vencimento</span></div>
           <div class="sc-glow" style="background:var(--brand)"></div>
+        </article>
+
+        <article class="stat-card stat-card-financial-health dashboard-clickable-card" data-dashboard-target="estoque.html#saude-financeira" role="link" tabindex="0" aria-label="Abrir alertas de margem no estoque">
+          <div class="sc-top">
+            <div class="sc-label">Saúde financeira</div>
+            <div class="sc-icon" style="background:rgba(201,169,94,0.18)">
+              <svg viewBox="0 0 18 18" fill="none" style="color:#c9a95e" aria-hidden="true"><path d="M3 14V4h12v10H3Z" stroke="currentColor" stroke-width="1.2"/><path d="M6 7h6M6 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <div id="kpi-financial-margin-count" class="sc-value" style="color:#f5d78e">0</div>
+          <div class="sc-delta"><span id="kpi-financial-margin-note" style="color:#c9a95e">Margem estimada &lt; 30%</span></div>
+          <div class="sc-glow" style="background:#c9a95e"></div>
         </article>
       </section>
 
@@ -399,6 +409,7 @@ import {
   bindLogoutButton,
   can,
   describeProfile,
+  calculateProductMargins,
   escapeHtml,
   formatCurrency,
   getUnitCost,
@@ -1045,6 +1056,17 @@ function renderDashboard() {
   document.getElementById("module-labels").textContent = `${labelCount} emitidas`;
   document.getElementById("module-whatsapp").textContent = `${filtered.comandos.length} comandos`;
   document.getElementById("ai-insight").textContent = buildInsight(filtered);
+  const marginReport = calculateProductMargins(filtered.estoque, { minMarginPct: 30 });
+  const kpiFinCount = document.getElementById("kpi-financial-margin-count");
+  const kpiFinNote = document.getElementById("kpi-financial-margin-note");
+  if (kpiFinCount) {
+    kpiFinCount.textContent = String(marginReport.alertCount);
+  }
+  if (kpiFinNote) {
+    kpiFinNote.textContent = marginReport.alertCount
+      ? `${marginReport.alertCount} produto(s) com margem estimada abaixo de 30%`
+      : "Margens dentro do mínimo esperado (com dados de CMV)";
+  }
   renderChart(filtered.compras, filtered.desperdicios, filtered.producoes);
   renderCriticalList(filtered.estoque);
   renderMovements(filtered);

@@ -11,9 +11,7 @@
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="dashboard-saas-page.css">
-<link rel="stylesheet" href="dashboard-approved-real.css">
+<link rel="stylesheet" href="assets/app-dashboard.min.css">
 <script src="premium-shell.js" defer></script>
 <title>Cadastro de Insumos | Hamburgueria</title>
 </head>
@@ -112,6 +110,13 @@
       <strong id="stock-kpi-cost-increase">0</strong>
       <small>Comparado ao custo anterior</small>
     </article>
+
+    <article class="panel stock-kpi-card stock-kpi-financial-health" id="saude-financeira">
+      <span>Saúde financeira (margem)</span>
+      <strong id="stock-kpi-margin-low">0</strong>
+      <small>Produtos com margem estimada abaixo de 30% (preço de venda + ficha técnica)</small>
+      <p id="stock-kpi-margin-preview" class="stock-kpi-margin-preview muted"></p>
+    </article>
   </section>
 
   <section class="panel stock-command-panel">
@@ -119,6 +124,12 @@
       <p class="eyebrow">Painel operacional</p>
       <h3>Insumos por categoria</h3>
       <p class="muted">Filtre rápido e alterne entre cards para operação ou tabela para conferência.</p>
+    </div>
+
+    <div id="ficha-migrate-wrap" class="stock-ficha-migrate-wrap" hidden>
+      <button id="ficha-migrate-firestore" type="button" class="secondary">Migrar fichas (texto → estrutura no Firestore)</button>
+      <span id="ficha-migrate-status" class="muted"></span>
+      <p class="muted stock-ficha-migrate-hint" style="margin:6px 0 0;font-size:0.82rem;">Ativação em massa: abra esta página com <code>?migrarFicha=executar</code> (admin, confirma uma vez).</p>
     </div>
 
     <div id="stock-category-filters" class="stock-category-filters" aria-label="Filtros de categoria"></div>
@@ -611,6 +622,11 @@
                 <div class="field-group" style="grid-column: 1 / -1;">
                   <label for="novo_ficha_observacoes">Observacoes de rendimento e custo</label>
                   <textarea id="novo_ficha_observacoes" placeholder="Ex.: 1 caixa atende 144 lanches. Revisar custo semanalmente."></textarea>
+                  <p class="muted">Uma linha por ingrediente (ex.: <code>150 g blend bovino</code>, <code>2 fatias queijo</code>) para o motor de CMV cruzar com o nome do insumo no estoque.</p>
+
+                  <label for="novo_preco_venda">Preço de venda referência (CMV)</label>
+                  <input id="novo_preco_venda" type="number" min="0" step="0.01" placeholder="Ex.: 32.90">
+                  <p class="muted">Opcional. Usado para margem vs custo estimado da ficha (insumos com o mesmo nome cadastrado).</p>
                 </div>
               </div>
             </div>
@@ -753,10 +769,13 @@ import {
   ORDER_WEEKDAYS,
   apiFetch,
   bindLogoutButton,
+  buildStockCatalogIndexes,
+  calculateProductMargins,
   calculateUnitCost,
   can,
   describeProfile,
   escapeHtml,
+  formatFichaTecnica,
   formatWeekdayList,
   formatCurrency,
   formatDocumentNumber,
@@ -766,10 +785,13 @@ import {
   getPackageQuantity,
   getPurchaseCost,
   getPrimaryProductSupplier,
+  getProductGrossMarginSnapshot,
   getUnitCost,
   getUsageUnit,
   handleStockAutomationEvent,
   isSupplierPromotionActive,
+  linkFichaIngredientesToInsumoIds,
+  migrateFichaTecnicaFirestore,
   normalizeProductSuppliers,
   normalizeWeekdayList,
   normalizeDocumentNumber,
@@ -811,6 +833,11 @@ const stockKpiExpiring = document.getElementById("stock-kpi-expiring");
 const stockKpiNoSupplier = document.getElementById("stock-kpi-no-supplier");
 const stockKpiLabels = document.getElementById("stock-kpi-labels");
 const stockKpiCostIncrease = document.getElementById("stock-kpi-cost-increase");
+const stockKpiMarginLow = document.getElementById("stock-kpi-margin-low");
+const stockKpiMarginPreview = document.getElementById("stock-kpi-margin-preview");
+const fichaMigrateWrap = document.getElementById("ficha-migrate-wrap");
+const fichaMigrateButton = document.getElementById("ficha-migrate-firestore");
+const fichaMigrateStatus = document.getElementById("ficha-migrate-status");
 const barcodeInput = document.getElementById("novo_codigo_barras");
 const nameInput = document.getElementById("novo_nome");
 const internalCodeInput = document.getElementById("novo_codigo_interno");
@@ -903,6 +930,74 @@ if (profile?.tipo === "estoque") {
 if (!isAdmin) {
   resetButton.hidden = true;
 }
+
+if (fichaMigrateWrap && can("estoque.editarInsumo", profile)) {
+  fichaMigrateWrap.hidden = false;
+}
+
+fichaMigrateButton?.addEventListener("click", async () => {
+  if (!fichaMigrateButton || !fichaMigrateStatus) {
+    return;
+  }
+  fichaMigrateButton.disabled = true;
+  fichaMigrateStatus.textContent = "Migrando…";
+  try {
+    const result = await migrateFichaTecnicaFirestore({ dryRun: false });
+    fichaMigrateStatus.textContent = `Atualizados: ${result.updated} · Ignorados: ${result.skipped} · Erros: ${result.errors.length}`;
+    setStatus("status", "Migração de fichas técnicas concluída.", "success");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    fichaMigrateStatus.textContent = "Falha na migração.";
+    setStatus("status", error?.message || "Não foi possível migrar as fichas.", "error");
+  } finally {
+    fichaMigrateButton.disabled = false;
+  }
+});
+
+function stripMigrarFichaQueryParams() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("migrarFicha");
+  url.searchParams.delete("runFichaMigrate");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+queueMicrotask(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const run =
+    params.get("migrarFicha") === "executar"
+    || params.get("runFichaMigrate") === "1";
+  if (!run) {
+    return;
+  }
+  if (!can("estoque.editarInsumo", profile)) {
+    setStatus("status", "Sem permissão para executar a migração de fichas.", "error");
+    stripMigrarFichaQueryParams();
+    return;
+  }
+  if (!window.confirm("Executar migrateFichaTecnicaFirestore({ dryRun: false }) agora? Isso grava fichaTecnicaIngredientes no Firestore.")) {
+    stripMigrarFichaQueryParams();
+    return;
+  }
+  if (fichaMigrateStatus) {
+    fichaMigrateStatus.textContent = "Migrando (URL)…";
+  }
+  try {
+    const result = await migrateFichaTecnicaFirestore({ dryRun: false });
+    if (fichaMigrateStatus) {
+      fichaMigrateStatus.textContent = `Atualizados: ${result.updated} · Ignorados: ${result.skipped} · Erros: ${result.errors.length}`;
+    }
+    setStatus("status", "Migração de fichas técnicas concluída (ativada pela URL).", "success");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    if (fichaMigrateStatus) {
+      fichaMigrateStatus.textContent = "Falha na migração (URL).";
+    }
+    setStatus("status", error?.message || "Não foi possível migrar as fichas.", "error");
+  }
+  stripMigrarFichaQueryParams();
+});
 
 const PRODUCT_IMAGE_MAX_SIZE_BYTES = 2 * 1024 * 1024;
 const PRODUCT_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -1895,6 +1990,10 @@ function resetCreateProductForm() {
   labelObservationInput.value = "";
   recipeLinksInput.value = "";
   recipeNotesInput.value = "";
+  const precoVendaInput = document.getElementById("novo_preco_venda");
+  if (precoVendaInput) {
+    precoVendaInput.value = "";
+  }
   unitMeasureInput.value = "un";
   document.getElementById("novo_qtd").value = "0";
   document.getElementById("novo_min").value = "2";
@@ -2621,6 +2720,24 @@ function renderStockKpis(items = []) {
   stockKpiNoSupplier.textContent = String(noSupplierItems);
   stockKpiLabels.textContent = String(labelItems);
   stockKpiCostIncrease.textContent = String(costIncreaseItems);
+
+  const marginReport = calculateProductMargins(items, { minMarginPct: 30 });
+  stockKpiMarginLow.textContent = String(marginReport.alertCount);
+  if (stockKpiMarginPreview) {
+    const preview = marginReport.belowThreshold
+      .slice(0, 4)
+      .map((row) => `${row.nome} (~${row.marginPct != null ? row.marginPct.toFixed(0) : "?"}%)`)
+      .join(" · ");
+    stockKpiMarginPreview.textContent = preview
+      ? `${preview}${marginReport.alertCount > 4 ? "…" : ""}`
+      : marginReport.results.length
+        ? "Nenhum alerta de margem com os dados atuais."
+        : "Informe preço de venda e ficha técnica com insumos cadastrados para ver a margem.";
+  }
+  const finCard = document.getElementById("saude-financeira");
+  if (finCard) {
+    finCard.classList.toggle("stock-kpi-financial-health--alert", marginReport.alertCount > 0);
+  }
 }
 
 function renderStockCategoryFilters() {
@@ -2849,12 +2966,24 @@ function createField(id, label, value, options = {}) {
     type = "number",
     step = "1",
     min = "0",
-    readOnly = false
+    readOnly = false,
+    asTextarea = false,
+    rows = 4
   } = options;
   const wrapper = document.createElement("label");
   wrapper.className = "field-group";
   wrapper.htmlFor = id;
   wrapper.innerHTML = `<span>${label}</span>`;
+
+  if (asTextarea) {
+    const textarea = document.createElement("textarea");
+    textarea.id = id;
+    textarea.rows = rows;
+    textarea.value = value ?? "";
+    textarea.readOnly = readOnly;
+    wrapper.appendChild(textarea);
+    return wrapper;
+  }
 
   const input = document.createElement("input");
   input.id = id;
@@ -3565,6 +3694,43 @@ function renderProductsTable(items) {
   });
 }
 
+/** Badge de margem bruta: (preço venda − CMV receita) / preço venda × 100 (mesma base que calculateProductMargins). */
+function formatMarginProfitBadgeHtml(snap) {
+  if (snap.status === "no_price") {
+    const title = "Informe o preço de venda de referência no card para calcular a margem bruta.";
+    return `<span class="margin-profit-badge margin-profit-badge--muted" title="${escapeHtml(title)}">Sem P. venda</span>`;
+  }
+
+  if (snap.status === "no_recipe") {
+    const title = "Cadastre a ficha de ingredientes para estimar o CMV da receita.";
+    return `<span class="margin-profit-badge margin-profit-badge--muted" title="${escapeHtml(title)}">Sem receita CMV</span>`;
+  }
+
+  const pct = snap.marginPct != null ? Math.round(snap.marginPct * 10) / 10 : 0;
+  let tier = "ok";
+  if (snap.status === "partial") {
+    tier = "partial";
+  } else if (!Number.isFinite(pct) || pct < 0) {
+    tier = "danger";
+  } else if (pct < 15) {
+    tier = "danger";
+  } else if (pct < 30) {
+    tier = "warn";
+  }
+
+  const label = snap.status === "partial" ? `~${pct}%` : `${pct}%`;
+  const cmvLabel = formatCurrency(snap.custoReceita);
+  const pvLabel = formatCurrency(snap.precoVenda);
+  const missingHint = snap.missingIngredients.length
+    ? ` Insumos não resolvidos: ${snap.missingIngredients.slice(0, 5).join(", ")}${snap.missingIngredients.length > 5 ? "…" : ""}.`
+    : "";
+  const title = snap.status === "partial"
+    ? `Margem com CMV parcial (valor pode estar otimista). CMV parcial ${cmvLabel}. Preço venda ${pvLabel}.${missingHint}`
+    : `Lucro bruto: (preço venda − CMV receita) / preço venda. CMV receita ${cmvLabel}. Preço venda ${pvLabel}.`;
+
+  return `<span class="margin-profit-badge margin-profit-badge--${tier}" title="${escapeHtml(title)}">Margem ${label}</span>`;
+}
+
 function renderProducts(items) {
   list.innerHTML = "";
   updateRegisteredItemsSummary(items);
@@ -3574,7 +3740,11 @@ function renderProducts(items) {
     return;
   }
 
+  const marginIndexes = buildStockCatalogIndexes(produtos);
+
   items.forEach((item) => {
+    const marginSnap = getProductGrossMarginSnapshot(item, marginIndexes);
+    const marginBadgeHtml = formatMarginProfitBadgeHtml(marginSnap);
     const article = document.createElement("article");
     const productSuppliers = normalizeProductSuppliers(item, fornecedores);
     const primarySupplier = getPrimaryProductSupplier(item, fornecedores);
@@ -3619,6 +3789,32 @@ function renderProducts(items) {
     fields.appendChild(createField(`image_upload_${item.id}`, "Imagem manual", item.imagemUploadUrl || "", {
       type: "url"
     }));
+
+    const precoVendaField = createField(
+      `preco_venda_${item.id}`,
+      "Preço venda referência (CMV)",
+      item.precoVenda != null && item.precoVenda !== "" ? String(item.precoVenda) : "",
+      { type: "number", step: "0.01", min: "0" }
+    );
+    fields.appendChild(precoVendaField);
+
+    const fichaVinculosField = createField(
+      `ficha_vinculos_${item.id}`,
+      "Ficha — produtos cardápio (texto)",
+      item.fichaTecnicaVinculos || "",
+      { asTextarea: true, rows: 2 }
+    );
+    fichaVinculosField.style.gridColumn = "1 / -1";
+    fields.appendChild(fichaVinculosField);
+
+    const fichaObsField = createField(
+      `ficha_obs_${item.id}`,
+      "Ficha — ingredientes (texto, uma linha por item)",
+      item.fichaTecnicaObservacoes || "",
+      { asTextarea: true, rows: 5 }
+    );
+    fichaObsField.style.gridColumn = "1 / -1";
+    fields.appendChild(fichaObsField);
 
     const orderDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasPedido");
     const deliveryDaysSummary = getOperationalWeekdaySummary(productSuppliers, "diasEntrega");
@@ -3840,6 +4036,14 @@ function renderProducts(items) {
           imagemPrincipal,
           imagemUrl: imagemFinal,
           origemCadastro: codigoBarras ? "codigo_barras" : "manual",
+          precoVenda: toNumber(document.getElementById(`preco_venda_${item.id}`)?.value, 0),
+          fichaTecnicaVinculos: document.getElementById(`ficha_vinculos_${item.id}`)?.value?.trim() ?? "",
+          fichaTecnicaObservacoes: document.getElementById(`ficha_obs_${item.id}`)?.value?.trim() ?? "",
+          // Catálogo em memória: mantém insumoId sincronizado com nomes do estoque em todo save.
+          fichaTecnicaIngredientes: linkFichaIngredientesToInsumoIds(
+            formatFichaTecnica(document.getElementById(`ficha_obs_${item.id}`)?.value?.trim() ?? ""),
+            produtos
+          ),
           ...buildPrimarySupplierFields(nextSuppliers, item),
           atualizadoEm: serverTimestamp()
         });
@@ -3981,7 +4185,10 @@ function renderProducts(items) {
           <h3>${escapeHtml(item.nome)}</h3>
           <p class="muted">SKU ${escapeHtml(productSku)}</p>
         </div>
-        <span class="stock-badge stock-badge-${operationalStatus.badgeClass}">${escapeHtml(operationalStatus.label)}</span>
+        <div class="inventory-product-badges">
+          ${marginBadgeHtml}
+          <span class="stock-badge stock-badge-${operationalStatus.badgeClass}">${escapeHtml(operationalStatus.label)}</span>
+        </div>
       </div>
 
       <div class="inventory-stock-strip">
@@ -4098,6 +4305,7 @@ async function loadProducts() {
         : toNumber(document.data().quantidade, 0),
       conversao: Math.max(1, toNumber(document.data().conversao, 1)),
       custoCompra: document.data().custoCompra,
+      precoVenda: toNumber(document.data().precoVenda ?? document.data().preco_venda, 0),
       unidadeMedida: document.data().unidadeMedida || document.data().unidadeUso || document.data().unidadeCompra || "un",
       unidadeUso: document.data().unidadeUso || document.data().unidadeCompra || "un",
       fornecedores: normalizeProductSuppliers(document.data(), fornecedores)
@@ -5163,6 +5371,12 @@ form.addEventListener("submit", async (event) => {
       etiquetaObservacao: labelObservationInput.value.trim(),
       fichaTecnicaVinculos: recipeLinksInput.value.trim(),
       fichaTecnicaObservacoes: recipeNotesInput.value.trim(),
+      // Catálogo em memória: mantém insumoId sincronizado com nomes do estoque na criação.
+      fichaTecnicaIngredientes: linkFichaIngredientesToInsumoIds(
+        formatFichaTecnica(recipeNotesInput.value.trim()),
+        produtos
+      ),
+      precoVenda: toNumber(document.getElementById("novo_preco_venda")?.value, 0),
       origemCadastro: codigoBarras ? "codigo_barras" : "manual",
       ...buildPrimarySupplierFields(productSuppliers),
       criadoEm: serverTimestamp(),
@@ -5341,6 +5555,9 @@ syncCreateFrequencyState();
 refreshSupplierListState(newSuppliersList, "Adicione ao menos um fornecedor para salvar o produto.");
 await updateBarcodeModeState();
 await loadProducts();
+if (location.hash === "#saude-financeira") {
+  document.getElementById("saude-financeira")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 setQuickLookupSource("Aguardando bipagem", "info");
 quickBarcodeInput.focus();
 </script>

@@ -1,0 +1,4 @@
+/* Login: core + tema approved (sem dashboard-saas-page). Saída: public/assets/app-login.min.css */
+@import "../../public/style.css";
+@import "../../public/style-legacy.css";
+@import "../../public/dashboard-approved-real.css";

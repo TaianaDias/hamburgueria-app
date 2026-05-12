@@ -1169,3 +1169,381 @@ body.dashboard-approved-real .approved-main .status {
 body.dashboard-approved-real .approved-main .list .empty-state {
   text-align: center;
 }
+
+/* --- Login: mesmo DS Luxury Black & Gold (sobrescreve camada !important legada em style.css) --- */
+body.login-premium-body.dashboard-approved-real {
+  background:
+    radial-gradient(circle at top left, rgba(201, 169, 94, 0.1), transparent 32%),
+    radial-gradient(circle at 78% 18%, rgba(201, 169, 94, 0.05), transparent 28%),
+    var(--bg) !important;
+  color: var(--silver) !important;
+}
+
+body.login-premium-body.dashboard-approved-real::before {
+  opacity: 0.12 !important;
+}
+
+body.login-premium-body.dashboard-approved-real main.page.page-login {
+  padding: 0 !important;
+  background: transparent !important;
+  color: inherit;
+}
+
+body.login-premium-body.dashboard-approved-real .login-marketing-panel {
+  border-color: var(--border) !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface-primary) 82%, transparent), color-mix(in srgb, var(--color-bg-primary) 70%, transparent)),
+    radial-gradient(circle at 18% 22%, var(--brand-glow), transparent 42%),
+    radial-gradient(circle at 88% 78%, rgba(201, 169, 94, 0.04), transparent 38%) !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(130%) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-brand-mark,
+body.login-premium-body.dashboard-approved-real .login-burger-icon {
+  border-color: color-mix(in srgb, var(--color-accent) 48%, transparent) !important;
+  box-shadow: 0 16px 40px var(--brand-glow) !important;
+  background: #0a0a0a !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-brand-mark {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-surface-secondary) 90%, #000), var(--color-bg-primary)) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-hero-copy h1 span {
+  color: var(--brand);
+}
+
+body.login-premium-body.dashboard-approved-real .login-hero-copy p:not(.eyebrow) {
+  color: var(--silver2);
+}
+
+body.login-premium-body.dashboard-approved-real .login-feature-grid article {
+  border-color: var(--border) !important;
+  background: color-mix(in srgb, var(--color-surface-primary) 55%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-feature-grid article span {
+  background: var(--brand-dim) !important;
+  color: var(--brand) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-testimonial {
+  border-color: color-mix(in srgb, var(--color-accent) 28%, transparent) !important;
+  background: var(--brand-dim) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-testimonial p {
+  color: color-mix(in srgb, var(--color-accent) 85%, #fff);
+}
+
+body.login-premium-body.dashboard-approved-real .login-testimonial strong {
+  color: var(--silver);
+}
+
+body.login-premium-body.dashboard-approved-real .login-trust-row span {
+  background: color-mix(in srgb, var(--color-bg-secondary) 75%, transparent) !important;
+  color: var(--silver2);
+  border: 1px solid var(--border);
+}
+
+body.login-premium-body.dashboard-approved-real .login-premium-card.panel,
+body.login-premium-body.dashboard-approved-real .login-premium-card {
+  border-color: var(--border) !important;
+  background:
+    linear-gradient(195deg, color-mix(in srgb, var(--color-surface-primary) 92%, transparent), color-mix(in srgb, var(--color-bg-primary) 88%, transparent)) !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(20px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(130%) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-premium-card.panel::before {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 42%) !important;
+  opacity: 0.45 !important;
+}
+
+body.login-premium-body.dashboard-approved-real .auth-switcher {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--color-bg-secondary) 65%, transparent);
+}
+
+body.login-premium-body.dashboard-approved-real .auth-tab.active {
+  background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 58%, #1a1208));
+  color: #0a0a0a;
+}
+
+body.login-premium-body.dashboard-approved-real .login-form-options a {
+  color: var(--brand);
+}
+
+body.login-premium-body.dashboard-approved-real .login-demo-callout {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent) !important;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--color-surface-secondary) 88%, #000), var(--color-bg-primary)) !important;
+  color: var(--silver2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 28px rgba(0, 0, 0, 0.42) !important;
+}
+
+body.login-premium-body.dashboard-approved-real .login-demo-callout strong {
+  color: var(--silver);
+}
+
+body.login-premium-body.dashboard-approved-real .login-demo-callout code {
+  color: color-mix(in srgb, var(--color-accent) 55%, #fefce8);
+  border-color: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* --- Migrado de style-legacy: módulos compras/fornecedores/produção/alertas (shell approved) --- */
+/* --- Lote visual premium: estoque, fornecedores, compras, alertas, producao (approved shell) --- */
+body.dashboard-approved-real .supplier-panel-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.dashboard-approved-real .supplier-panel-loading[hidden] {
+  display: none !important;
+}
+
+body.dashboard-approved-real .supplier-loading-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand, #e8442a);
+  animation: supplier-loading-pulse 1s ease-in-out infinite;
+}
+
+@keyframes supplier-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+body.dashboard-approved-real .supplier-panel-loading {
+  border-color: rgba(232, 68, 42, 0.22);
+  background: rgba(232, 68, 42, 0.06);
+}
+
+body.dashboard-approved-real .approved-main #lista.list,
+body.dashboard-approved-real .approved-main #alerts-list.list {
+  display: grid;
+  gap: 14px;
+}
+
+body.dashboard-approved-real .approved-main .empty-state {
+  margin-inline: auto;
+  max-width: 520px;
+  text-align: center;
+  padding: 1.35rem 1.25rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(2, 6, 23, 0.38));
+}
+
+body.dashboard-approved-real .alert-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px 16px;
+}
+
+body.dashboard-approved-real .layout-grid {
+  align-items: start;
+}
+
+body.dashboard-approved-real .thermal-label-preview {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(2, 6, 23, 0.45));
+}
+
+body.dashboard-approved-real .timeline-list span {
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+body.dashboard-approved-real .timeline-list span:hover {
+  border-color: rgba(232, 68, 42, 0.28);
+  background: rgba(232, 68, 42, 0.06);
+}
+
+@media (max-width: 768px) {
+  body.dashboard-approved-real .page-header .actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+}
+
+/* --- Refinamento premium por módulo (compras, fornecedores, producao, alertas) --- */
+
+/* Compras: hierarquia de decisão + leitura financeira */
+body.dashboard-approved-real .page-module-compras #purchase-register-section.panel {
+  border-left: 3px solid rgba(232, 68, 42, 0.75);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.24);
+}
+
+body.dashboard-approved-real .page-module-compras #purchase-form #purchase-total {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(232, 68, 42, 0.28);
+  border-radius: 12px;
+}
+
+body.dashboard-approved-real .page-module-compras #purchase-form .inline-choice {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.dashboard-approved-real .page-module-compras .purchase-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-compras .purchase-history-item .summary-line span:last-child {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.dashboard-approved-real .page-module-compras #lista.list {
+  display: grid;
+  gap: 16px;
+}
+
+body.dashboard-approved-real .page-module-compras #lista .card .supplier-price-grid {
+  margin-top: 14px;
+}
+
+body.dashboard-approved-real .page-module-compras .actions.compact-actions {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Fornecedores: zona de vínculo produto ↔ fornecedor */
+body.dashboard-approved-real .page-module-fornecedores .supplier-products-field {
+  position: relative;
+  padding: 14px 14px 16px;
+  margin-top: 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(232, 68, 42, 0.24);
+  background: linear-gradient(145deg, rgba(232, 68, 42, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-products-field > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-products-field > span:first-child::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand, #e8442a);
+  box-shadow: 0 0 14px rgba(232, 68, 42, 0.55);
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-product-picker {
+  max-height: min(44vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  margin-top: 10px;
+  padding: 6px 8px 8px 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(2, 6, 23, 0.35);
+}
+
+body.dashboard-approved-real .page-module-fornecedores .supplier-product-picker:focus-within {
+  border-color: rgba(232, 68, 42, 0.35);
+  box-shadow: 0 0 0 1px rgba(232, 68, 42, 0.12);
+}
+
+/* Produção: fluxo formulário → preview → histórico */
+body.dashboard-approved-real .page-module-producao #etiqueta.panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-producao #etiqueta.panel h3::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  min-width: 24px;
+  background: linear-gradient(90deg, rgba(232, 68, 42, 0.45), transparent);
+}
+
+body.dashboard-approved-real .page-module-producao #label-preview {
+  border-radius: 20px;
+}
+
+body.dashboard-approved-real .page-module-producao #label-history {
+  display: grid;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-producao .layout-grid {
+  gap: 18px;
+}
+
+/* Alertas: métricas, ações e histórico mais escaneáveis */
+body.dashboard-approved-real .page-module-alertas .stats-grid {
+  gap: 14px;
+}
+
+body.dashboard-approved-real .page-module-alertas .stats-grid > .card {
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+body.dashboard-approved-real .page-module-alertas .stats-grid > .card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+body.dashboard-approved-real .page-module-alertas #history-list.list {
+  display: grid;
+  gap: 12px;
+}
+
+body.dashboard-approved-real .page-module-alertas .alert-card .inline-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  body.dashboard-approved-real .page-module-alertas .alert-card .inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.dashboard-approved-real .page-module-alertas .alert-card .inline-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}

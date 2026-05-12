@@ -1,17 +1,27 @@
 <!DOCTYPE html>
+<!--
+  Template oficial — páginas operacionais (dashboard-approved-real).
+  Copie este ficheiro para novo-modulo.html; ajuste <title>, conteúdo em .page e o script (requireAuth + permission).
+  CSS: um único bundle (assets/app-dashboard.min.css); após editar public/*.css, correr npm run build:css.
+  Documentação: AUDITORIA.md → «Padrão oficial de páginas operacionais».
+-->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#070707">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sistema Carioca's">
 <link rel="icon" href="favicon-32.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="assets/app-dashboard.min.css">
 <script src="premium-shell.js" defer></script>
-<title>Inventario | Hamburgueria</title>
+<title>Nova página operacional | Sistema Carioca's</title>
 </head>
-<body class="premium-app-body dashboard-mobile-fix dashboard-approved-real">
+<body class="premium-app-body dashboard-mobile-fix dashboard-saas-page dashboard-approved-real">
 <header class="topbar" aria-label="Topo principal">
   <button id="dashboard-mobile-menu" class="top-menu" type="button" aria-label="Abrir menu">
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -80,43 +90,20 @@
     <span id="user-info" hidden></span>
   </aside>
 
-<main class="main approved-main">
-<section class="page">
-  <header class="page-header">
-    <div>
-      <p class="eyebrow">Conferencia fisica</p>
-      <h1>Inventario</h1>
-</div>
-    <div class="actions">
-      <a class="button secondary" href="index.html">Voltar</a>
-    </div>
-  </header>
+  <main class="main approved-main">
+    <section class="page">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Novo módulo</p>
+          <h1>Título da página</h1>
+          <p class="muted">Coloque o conteúdo operacional dentro de <code>section.page</code>. Não duplique <code>#user-info</code> no cabeçalho: use apenas o span oculto na sidebar; preencha-o após <code>requireAuth</code> para o topbar sincronizar via <code>premium-shell.js</code>.</p>
+        </div>
+      </header>
 
-  <section class="panel">
-    <h3>Nova contagem</h3>
-    <form id="inventory-form" class="form-grid" style="margin-top: 16px;">
-      <div class="field-group">
-        <label for="product">Produto</label>
-        <select id="product"></select>
-      </div>
-      <div class="field-group">
-        <label for="physical">Quantidade fisica</label>
-        <input id="physical" type="number" min="0" step="0.01" value="0">
-      </div>
-      <div class="field-group">
-        <label for="reason">Justificativa</label>
-        <input id="reason" placeholder="Contagem mensal, ajuste, quebra...">
-      </div>
-      <button type="submit">Registrar divergencia</button>
-    </form>
-    <div id="status" class="status info" hidden></div>
-  </section>
-
-  <section class="panel" style="margin-top: 20px;">
-    <h3>Histórico de inventario</h3>
-    <div id="inventory-list" class="list" style="margin-top: 16px;"></div>
-  </section>
-</section>
+      <section class="panel" aria-label="Área de conteúdo">
+        <p class="muted">Painéis, formulários e listas vão aqui.</p>
+      </section>
+    </section>
   </main>
 </div>
 
@@ -209,69 +196,11 @@
 </div>
 
 <script type="module">
-import { db } from "./firebase.js";
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { bindLogoutButton, describeProfile, escapeHtml, requireAuth, setStatus, toNumber } from "./app.js";
-import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
+import { bindLogoutButton, describeProfile, requireAuth } from "./app.js";
 
 bindLogoutButton();
-const { profile } = await requireAuth({ permission: "estoque.historico" });
+const { profile } = await requireAuth({ permission: "estoque.ver" });
 document.getElementById("user-info").textContent = describeProfile(profile);
-
-const productSelect = document.getElementById("product");
-let estoque = [];
-
-async function loadProducts() {
-  const snapshot = await getDocs(collection(db, "estoque"));
-  estoque = snapshot.docs.map((document) => ({ id: document.id, ...document.data() }))
-    .sort((left, right) => String(left.nome || "").localeCompare(String(right.nome || ""), "pt-BR"));
-  productSelect.innerHTML = estoque.map((item) => `<option value="${item.id}">${escapeHtml(item.nome)} | sistema: ${toNumber(item.quantidade, 0)}</option>`).join("");
-}
-
-async function loadInventory() {
-  const snapshot = await getDocs(query(collection(db, OPERATIONAL_COLLECTIONS.inventarios), orderBy("criadoEm", "desc")));
-  const list = document.getElementById("inventory-list");
-  const items = snapshot.docs.slice(0, 10).map((document) => ({ id: document.id, ...document.data() }));
-  list.innerHTML = items.length ? "" : '<div class="empty-state">Nenhuma contagem registrada.</div>';
-  items.forEach((item) => {
-    const article = document.createElement("article");
-    article.className = "card";
-    article.innerHTML = `
-      <div class="summary-line">
-        <strong>${escapeHtml(item.produtoNome || "Produto")}</strong>
-        <span>Divergencia: ${toNumber(item.divergencia, 0)}</span>
-      </div>
-      <p class="muted">Sistema: ${toNumber(item.quantidadeSistema, 0)} | Fisico: ${toNumber(item.quantidadeFisica, 0)} | ${escapeHtml(item.justificativa || "Sem justificativa")}</p>
-    `;
-    list.appendChild(article);
-  });
-}
-
-document.getElementById("inventory-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const product = estoque.find((item) => item.id === productSelect.value);
-  if (!product) {
-    setStatus("status", "Selecione um produto.", "error");
-    return;
-  }
-  const physical = Math.max(0, toNumber(document.getElementById("physical").value, 0));
-  const systemQty = toNumber(product.quantidade, 0);
-  await addDoc(collection(db, OPERATIONAL_COLLECTIONS.inventarios), {
-    produtoId: product.id,
-    produtoNome: product.nome,
-    quantidadeSistema: systemQty,
-    quantidadeFisica: physical,
-    divergencia: physical - systemQty,
-    justificativa: document.getElementById("reason").value.trim(),
-    responsavel: profile.email,
-    criadoEm: serverTimestamp()
-  });
-  setStatus("status", "Contagem registrada. O ajuste de saldo deve ser aprovado pelo admin.", "success");
-  await loadInventory();
-});
-
-await loadProducts();
-await loadInventory();
 </script>
 </body>
 </html>

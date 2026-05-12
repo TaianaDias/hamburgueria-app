@@ -11,6 +11,8 @@
     "start": "node server.js",
     "start:whatsapp-local": "powershell -ExecutionPolicy Bypass -File scripts/start-whatsapp-local.ps1",
     "whatsapp:health": "node scripts/whatsapp-health.mjs",
+    "build:css": "node scripts/build-css.mjs",
+    "watch:css": "node scripts/build-css.mjs --watch",
     "check:html": "node scripts/check-html-modules.mjs",
     "check:smoke": "node scripts/smoke-test.mjs",
     "check:phase3": "node scripts/phase3-visual-check.mjs",
@@ -18,7 +20,7 @@
     "check:phase5": "node scripts/phase5-operational-validation.mjs",
     "diag:fornecedores-phase5": "node scripts/phase5-fornecedores-diagnostic.mjs",
     "audit:firestore-user": "node scripts/phase4-firestore-usuario.mjs",
-    "ci": "npm run check:html && npm run check:smoke",
+    "ci": "npm run build:css && npm run check:html && npm run check:smoke",
     "mobile:copy": "npx cap copy",
     "mobile:sync": "npx cap sync",
     "mobile:doctor": "npx cap doctor",
@@ -38,6 +40,7 @@
     "firebase-admin": "^13.8.0"
   },
   "devDependencies": {
+    "esbuild": "^0.25.12",
     "playwright": "^1.52.0"
   }
 }
