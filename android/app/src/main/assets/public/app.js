@@ -1650,10 +1650,35 @@ export async function handleStockAutomationEvent(event = {}) {
 
 export function registerServiceWorker() {
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
+    let reloadedAfterUpdate = false;
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloadedAfterUpdate) {
+        return;
+      }
+
+      reloadedAfterUpdate = true;
+      window.location.reload();
+    });
+
     navigator.serviceWorker.register("/sw.js")
       .then(async (registration) => {
         try {
           await registration.update();
+
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+
+          registration.addEventListener("updatefound", () => {
+            const worker = registration.installing;
+
+            worker?.addEventListener("statechange", () => {
+              if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                worker.postMessage({ type: "SKIP_WAITING" });
+              }
+            });
+          });
         } catch (error) {
           console.warn("Falha ao atualizar o service worker.", error);
         }

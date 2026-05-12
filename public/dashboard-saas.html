@@ -414,12 +414,14 @@ import {
   formatCurrency,
   getUnitCost,
   normalizeText,
+  registerServiceWorker,
   requireAuth,
   setStatus,
   toNumber
 } from "./app.js";
 import { OPERATIONAL_COLLECTIONS } from "./operational-core.js";
 
+registerServiceWorker();
 bindLogoutButton();
 const { profile } = await requireAuth();
 document.getElementById("user-info").textContent = profile.nome || profile.email || describeProfile(profile);

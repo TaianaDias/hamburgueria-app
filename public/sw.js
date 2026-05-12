@@ -1,29 +1,13 @@
-const CACHE_NAME = "hamburgueria-app-v22";
-const APP_SHELL = [...new Set([
-  "/",
-  "/login.html",
-  "/index.html",
-  "/estoque.html",
-  "/desperdicio.html",
-  "/reposicao-producao.html",
-  "/compras.html",
-  "/alertas-reposicao.html",
-  "/analise-compras.html",
-  "/dashboard-compras.html",
-  "/fornecedores.html",
-  "/dashboard-saas.html",
-  "/producao.html",
-  "/relatorio.html",
-  "/etiquetas.html",
-  "/funcionarias.html",
-  "/configuracoes.html",
-  "/funcionarios.html",
+const CACHE_NAME = "hamburgueria-app-v23";
+const STATIC_ASSETS = [...new Set([
   "/assets/app-core.min.css",
   "/assets/app-dashboard.min.css",
   "/assets/app-login.min.css",
   "/firebase.js",
   "/app.js",
   "/barcode-cache.js",
+  "/premium-shell.js",
+  "/operational-core.js",
   "/runtime-config.json",
   "/manifest.json",
   "/icon.svg",
@@ -38,43 +22,25 @@ function isCacheableRequest(request) {
   return request.method === "GET" && url.origin === self.location.origin && /^https?:$/.test(url.protocol);
 }
 
+function isStaticAssetRequest(request) {
+  const url = new URL(request.url);
+
+  return (
+    isCacheableRequest(request)
+    && request.mode !== "navigate"
+    && request.destination !== "document"
+    && !url.pathname.endsWith(".html")
+    && !url.pathname.startsWith("/api/")
+  );
+}
+
 function isValidCacheResponse(response) {
   return response && response.ok && response.type === "basic";
 }
 
-function getCacheKey(request) {
-  const url = new URL(request.url);
-
-  if (
-    request.mode === "navigate"
-    || request.destination === "document"
-    || url.pathname === "/"
-    || url.pathname.endsWith(".html")
-  ) {
-    return url.pathname || "/";
-  }
-
-  return request;
-}
-
-async function matchCached(request) {
-  const url = new URL(request.url);
-  const byKey = await caches.match(getCacheKey(request));
-
-  if (byKey) {
-    return byKey;
-  }
-
-  if (request.mode === "navigate" || request.destination === "document" || url.pathname.endsWith(".html")) {
-    return caches.match(url.pathname || "/");
-  }
-
-  return caches.match(request);
-}
-
 async function warmAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  await Promise.allSettled(APP_SHELL.map(async (path) => {
+  await Promise.allSettled(STATIC_ASSETS.map(async (path) => {
     const response = await fetch(new Request(path, { cache: "reload" }));
 
     if (isValidCacheResponse(response)) {
@@ -86,9 +52,9 @@ async function warmAppShell() {
 async function fetchAndCache(request) {
   const response = await fetch(request);
 
-  if (isCacheableRequest(request) && isValidCacheResponse(response)) {
+  if (isStaticAssetRequest(request) && isValidCacheResponse(response)) {
     const cache = await caches.open(CACHE_NAME);
-    await cache.put(getCacheKey(request), response.clone());
+    await cache.put(request, response.clone());
   }
 
   return response;
@@ -110,18 +76,18 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
-  if (!isCacheableRequest(event.request)) {
+  if (!isStaticAssetRequest(event.request)) {
     return;
   }
 
   event.respondWith(
-    matchCached(event.request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-
-      return fetchAndCache(event.request).catch(() => matchCached(event.request));
-    })
+    caches.match(event.request).then((cached) => cached || fetchAndCache(event.request))
   );
 });
