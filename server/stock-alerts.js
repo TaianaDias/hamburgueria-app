@@ -774,35 +774,59 @@ export function createStockAlertService(options = {}) {
   }
 
   async function loadCollections() {
-    const [
-      configResult,
-      stockSnapshot,
-      suppliersSnapshot,
-      purchasesSnapshot,
-      alertsSnapshot,
-      historySnapshot,
-      notificationsSnapshot
-    ] = await Promise.all([
-      getSystemConfig(),
-      firestore.collection(STOCK_COLLECTION).get(),
-      firestore.collection(SUPPLIERS_COLLECTION).get(),
-      firestore.collection(PURCHASES_COLLECTION).get(),
-      firestore.collection(ALERTS_COLLECTION).get(),
-      firestore.collection(ALERT_HISTORY_COLLECTION).orderBy("createdAt", "desc").limit(20).get(),
-      firestore.collection(OUTBOUND_NOTIFICATIONS_COLLECTION).orderBy("createdAt", "desc").limit(1).get()
-    ]);
+    const FIREBASE_TIMEOUT_MS = 10000;
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), FIREBASE_TIMEOUT_MS);
 
-    return {
-      configResult,
-      stockItems: stockSnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
-      suppliers: suppliersSnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
-      purchases: purchasesSnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
-      currentAlerts: new Map(alertsSnapshot.docs.map((document) => [document.id, { id: document.id, ...document.data() }])),
-      history: historySnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
-      latestNotification: notificationsSnapshot.empty
-        ? null
-        : { id: notificationsSnapshot.docs[0].id, ...notificationsSnapshot.docs[0].data() }
-    };
+    try {
+      const [
+        configResult,
+        stockSnapshot,
+        suppliersSnapshot,
+        purchasesSnapshot,
+        alertsSnapshot,
+        historySnapshot,
+        notificationsSnapshot
+      ] = await Promise.race([
+        Promise.all([
+          getSystemConfig(),
+          firestore.collection(STOCK_COLLECTION).get(),
+          firestore.collection(SUPPLIERS_COLLECTION).get(),
+          firestore.collection(PURCHASES_COLLECTION).get(),
+          firestore.collection(ALERTS_COLLECTION).get(),
+          firestore.collection(ALERT_HISTORY_COLLECTION).orderBy("createdAt", "desc").limit(20).get(),
+          firestore.collection(OUTBOUND_NOTIFICATIONS_COLLECTION).orderBy("createdAt", "desc").limit(1).get()
+        ]),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Firebase queries timeout após 10 segundos")), FIREBASE_TIMEOUT_MS)
+        )
+      ]);
+
+      return {
+        configResult,
+        stockItems: stockSnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
+        suppliers: suppliersSnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
+        purchases: purchasesSnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
+        currentAlerts: new Map(alertsSnapshot.docs.map((document) => [document.id, { id: document.id, ...document.data() }])),
+        history: historySnapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
+        latestNotification: notificationsSnapshot.empty
+          ? null
+          : { id: notificationsSnapshot.docs[0].id, ...notificationsSnapshot.docs[0].data() }
+      };
+    } catch (error) {
+      logger.error("Firebase loadCollections falhou, retornando dados vazios", error);
+      return {
+        configResult: { alertConfig: DEFAULT_ALERT_CONFIG, raw: {} },
+        stockItems: [],
+        suppliers: [],
+        purchases: [],
+        currentAlerts: new Map(),
+        history: [],
+        latestNotification: null
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   function buildAlertModel(product, supplierCatalog, purchases, currentAlerts, config, referenceDate = new Date()) {
@@ -1018,17 +1042,41 @@ export function createStockAlertService(options = {}) {
       provider: configResult.alertConfig.whatsappProvider,
       env: process.env
     });
-    const result = adminWhatsapp
-      ? await notifier.send({
-        recipient: adminWhatsapp,
-        message
-      })
-      : {
+
+    let result = null;
+    try {
+      if (adminWhatsapp) {
+        const sendPromise = notifier.send({
+          recipient: adminWhatsapp,
+          message
+        });
+        
+        // Timeout de 5 segundos para envio
+        result = await Promise.race([
+          sendPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("WhatsApp send timeout")), 5000)
+          )
+        ]);
+      } else {
+        result = {
+          delivered: false,
+          status: "missing_recipient",
+          previewUrl: "",
+          provider: notifier.provider
+        };
+      }
+    } catch (error) {
+      logger.warn("Falha ao enviar notificação WhatsApp, continuando", error);
+      result = {
         delivered: false,
-        status: "missing_recipient",
-        previewUrl: "",
-        provider: notifier.provider
+        status: "send_error",
+        previewUrl: buildWhatsAppPreviewUrl(adminWhatsapp, message),
+        provider: notifier.provider,
+        error: error.message
       };
+    }
+
     const notificationPayload = {
       channel: "whatsapp",
       provider: notifier.provider,
@@ -1217,37 +1265,64 @@ export function createStockAlertService(options = {}) {
           provider: alertConfig.whatsappProvider,
           env: process.env
         });
-        const result = adminWhatsapp
-          ? await notifier.send({
-            recipient: adminWhatsapp,
-            message: weeklyReport.message
-          })
-          : {
-            delivered: false,
-            status: "missing_recipient",
-            previewUrl: "",
-            provider: notifier.provider
-          };
 
-        await firestore.collection(OUTBOUND_NOTIFICATIONS_COLLECTION).add({
-          channel: "whatsapp",
-          provider: notifier.provider,
-          recipient: adminWhatsapp,
-          message: weeklyReport.message,
-          previewUrl: result.previewUrl || buildWhatsAppPreviewUrl(adminWhatsapp, weeklyReport.message),
-          status: result.status,
-          delivered: result.delivered,
-          trigger: `${trigger}_weekly_report`,
-          type: "weekly_report",
-          createdAt: referenceDate.toISOString()
-        });
-
-        await systemConfigRef.set({
-          alertasReposicao: {
-            ...alertConfig,
-            lastWeeklyReportAt: referenceDate.toISOString()
+        let result = null;
+        try {
+          if (adminWhatsapp) {
+            const sendPromise = notifier.send({
+              recipient: adminWhatsapp,
+              message: weeklyReport.message
+            });
+            
+            // Timeout de 5 segundos para envio
+            result = await Promise.race([
+              sendPromise,
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("WhatsApp weekly report timeout")), 5000)
+              )
+            ]);
+          } else {
+            result = {
+              delivered: false,
+              status: "missing_recipient",
+              previewUrl: "",
+              provider: notifier.provider
+            };
           }
-        }, { merge: true });
+        } catch (error) {
+          logger.warn("Falha ao enviar relatório semanal via WhatsApp", error);
+          result = {
+            delivered: false,
+            status: "send_error",
+            previewUrl: buildWhatsAppPreviewUrl(adminWhatsapp, weeklyReport.message),
+            provider: notifier.provider,
+            error: error.message
+          };
+        }
+
+        try {
+          await firestore.collection(OUTBOUND_NOTIFICATIONS_COLLECTION).add({
+            channel: "whatsapp",
+            provider: notifier.provider,
+            recipient: adminWhatsapp,
+            message: weeklyReport.message,
+            previewUrl: result.previewUrl || buildWhatsAppPreviewUrl(adminWhatsapp, weeklyReport.message),
+            status: result.status,
+            delivered: result.delivered,
+            trigger: `${trigger}_weekly_report`,
+            type: "weekly_report",
+            createdAt: referenceDate.toISOString()
+          });
+
+          await systemConfigRef.set({
+            alertasReposicao: {
+              ...alertConfig,
+              lastWeeklyReportAt: referenceDate.toISOString()
+            }
+          }, { merge: true });
+        } catch (error) {
+          logger.warn("Falha ao registrar relatório semanal no Firestore", error);
+        }
 
         return weeklyReport;
       }
@@ -1270,112 +1345,124 @@ export function createStockAlertService(options = {}) {
     evaluationInFlight = true;
 
     try {
-      const referenceDate = new Date();
-      const loaded = await loadCollections();
-      const { alertConfig } = loaded.configResult;
+      // Timeout total de 30 segundos para toda a avaliação
+      const evaluationPromise = (async () => {
+        const referenceDate = new Date();
+        const loaded = await loadCollections();
+        const { alertConfig } = loaded.configResult;
 
-      if (!alertConfig.enabled) {
+        if (!alertConfig.enabled) {
+          return {
+            generatedAt: referenceDate.toISOString(),
+            config: alertConfig,
+            adminWhatsapp: normalizePhone(loaded.configResult.raw.adminWhatsapp || ""),
+            supportedProviders: [...WHATSAPP_PROVIDERS],
+            activeAlerts: [],
+            attentionCount: 0,
+            urgentCount: 0,
+            estimatedSavings: 0,
+            latestNotification: loaded.latestNotification,
+            history: loaded.history,
+            weeklyReport: buildWeeklyReport(loaded.purchases, [], referenceDate)
+          };
+        }
+
+        if (!force && !alertConfig.autoEvaluation) {
+          return {
+            generatedAt: referenceDate.toISOString(),
+            config: alertConfig,
+            adminWhatsapp: normalizePhone(loaded.configResult.raw.adminWhatsapp || ""),
+            supportedProviders: [...WHATSAPP_PROVIDERS],
+            activeAlerts: [],
+            attentionCount: 0,
+            urgentCount: 0,
+            estimatedSavings: 0,
+            latestNotification: loaded.latestNotification,
+            history: loaded.history,
+            weeklyReport: buildWeeklyReport(loaded.purchases, [], referenceDate)
+          };
+        }
+
+        const activeAlerts = [];
+        const notificationsToQueue = [];
+
+        for (const product of loaded.stockItems) {
+          const alert = buildAlertModel(
+            product,
+            loaded.suppliers,
+            loaded.purchases,
+            loaded.currentAlerts,
+            alertConfig,
+            referenceDate
+          );
+
+          if (alert.level === "normal") {
+            if (alert.existingAlert && alert.existingAlert.level !== "normal" && alert.existingAlert.open !== false) {
+              await persistAlertResolution(alert, actor, referenceDate, "estoque normalizado");
+            }
+
+            continue;
+          }
+
+          const notified = await persistAlertState(alert, actor, alertConfig, referenceDate);
+
+          if (alert.status !== "resolved_manual") {
+            activeAlerts.push(summarizeAlert(alert));
+          }
+
+          if (notified) {
+            notificationsToQueue.push(alert);
+          }
+        }
+
+        const latestNotification = notificationsToQueue.length
+          ? await queueNotification(notificationsToQueue, loaded.configResult, trigger, referenceDate)
+          : loaded.latestNotification;
+
+        await systemConfigRef.set({
+          alertasReposicao: {
+            ...alertConfig,
+            lastEvaluatedAt: referenceDate.toISOString()
+          }
+        }, { merge: true });
+
+        const weeklyReport = await maybeQueueWeeklyReport({
+          ...loaded,
+          activeAlerts
+        }, force ? "force" : trigger, referenceDate);
+        const urgentCount = activeAlerts.filter((alert) => alert.level === "urgent").length;
+        const attentionCount = activeAlerts.filter((alert) => alert.level === "attention").length;
+        const estimatedSavings = activeAlerts.reduce((sum, alert) => sum + Math.max(0, toNumber(alert.estimatedSavings, 0)), 0);
+
         return {
           generatedAt: referenceDate.toISOString(),
           config: alertConfig,
           adminWhatsapp: normalizePhone(loaded.configResult.raw.adminWhatsapp || ""),
           supportedProviders: [...WHATSAPP_PROVIDERS],
-          activeAlerts: [],
-          attentionCount: 0,
-          urgentCount: 0,
-          estimatedSavings: 0,
-          latestNotification: loaded.latestNotification,
+          activeAlerts: activeAlerts.sort((left, right) => {
+            if (left.level !== right.level) {
+              return left.level === "urgent" ? -1 : 1;
+            }
+
+            return left.currentStock - right.currentStock;
+          }),
+          attentionCount,
+          urgentCount,
+          estimatedSavings,
+          latestNotification,
           history: loaded.history,
-          weeklyReport: buildWeeklyReport(loaded.purchases, [], referenceDate)
+          weeklyReport
         };
-      }
+      })();
 
-      if (!force && !alertConfig.autoEvaluation) {
-        return {
-          generatedAt: referenceDate.toISOString(),
-          config: alertConfig,
-          adminWhatsapp: normalizePhone(loaded.configResult.raw.adminWhatsapp || ""),
-          supportedProviders: [...WHATSAPP_PROVIDERS],
-          activeAlerts: [],
-          attentionCount: 0,
-          urgentCount: 0,
-          estimatedSavings: 0,
-          latestNotification: loaded.latestNotification,
-          history: loaded.history,
-          weeklyReport: buildWeeklyReport(loaded.purchases, [], referenceDate)
-        };
-      }
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Avaliação de alertas timeout após 30 segundos")), 30000)
+      );
 
-      const activeAlerts = [];
-      const notificationsToQueue = [];
-
-      for (const product of loaded.stockItems) {
-        const alert = buildAlertModel(
-          product,
-          loaded.suppliers,
-          loaded.purchases,
-          loaded.currentAlerts,
-          alertConfig,
-          referenceDate
-        );
-
-        if (alert.level === "normal") {
-          if (alert.existingAlert && alert.existingAlert.level !== "normal" && alert.existingAlert.open !== false) {
-            await persistAlertResolution(alert, actor, referenceDate, "estoque normalizado");
-          }
-
-          continue;
-        }
-
-        const notified = await persistAlertState(alert, actor, alertConfig, referenceDate);
-
-        if (alert.status !== "resolved_manual") {
-          activeAlerts.push(summarizeAlert(alert));
-        }
-
-        if (notified) {
-          notificationsToQueue.push(alert);
-        }
-      }
-
-      const latestNotification = notificationsToQueue.length
-        ? await queueNotification(notificationsToQueue, loaded.configResult, trigger, referenceDate)
-        : loaded.latestNotification;
-
-      await systemConfigRef.set({
-        alertasReposicao: {
-          ...alertConfig,
-          lastEvaluatedAt: referenceDate.toISOString()
-        }
-      }, { merge: true });
-
-      const weeklyReport = await maybeQueueWeeklyReport({
-        ...loaded,
-        activeAlerts
-      }, force ? "force" : trigger, referenceDate);
-      const urgentCount = activeAlerts.filter((alert) => alert.level === "urgent").length;
-      const attentionCount = activeAlerts.filter((alert) => alert.level === "attention").length;
-      const estimatedSavings = activeAlerts.reduce((sum, alert) => sum + Math.max(0, toNumber(alert.estimatedSavings, 0)), 0);
-
-      return {
-        generatedAt: referenceDate.toISOString(),
-        config: alertConfig,
-        adminWhatsapp: normalizePhone(loaded.configResult.raw.adminWhatsapp || ""),
-        supportedProviders: [...WHATSAPP_PROVIDERS],
-        activeAlerts: activeAlerts.sort((left, right) => {
-          if (left.level !== right.level) {
-            return left.level === "urgent" ? -1 : 1;
-          }
-
-          return left.currentStock - right.currentStock;
-        }),
-        attentionCount,
-        urgentCount,
-        estimatedSavings,
-        latestNotification,
-        history: loaded.history,
-        weeklyReport
-      };
+      return await Promise.race([evaluationPromise, timeoutPromise]);
+    } catch (error) {
+      logger.error("Erro em evaluateAlerts:", error);
+      return null;
     } finally {
       evaluationInFlight = false;
     }
@@ -1412,11 +1499,17 @@ export function createStockAlertService(options = {}) {
         const { alertConfig } = await getSystemConfig();
 
         if (shouldRunScheduler(alertConfig, new Date())) {
-          await evaluateAlerts({
-            force: false,
-            actor: "scheduler",
-            trigger
-          });
+          // Timeout de 35 segundos para a avaliação (um pouco maior que o timeout interno de 30s)
+          await Promise.race([
+            evaluateAlerts({
+              force: false,
+              actor: "scheduler",
+              trigger
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Scheduler evaluation timeout")), 35000)
+            )
+          ]);
         }
       } catch (error) {
         logger.error("Falha no agendador de alertas de reposicao.", error);
@@ -1432,6 +1525,8 @@ export function createStockAlertService(options = {}) {
     if (schedulerHandle?.unref instanceof Function) {
       schedulerHandle.unref();
     }
+
+    logger.log("Scheduler de alertas iniciado com intervalo de 15 minutos");
   }
 
   async function markAlertResolved(productId, actor = "admin") {
