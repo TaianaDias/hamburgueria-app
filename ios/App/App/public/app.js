@@ -1650,41 +1650,27 @@ export async function handleStockAutomationEvent(event = {}) {
 
 export function registerServiceWorker() {
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-    let reloadedAfterUpdate = false;
+    const cleanupKey = "sw_cleanup_v1";
 
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloadedAfterUpdate) {
-        return;
-      }
+    Promise.resolve()
+      .then(async () => {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        const hadRegistrations = registrations.length > 0;
 
-      reloadedAfterUpdate = true;
-      window.location.reload();
-    });
+        await Promise.all(registrations.map((registration) => registration.unregister()));
 
-    navigator.serviceWorker.register("/sw.js")
-      .then(async (registration) => {
-        try {
-          await registration.update();
+        if ("caches" in window) {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+        }
 
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: "SKIP_WAITING" });
-          }
-
-          registration.addEventListener("updatefound", () => {
-            const worker = registration.installing;
-
-            worker?.addEventListener("statechange", () => {
-              if (worker.state === "installed" && navigator.serviceWorker.controller) {
-                worker.postMessage({ type: "SKIP_WAITING" });
-              }
-            });
-          });
-        } catch (error) {
-          console.warn("Falha ao atualizar o service worker.", error);
+        if (hadRegistrations && sessionStorage.getItem(cleanupKey) !== "done") {
+          sessionStorage.setItem(cleanupKey, "done");
+          window.location.reload();
         }
       })
       .catch((error) => {
-        console.warn("Falha ao registrar service worker.", error);
+        console.warn("Falha ao limpar service workers antigos.", error);
       });
   }
 }
