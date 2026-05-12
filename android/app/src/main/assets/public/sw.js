@@ -1,4 +1,4 @@
-const CACHE_NAME = "hamburgueria-app-v21";
+const CACHE_NAME = "hamburgueria-app-v22";
 const APP_SHELL = [...new Set([
   "/",
   "/login.html",
@@ -42,6 +42,36 @@ function isValidCacheResponse(response) {
   return response && response.ok && response.type === "basic";
 }
 
+function getCacheKey(request) {
+  const url = new URL(request.url);
+
+  if (
+    request.mode === "navigate"
+    || request.destination === "document"
+    || url.pathname === "/"
+    || url.pathname.endsWith(".html")
+  ) {
+    return url.pathname || "/";
+  }
+
+  return request;
+}
+
+async function matchCached(request) {
+  const url = new URL(request.url);
+  const byKey = await caches.match(getCacheKey(request));
+
+  if (byKey) {
+    return byKey;
+  }
+
+  if (request.mode === "navigate" || request.destination === "document" || url.pathname.endsWith(".html")) {
+    return caches.match(url.pathname || "/");
+  }
+
+  return caches.match(request);
+}
+
 async function warmAppShell() {
   const cache = await caches.open(CACHE_NAME);
   await Promise.allSettled(APP_SHELL.map(async (path) => {
@@ -58,7 +88,7 @@ async function fetchAndCache(request) {
 
   if (isCacheableRequest(request) && isValidCacheResponse(response)) {
     const cache = await caches.open(CACHE_NAME);
-    await cache.put(request, response.clone());
+    await cache.put(getCacheKey(request), response.clone());
   }
 
   return response;
@@ -85,14 +115,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetchAndCache(event.request).catch(() => caches.match(event.request) || caches.match("/dashboard-saas.html"))
-    );
-    return;
-  }
-
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetchAndCache(event.request))
+    matchCached(event.request).then((cached) => {
+      if (cached) {
+        return cached;
+      }
+
+      return fetchAndCache(event.request).catch(() => matchCached(event.request));
+    })
   );
 });
