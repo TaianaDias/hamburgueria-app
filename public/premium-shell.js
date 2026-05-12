@@ -464,6 +464,42 @@ function bindApprovedChrome() {
   const dashboardActionDialog = document.getElementById("dashboard-action-dialog");
   const dashboardSearchDialog = document.getElementById("dashboard-search-dialog");
 
+  function forceCloseDialog(dialog) {
+    if (!dialog) {
+      return;
+    }
+
+    try {
+      if (dialog.open && typeof dialog.close === "function") {
+        dialog.close();
+      }
+    } catch (_) {
+      /* ignore */
+    }
+
+    dialog.removeAttribute("open");
+  }
+
+  function resetApprovedChromeState() {
+    if (mobileDrawerBackdrop) {
+      mobileDrawerBackdrop.hidden = true;
+    }
+
+    if (dashboardAlertDrawerBackdrop) {
+      dashboardAlertDrawerBackdrop.hidden = true;
+    }
+
+    document.body.classList.remove(
+      "dashboard-mobile-drawer-open",
+      "premium-alert-drawer-open",
+      "premium-mobile-menu-open"
+    );
+    mobileMoreButton?.setAttribute("aria-expanded", "false");
+    dashboardAlertButton?.setAttribute("aria-expanded", "false");
+    forceCloseDialog(dashboardActionDialog);
+    forceCloseDialog(dashboardSearchDialog);
+  }
+
   function toggleMobileDrawer(open) {
     if (!mobileDrawerBackdrop || !mobileMoreButton) {
       return;
@@ -481,6 +517,13 @@ function bindApprovedChrome() {
     document.body.classList.toggle("premium-alert-drawer-open", open);
     dashboardAlertButton.setAttribute("aria-expanded", String(open));
   }
+
+  resetApprovedChromeState();
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      resetApprovedChromeState();
+    }
+  });
 
   try {
     if (window.matchMedia("(min-width: 1025px)").matches && localStorage.getItem("dashboard-sidebar-collapsed") === "1") {

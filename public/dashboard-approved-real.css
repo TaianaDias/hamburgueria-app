@@ -817,9 +817,10 @@ body.dashboard-approved-real .dashboard-mobile-drawer-backdrop {
   z-index: 300;
   background: rgba(0,0,0,0.68);
   backdrop-filter: blur(8px);
+  pointer-events: auto;
 }
 body.dashboard-approved-real .premium-alert-drawer-backdrop[hidden],
-body.dashboard-approved-real .dashboard-mobile-drawer-backdrop[hidden] { display: none !important; }
+body.dashboard-approved-real .dashboard-mobile-drawer-backdrop[hidden] { display: none !important; pointer-events: none !important; }
 body.dashboard-approved-real .premium-alert-drawer,
 body.dashboard-approved-real .dashboard-mobile-drawer {
   position: fixed;
